@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core palette - Enterprise slate blues */
+    --background: 210 20% 98%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    /* Primary - Trustworthy blue */
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Muted slate */
+    --secondary: 215 20% 94%;
+    --secondary-foreground: 220 20% 25%;
+
+    --muted: 215 20% 96%;
+    --muted-foreground: 215 15% 50%;
+
+    --accent: 215 25% 92%;
+    --accent-foreground: 220 20% 20%;
+
+    /* Semantic colors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Status colors for AI rankings */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 50% 95%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 80% 95%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 199 80% 95%;
+
+    /* AI-specific tokens */
+    --ai-accent: 250 80% 60%;
+    --ai-accent-foreground: 0 0% 100%;
+    --ai-surface: 250 40% 97%;
+    --ai-border: 250 30% 90%;
+
+    /* Ranking tiers */
+    --rank-high: 142 71% 45%;
+    --rank-medium: 38 92% 50%;
+    --rank-low: 215 15% 60%;
+
+    --border: 215 25% 90%;
+    --input: 215 25% 90%;
+    --ring: 217 91% 50%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 215 20% 85%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 25% 15%;
+    --sidebar-accent-foreground: 215 20% 90%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 217 91% 50%;
+  }
+
+  .dark {
+    --background: 220 25% 6%;
+    --foreground: 215 20% 95%;
+
+    --card: 220 25% 9%;
+    --card-foreground: 215 20% 95%;
+
+    --popover: 220 25% 9%;
+    --popover-foreground: 215 20% 95%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 215 20% 85%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 215 15% 55%;
+
+    --accent: 220 20% 18%;
+    --accent-foreground: 215 20% 90%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success-muted: 142 30% 15%;
+    --warning-muted: 38 40% 15%;
+    --info-muted: 199 40% 15%;
+
+    --ai-surface: 250 30% 12%;
+    --ai-border: 250 25% 25%;
+
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* AI Badge styling */
+  .ai-badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(var(--ai-surface));
+    border: 1px solid hsl(var(--ai-border));
+    color: hsl(var(--ai-accent));
+  }
+
+  /* Rank indicators */
+  .rank-high {
+    @apply bg-success-muted text-success border-success/20;
+  }
+  
+  .rank-medium {
+    @apply bg-warning-muted text-warning border-warning/20;
+  }
+  
+  .rank-low {
+    @apply bg-muted text-muted-foreground border-border;
+  }
+
+  /* Card hover states */
+  .candidate-card {
+    @apply transition-all duration-200 ease-out;
+  }
+  
+  .candidate-card:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  /* AI processing animation */
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  .ai-processing {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  /* Drag handle indicator */
+  .drag-handle {
+    @apply cursor-grab active:cursor-grabbing;
+  }
+
+  /* Override indicator */
+  .override-indicator {
+    @apply relative;
+  }
+  
+  .override-indicator::after {
+    content: '';
+    @apply absolute -left-2 top-0 bottom-0 w-0.5 bg-warning rounded-full;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glass-surface {
+    @apply bg-card/80 backdrop-blur-sm;
+  }
+}
