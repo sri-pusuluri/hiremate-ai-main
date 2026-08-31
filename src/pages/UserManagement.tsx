@@ -179,6 +179,7 @@ export default function UserManagement() {
     } finally {
       setIsInviting(false);
     }
+  };
   const handleResendInvite = async (email: string, role: string) => {
     try {
       const { error } = await supabase.functions.invoke('invite-user', {
