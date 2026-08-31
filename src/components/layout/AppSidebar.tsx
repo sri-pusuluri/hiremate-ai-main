@@ -148,10 +148,10 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="w-full mt-2 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+            className="w-full mt-2 text-sidebar-foreground/70 hover:bg-white/10 hover:text-white"
             onClick={() => signOut()}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </Button>
         </div>
