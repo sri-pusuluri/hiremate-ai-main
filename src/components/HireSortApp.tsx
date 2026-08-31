@@ -170,7 +170,7 @@ export function HireSortApp() {
 
   const handleConfirmOnboarding = async () => {
     setShowOnboarding(false);
-    setCurrentScreen('processing');
+    setCurrentScreen('ranked-list');
 
     if (selectedJob) {
       try {
@@ -181,6 +181,15 @@ export function HireSortApp() {
             ai_processing_status: 'processing'
           })
           .eq('id', selectedJob.id);
+          
+        setSelectedJob(prev => prev ? {
+          ...prev,
+          hireSortEnabled: true,
+          aiProcessingStatus: 'processing'
+        } : null);
+
+        // Kick off background processing without blocking
+        processCandidatesInBg(selectedJob);
       } catch (err) {
         console.error("Failed to enable HireSort in database:", err);
       }
@@ -311,10 +320,8 @@ export function HireSortApp() {
     return result;
   };
 
-  const handleProcessingComplete = async () => {
-    setCurrentScreen('ranked-list');
-
-    if (selectedJob) {
+  const processCandidatesInBg = async (jobToProcess: Job) => {
+    if (jobToProcess) {
       try {
         const nowStr = new Date().toISOString();
         
@@ -326,13 +333,13 @@ export function HireSortApp() {
             ai_processing_status: 'complete',
             last_ranked_at: nowStr
           })
-          .eq('id', selectedJob.id);
+          .eq('id', jobToProcess.id);
 
         // 2. Perform mock candidate analysis updates for this job
         const { data: jobCands } = await supabase
           .from('candidates')
           .select('id, full_name, resume_text')
-          .eq('job_id', selectedJob.id);
+          .eq('job_id', jobToProcess.id);
 
         if (jobCands) {
           for (let i = 0; i < jobCands.length; i++) {
@@ -342,8 +349,8 @@ export function HireSortApp() {
             const analysis = await analyzeCandidateWithLLM(
               cand.full_name,
               cand.resume_text || '',
-              selectedJob.title,
-              selectedJob.description || ''
+              jobToProcess.title,
+              jobToProcess.description || ''
             );
 
             const score = analysis?.score || (i % 2 === 0 ? 'high' : 'medium');
@@ -355,7 +362,7 @@ export function HireSortApp() {
             const risk = analysis?.retentionRisk || 'low';
             const riskFactor = analysis?.retentionRiskFactor || (i % 2 === 0 ? 'Stable 3+ year average tenure' : 'Previous short tenure');
             const joinEstimate = analysis?.timeToJoinEstimate || (i % 2 === 0 ? '15 days' : '30 days');
-            const textAssessment = analysis?.assessment || `Processed via local simulation.`;
+            const textAssessment = analysis?.assessment || `Demo Mode: No AI API key configured in Settings. This is a simulated evaluation.`;
             const foundSkills = analysis?.matchedSkills || [];
             const lackSkills = analysis?.missingSkills || [];
 
@@ -440,13 +447,14 @@ export function HireSortApp() {
           />
         );
       case 'processing':
+        // Fallback in case state gets weird, but we no longer use this screen
         return (
-          <ProcessingState
-            jobTitle={selectedJob?.title || 'Job'}
-            totalCandidates={selectedJob?.candidateCount || 100}
-            isActualProcessingComplete={selectedJob?.aiProcessingStatus === 'complete'}
-            onComplete={handleProcessingComplete}
-          />
+          <div className="flex items-center justify-center min-h-[60vh] animate-fade-in">
+            <div className="text-center max-w-md p-8 bg-muted rounded-xl">
+              <h2 className="text-xl font-semibold mb-2">AI is ranking candidates...</h2>
+              <p className="text-muted-foreground">Please wait a moment while we process the resumes in the background.</p>
+            </div>
+          </div>
         );
       case 'ranked-list':
         return (

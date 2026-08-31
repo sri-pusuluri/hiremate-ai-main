@@ -249,6 +249,20 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
         )}
       </div>
 
+      {selectedJob?.aiProcessingStatus === 'processing' && (
+        <div className="mb-6 p-4 bg-ai-surface/50 border border-ai-accent/30 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-ai-surface flex items-center justify-center animate-pulse-soft">
+              <Sparkles className="w-5 h-5 text-ai-accent" />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground">AI is ranking candidates</h3>
+              <p className="text-sm text-muted-foreground">Evaluating resumes in the background. Results will appear automatically.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Candidate Source Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CandidateTab)} className="mb-4">
         <TabsList className="grid w-full max-w-lg grid-cols-3">

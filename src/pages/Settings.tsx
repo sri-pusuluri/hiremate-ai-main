@@ -246,7 +246,7 @@ export default function Settings() {
               interviewPassProb: i % 2 === 0 ? 92 : 68,
               offerAcceptanceProb: 80,
               retentionRisk: 'low',
-              assessment: `Candidate ${cand.full_name} processed via local simulation.`
+              assessment: `Candidate ${cand.full_name} processed in Demo Mode (no API key configured).`
             }
           }).eq('id', candData.id);
         } else {
