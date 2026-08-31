@@ -197,7 +197,7 @@ export function HireSortApp() {
   };
 
   const analyzeCandidateWithLLM = async (candidateName: string, resumeText: string, jobTitle: string, jobDesc: string) => {
-    const provider = localStorage.getItem('ai_provider') || 'gemini';
+    const provider = localStorage.getItem('ai_provider') || 'openai';
     const geminiKey = localStorage.getItem('gemini_api_key');
     const openaiKey = localStorage.getItem('openai_api_key');
     const claudeKey = localStorage.getItem('claude_api_key');

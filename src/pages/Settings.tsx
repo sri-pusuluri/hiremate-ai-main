@@ -54,7 +54,7 @@ export default function Settings() {
   const [mockMode, setMockMode] = useState(() => localStorage.getItem('use_mock_supabase') === 'true');
 
   // AI Provider settings
-  const [aiProvider, setAiProvider] = useState(localStorage.getItem('ai_provider') || 'gemini');
+  const [aiProvider, setAiProvider] = useState(localStorage.getItem('ai_provider') || 'openai');
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_api_key') || (import.meta.env.VITE_GEMINI_API_KEY as string) || '');
   const [openaiKey, setOpenaiKey] = useState(localStorage.getItem('openai_api_key') || (import.meta.env.VITE_OPENAI_API_KEY as string) || '');
   const [claudeKey, setClaudeKey] = useState(localStorage.getItem('claude_api_key') || (import.meta.env.VITE_CLAUDE_API_KEY as string) || '');
