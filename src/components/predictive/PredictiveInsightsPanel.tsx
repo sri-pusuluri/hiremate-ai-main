@@ -164,12 +164,19 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
                             Resume Format Check
                             <TooltipProvider>
                                 <Tooltip>
-                                    <TooltipTrigger>
-                                        <Info className="w-3.5 h-3.5 text-muted-foreground/70" />
+                                    <TooltipTrigger asChild>
+                                        <span className="cursor-help flex items-center justify-center hover:bg-muted p-0.5 rounded-full transition-colors">
+                                            <Info className="w-4 h-4 text-muted-foreground" />
+                                        </span>
                                     </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p className="max-w-xs text-xs font-semibold mb-1">{aiGeneratedProbability}% AI Probability</p>
-                                        <p className="max-w-xs text-xs">{aiGeneratedReasoning}</p>
+                                    <TooltipContent className="p-3">
+                                        <p className="max-w-xs text-sm font-semibold mb-1 border-b pb-1">
+                                            {aiGeneratedProbability}% AI Probability
+                                        </p>
+                                        <p className="max-w-xs text-xs text-muted-foreground mt-1">
+                                            <span className="font-semibold text-foreground">Why: </span>
+                                            {aiGeneratedReasoning}
+                                        </p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
