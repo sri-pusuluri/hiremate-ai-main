@@ -39,6 +39,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 
@@ -177,6 +178,50 @@ export default function UserManagement() {
       });
     } finally {
       setIsInviting(false);
+    }
+  const handleResendInvite = async (email: string, role: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('invite-user', {
+        body: { email, role }
+      });
+      if (error) throw error;
+      toast({
+        title: 'Invitation Resent',
+        description: `A new invitation email was sent to ${email}`,
+      });
+    } catch (error: any) {
+      console.error('Error resending invite:', error);
+      toast({
+        title: 'Resend Failed',
+        description: error.message || 'Could not resend invitation. The user may have already completed signup.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, email: string) => {
+    if (!window.confirm(`Are you sure you want to completely remove ${email}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
+      if (error) throw error;
+      
+      toast({
+        title: 'User Removed',
+        description: `${email} has been permanently removed.`,
+      });
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Deletion Failed',
+        description: error.message || 'Could not remove the user.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -391,6 +436,19 @@ export default function UserManagement() {
                             onClick={() => handleRoleChange(u.id, u.role === 'admin' ? 'recruiter' : 'admin')}
                           >
                             Change to {u.role === 'admin' ? 'Recruiter' : 'Admin'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleResendInvite(u.email || '', u.role)}
+                          >
+                            Resend Invitation
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteUser(u.id, u.email || '')}
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          >
+                            Remove User
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
