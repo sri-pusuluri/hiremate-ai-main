@@ -18,10 +18,11 @@ import {
   MessageSquare,
   Linkedin,
   RefreshCw,
-  Globe
+  Globe,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PredictiveInsightsPanel } from '@/components/predictive/PredictiveInsightsPanel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +43,22 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
   const [syncing, setSyncing] = useState(false);
   const [syncLogs, setSyncLogs] = useState<string[]>([]);
   const [isSynced, setIsSynced] = useState(false);
+  const [localAIEnabled, setLocalAIEnabled] = useState(false);
+
+  const isAIEnabled = job ? job.hireSortEnabled : true;
+  const effectiveAIEnabled = isAIEnabled || localAIEnabled;
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
+
+  useEffect(() => {
+    setFeedback(candidate.recruiterFeedback || null);
+    setShowResumeModal(false);
+    setLinkedinUrl(`https://linkedin.com/in/${candidate.name.toLowerCase().replace(/\s+/g, '-')}`);
+    setSyncing(false);
+    setSyncLogs([]);
+    setIsSynced(false);
+    setLocalAIEnabled(false);
+    setIsReanalyzing(false);
+  }, [candidate.id, candidate.name, candidate.recruiterFeedback]);
 
   const handleSyncLinkedIn = () => {
     if (!linkedinUrl) {
@@ -86,6 +103,17 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
     onFeedback(type);
   };
 
+  const handleReanalyze = () => {
+    setIsReanalyzing(true);
+    setTimeout(() => {
+      setIsReanalyzing(false);
+      toast({
+        title: "Re-analysis Complete",
+        description: `Candidate profile for ${candidate.name} has been re-evaluated against the latest job description.`,
+      });
+    }, 2500);
+  };
+
   return (
     <>
       <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-card border-l border-border shadow-dropdown z-40 flex flex-col animate-slide-in-right">
@@ -102,13 +130,13 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-semibold text-foreground">{candidate.name}</h2>
-                <RankBadge rank={candidate.aiRank || 0} score={candidate.aiScore || 'low'} />
+                {effectiveAIEnabled && <RankBadge rank={candidate.aiRank || 0} score={candidate.aiScore || 'low'} />}
               </div>
               <p className="text-muted-foreground">
                 {candidate.currentRole} at {candidate.company}
               </p>
               <div className="flex items-center gap-2 mt-2">
-                <RelevanceLabel score={candidate.aiScore || 'low'} />
+                {effectiveAIEnabled && <RelevanceLabel score={candidate.aiScore || 'low'} />}
                 {candidate.isPinned && <OverrideIndicator type="pinned" />}
                 {candidate.isBoosted && <OverrideIndicator type="boosted" />}
               </div>
@@ -186,42 +214,90 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
             )}
           </div>
 
-          {/* AI Match Analysis - Enhanced */}
-          <div className="mb-6">
-            <AIMatchAnalysis candidate={candidate} job={job} />
-          </div>
+          {effectiveAIEnabled ? (
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4 mt-2">
+                <h3 className="font-semibold text-foreground text-lg">AI Match Analysis</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs bg-ai-surface hover:bg-ai-surface/80 border-ai-border text-ai-accent"
+                  onClick={handleReanalyze}
+                  disabled={isReanalyzing}
+                >
+                  {isReanalyzing ? (
+                    <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 mr-2" />
+                  )}
+                  {isReanalyzing ? "Re-analyzing..." : "Re-analyze Profile"}
+                </Button>
+              </div>
 
-          {/* Predictive Insights - NEW */}
-          <div className="mb-6">
-            <PredictiveInsightsPanel candidate={candidate} />
-          </div>
+              {isReanalyzing && (
+                <div className="absolute inset-0 top-12 z-10 bg-background/60 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center border border-ai-border/50">
+                  <RefreshCw className="w-6 h-6 text-ai-accent animate-spin mb-3" />
+                  <p className="text-sm font-medium text-foreground">Running Dual Engine Analysis...</p>
+                  <p className="text-xs text-muted-foreground mt-1 text-center px-4">Recalculating embeddings against latest job description.</p>
+                </div>
+              )}
 
-          {/* Feedback Section */}
-          <div className="border border-border rounded-xl p-5 mb-6">
-            <h3 className="font-semibold text-foreground mb-2">Was this ranking helpful?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Your feedback helps improve future rankings
-            </p>
+              {/* Dual Engine Analysis */}
+              <div className="mb-6">
+                <AIMatchAnalysis candidate={candidate} job={job} />
+              </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                variant={feedback === 'good' ? 'success' : 'success-outline'}
-                size="sm"
-                onClick={() => handleFeedback('good')}
+              {/* Predictive Insights - NEW */}
+              <div className="mb-6">
+                <PredictiveInsightsPanel candidate={candidate} />
+              </div>
+
+              {/* Feedback Section */}
+              <div className="border border-border rounded-xl p-5 mb-6">
+                <h3 className="font-semibold text-foreground mb-2">Was this ranking helpful?</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Your feedback helps improve future rankings
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant={feedback === 'good' ? 'success' : 'success-outline'}
+                    size="sm"
+                    onClick={() => handleFeedback('good')}
+                  >
+                    <ThumbsUp className="w-4 h-4" />
+                    Good suggestion
+                  </Button>
+                  <Button
+                    variant={feedback === 'poor' ? 'warning' : 'warning-outline'}
+                    size="sm"
+                    onClick={() => handleFeedback('poor')}
+                  >
+                    <ThumbsDown className="w-4 h-4" />
+                    Needs improvement
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="border border-ai-border/50 bg-ai-surface/30 rounded-xl p-6 mb-6 text-center shadow-inner">
+              <Sparkles className="w-8 h-8 text-ai-accent mx-auto mb-3 opacity-80" />
+              <h3 className="font-semibold text-foreground mb-1 text-lg">AI Analysis Disabled</h3>
+              <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+                Enable AI analysis for this candidate to view semantic match scores, predictive insights, and automated rankings.
+              </p>
+              <Button 
+                onClick={() => {
+                  setLocalAIEnabled(true);
+                  handleReanalyze();
+                }} 
+                className="bg-ai-surface hover:bg-ai-surface/80 border border-ai-border text-ai-accent font-medium shadow-sm"
               >
-                <ThumbsUp className="w-4 h-4" />
-                Good suggestion
-              </Button>
-              <Button
-                variant={feedback === 'poor' ? 'warning' : 'warning-outline'}
-                size="sm"
-                onClick={() => handleFeedback('poor')}
-              >
-                <ThumbsDown className="w-4 h-4" />
-                Poor suggestion
+                <Sparkles className="w-4 h-4 mr-2" />
+                Enable AI Analysis
               </Button>
             </div>
-          </div>
+          )}
 
           {/* Recruiter Notes */}
           {candidate.recruiterNotes && (

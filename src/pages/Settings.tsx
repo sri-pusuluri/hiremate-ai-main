@@ -188,21 +188,38 @@ export default function Settings() {
         const cand = importedCandidates[i];
         log(`\n👤 [Candidates] Ingesting candidate ${i+1}/${importedCandidates.length}: "${cand.full_name}"...`);
 
-        // Insert Candidate row
-        const { data: candData, error: dbError } = await supabase
+        // Check for existing Candidate
+        const { data: existingCand } = await supabase
           .from('candidates')
-          .insert({
-            job_id: cand.job_id,
-            full_name: cand.full_name,
-            email: cand.email,
-            experience: cand.experience || 0,
-            ai_score: 'medium'
-          })
-          .select()
-          .single();
+          .select('id')
+          .eq('email', cand.email)
+          .eq('job_id', cand.job_id)
+          .maybeSingle();
 
-        if (dbError) throw dbError;
-        log(`💾 Candidate saved with ID: ${candData.id}`);
+        let candData = existingCand;
+
+        if (!existingCand) {
+          const { data: newCand, error: dbError } = await supabase
+            .from('candidates')
+            .insert({
+              job_id: cand.job_id,
+              full_name: cand.full_name,
+              email: cand.email,
+              experience: cand.experience || 0,
+              ai_score: 'medium'
+            })
+            .select()
+            .single();
+
+          if (dbError) throw dbError;
+          candData = newCand;
+          log(`💾 New Candidate saved with ID: ${candData.id}`);
+        } else {
+          log(`⏭️ Candidate ${cand.email} already exists, skipping insert.`);
+        }
+        
+        if (!candData) continue;
+        
         await new Promise(resolve => setTimeout(resolve, 400));
 
         // Invoke Edge Function

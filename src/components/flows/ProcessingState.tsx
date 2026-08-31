@@ -5,19 +5,29 @@ import { Button } from '@/components/ui/button';
 interface ProcessingStateProps {
   jobTitle: string;
   totalCandidates: number;
+  isActualProcessingComplete?: boolean;
   onComplete: () => void;
 }
 
-export function ProcessingState({ jobTitle, totalCandidates, onComplete }: ProcessingStateProps) {
+export function ProcessingState({ jobTitle, totalCandidates, isActualProcessingComplete, onComplete }: ProcessingStateProps) {
   const [progress, setProgress] = useState(0);
   const [processed, setProcessed] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
   // Simulate processing
   useEffect(() => {
+    if (isActualProcessingComplete) {
+      setProgress(100);
+      setIsComplete(true);
+      return;
+    }
+
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + Math.random() * 8;
+        let next = prev + Math.random() * 8;
+        if (next >= 98 && !isActualProcessingComplete) {
+          return 98; // Hang until actual processing is done
+        }
         if (next >= 100) {
           clearInterval(interval);
           setIsComplete(true);
@@ -29,7 +39,7 @@ export function ProcessingState({ jobTitle, totalCandidates, onComplete }: Proce
     }, 500);
 
     return () => clearInterval(interval);
-  }, [totalCandidates]);
+  }, [totalCandidates, isActualProcessingComplete]);
 
   const estimatedTimeRemaining = Math.max(1, Math.ceil((100 - progress) / 10));
 

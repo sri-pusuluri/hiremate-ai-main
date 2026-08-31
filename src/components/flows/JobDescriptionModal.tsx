@@ -105,9 +105,13 @@ Applicants: ${job.candidateCount}
             {job.description && (
               <section>
                 <h3 className="text-sm font-semibold text-foreground mb-2">About the Role</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {job.description}
-                </p>
+                <div className="space-y-3">
+                  {job.description.split('\n\n').map((para, i) => (
+                    <p key={i} className="text-sm text-muted-foreground leading-relaxed">
+                      {para.trim()}
+                    </p>
+                  ))}
+                </div>
               </section>
             )}
 

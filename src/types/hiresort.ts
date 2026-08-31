@@ -35,6 +35,7 @@ export interface Candidate {
 
   // Predictive AI Layer
   predictiveInsights?: {
+    llmGuessedSimilarity?: number;
     interviewPassProb: number; // 0-100
     offerAcceptanceProb: number; // 0-100
     onboardingSuccessProb: number; // 0-100
@@ -42,6 +43,7 @@ export interface Candidate {
     retentionRiskFactor?: string;
     timeToJoinEstimate?: string;
     assessment?: string; // Detailed predictive assessment
+    resumeFormat?: 'AI Generated' | 'Human Written' | 'Mixed';
   };
 }
 

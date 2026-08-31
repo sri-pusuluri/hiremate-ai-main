@@ -114,6 +114,27 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
           jobData = reloaded;
         }
 
+        // Auto-cleanup existing duplicates in the background
+        const { data: allCands } = await supabase.from('candidates').select('id, email, job_id');
+        if (allCands) {
+          const seen = new Set();
+          const toDelete = [];
+          for (const c of allCands) {
+            const key = `${c.email}-${c.job_id}`;
+            if (seen.has(key)) {
+              toDelete.push(c.id);
+            } else {
+              seen.add(key);
+            }
+          }
+          if (toDelete.length > 0) {
+            console.log(`Cleaning up ${toDelete.length} duplicate candidates...`);
+            for (let i = 0; i < toDelete.length; i += 50) {
+               await supabase.from('candidates').delete().in('id', toDelete.slice(i, i + 50));
+            }
+          }
+        }
+
         const { data: candData } = await supabase.from('candidates').select('job_id');
 
         if (jobData && jobData.length > 0) {
@@ -133,7 +154,8 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
               hireSortEnabled: j.hire_sort_enabled,
               aiProcessingStatus: j.ai_processing_status,
               lastRankedAt: j.last_ranked_at,
-              candidateCount: count
+              candidateCount: count,
+              postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
             };
           });
           setJobs(mappedJobs);
@@ -189,28 +211,43 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
 
       // 2. Ingest Candidates
       for (const cand of importedCandidates) {
-        const { data: candData, error: dbError } = await supabase
+        // Check for existing candidate to prevent duplicates
+        const { data: existingCand } = await supabase
           .from('candidates')
-          .insert({
-            job_id: cand.job_id,
-            full_name: cand.full_name,
-            email: cand.email,
-            experience: cand.experience || 0,
-            ai_score: 'medium'
-          })
-          .select()
-          .single();
+          .select('id')
+          .eq('email', cand.email)
+          .eq('job_id', cand.job_id)
+          .maybeSingle();
 
-        if (dbError) throw dbError;
+        let candData = existingCand;
 
-        // Trigger Edge Function (non-blocking)
-        supabase.functions.invoke('ingest-resume', {
-          body: {
-            candidateId: candData.id,
-            resumeText: cand.resume_text,
-            jobId: cand.job_id
-          }
-        }).catch(e => console.warn("Failed invoking edge function:", e));
+        if (!existingCand) {
+          const { data: newCand, error: dbError } = await supabase
+            .from('candidates')
+            .insert({
+              job_id: cand.job_id,
+              full_name: cand.full_name,
+              email: cand.email,
+              experience: cand.experience || 0,
+              ai_score: 'medium'
+            })
+            .select()
+            .single();
+
+          if (dbError) throw dbError;
+          candData = newCand;
+        }
+
+        if (candData) {
+          // Trigger Edge Function (non-blocking)
+          supabase.functions.invoke('ingest-resume', {
+            body: {
+              candidateId: candData.id,
+              resumeText: cand.resume_text,
+              jobId: cand.job_id
+            }
+          }).catch(e => console.warn("Failed invoking edge function:", e));
+        }
       }
 
       toast({

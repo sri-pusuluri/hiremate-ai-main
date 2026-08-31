@@ -7,9 +7,21 @@
       "location": "Bangalore, India",
       "type": "Full-time",
       "salary": "$90,000 - $120,000",
-      "description": "We are seeking a Senior Frontend Engineer to build high-performance React applications, coordinate team features, and optimize browser rendering performance.",
-      "requirements": ["React", "TypeScript", "TailwindCSS", "Webpack", "Vite", "Next.js", "5+ years experience"],
-      "responsibilities": ["Lead frontend architecture", "Optimize web page performance", "Mentor junior developers"]
+      "description": "HireMate is revolutionizing the talent acquisition space with AI-driven intelligence. We are seeking a Staff/Senior Frontend Engineer to spearhead the architecture of our core web platform. You will build highly scalable, interactive UI components using React 18, TypeScript, and modern state management, impacting thousands of global recruiters daily.\n\n### Why Join Us?\nWe operate like an elite sports team—fast-paced, highly collaborative, and heavily invested in your growth. We offer comprehensive benefits including 100% covered health/dental/vision insurance, a 4% 401(k) match, unlimited PTO, and a $1,500 annual home-office stipend.",
+      "requirements": [
+        "React 18 & TypeScript (5+ years)",
+        "State Management (Zustand, Redux)",
+        "Vite, Next.js, Webpack",
+        "CI/CD & Testing (Jest, Cypress)",
+        "Performance optimization & Web Vitals"
+      ],
+      "responsibilities": [
+        "Architect highly scalable frontend systems from scratch",
+        "Establish engineering standards and mentor junior developers",
+        "Collaborate with product and design to craft pixel-perfect, accessible UIs",
+        "Optimize rendering performance and manage complex state logic",
+        "Lead code reviews and maintain strict testing coverage"
+      ]
     },
     {
       "id": "22222222-2222-2222-2222-222222222222",
@@ -18,9 +30,21 @@
       "location": "Singapore",
       "type": "Full-time",
       "salary": "$110,000 - $140,000",
-      "description": "We are looking for a Product Manager to guide product development, draft specifications, align cross-functional stakeholder agendas, and track metrics.",
-      "requirements": ["Product Lifecycle Management", "Agile Methodologies", "User Research", "KPI Analytics", "4+ years experience"],
-      "responsibilities": ["Define product roadmap", "Write detailed product requirements (PRDs)", "Conduct market analysis"]
+      "description": "At HireMate, we build the engine that powers modern recruiting. We are looking for a strategic Product Manager to own our core matching algorithm and enterprise dashboard. You will synthesize market research, define the roadmap, and work closely with AI researchers and engineers to deliver features that drive massive business impact.\n\n### What We Offer\nBeyond a competitive salary and equity package, you will receive full medical/dental benefits, flexible remote work options, generous parental leave, and an annual learning & development budget to attend global conferences.",
+      "requirements": [
+        "B2B SaaS Product Management (4+ years)",
+        "Agile & Scrum methodologies",
+        "Data analytics (Mixpanel, SQL)",
+        "Excellent PRD writing and stakeholder alignment",
+        "Experience in HR-Tech or AI is a plus"
+      ],
+      "responsibilities": [
+        "Define and execute a robust 12-month product roadmap",
+        "Write comprehensive PRDs and user stories",
+        "Conduct deep-dive market analysis and customer interviews",
+        "Track KPIs and iterate rapidly based on user feedback",
+        "Align cross-functional teams across engineering, marketing, and sales"
+      ]
     },
     {
       "id": "33333333-3333-3333-3333-333333333333",
@@ -29,9 +53,21 @@
       "location": "Remote",
       "type": "Full-time",
       "salary": "$80,000 - $105,000",
-      "description": "We are seeking a UX Designer to create wireframes, user journeys, prototypes, and UI specifications using Figma.",
-      "requirements": ["Figma", "User Research", "Wireframing", "Interaction Design", "Prototyping", "3+ years experience"],
-      "responsibilities": ["Design high-fidelity mockups", "Perform usability testing", "Coordinate with frontend engineers"]
+      "description": "HireMate believes that enterprise software shouldn't be ugly or hard to use. We need a visionary UX Designer to lead the end-to-end design lifecycle for our platform. From low-fidelity wireframes to complex interactive prototypes in Figma, you will shape intuitive experiences that abstract away the complexity of AI-driven recruiting.\n\n### Perks & Benefits\nWe value creativity and well-being. Enjoy 100% remote work flexibility, premium health insurance coverage, a comprehensive wellness stipend, 401(k) matching, and an annual company retreat.",
+      "requirements": [
+        "Figma & Prototyping tools (3+ years)",
+        "Deep understanding of WCAG Accessibility",
+        "Design Systems & Component libraries",
+        "Strong portfolio showcasing B2B SaaS workflows",
+        "User Research & Usability testing"
+      ],
+      "responsibilities": [
+        "Design high-fidelity mockups and interactive prototypes",
+        "Conduct extensive user research and usability testing sessions",
+        "Build and maintain our global design system",
+        "Collaborate tightly with frontend engineers to ensure pixel-perfect implementation",
+        "Advocate for user-centric design principles across the organization"
+      ]
     },
     {
       "id": "e98c56c2-0731-482a-bc91-236b2f42a11b",
@@ -40,9 +76,21 @@
       "location": "Remote",
       "type": "Full-time",
       "salary": "$100,000 - $130,000",
-      "description": "We are seeking a skilled Full Stack Developer proficient in React, Node.js, and PostgreSQL to join our team.",
-      "requirements": ["React", "Node.js", "PostgreSQL", "Express", "REST APIs", "3+ years experience"],
-      "responsibilities": ["Develop frontend features", "Build REST APIs", "Manage PostgreSQL queries"]
+      "description": "Join HireMate's core engineering squad as a Full Stack Developer! You will be instrumental in building both our React-based frontend and our highly performant Node.js/PostgreSQL backend. We are an early-stage, fast-growing startup where your code will ship to production on day one.\n\n### Comprehensive Benefits\nWe offer a highly competitive compensation package including generous equity, top-tier health/dental/vision plans, a 401(k) with company match, 4 weeks of paid vacation, and a $1,000 work-from-home setup budget.",
+      "requirements": [
+        "React, TypeScript, Node.js (3+ years)",
+        "Database Design (PostgreSQL, Prisma/TypeORM)",
+        "Cloud Platforms (AWS, GCP) and Docker",
+        "RESTful APIs & GraphQL",
+        "Automated Testing (Jest, Cypress)"
+      ],
+      "responsibilities": [
+        "Develop and maintain scalable full-stack features end-to-end",
+        "Design robust database schemas and optimize query performance",
+        "Build secure and scalable RESTful APIs",
+        "Implement automated CI/CD pipelines and write comprehensive tests",
+        "Collaborate with cross-functional teams in an Agile environment"
+      ]
     },
     {
       "id": "f87b45b1-0620-471a-ab80-125a1e31a00a",
@@ -51,9 +99,21 @@
       "location": "New York, NY",
       "type": "Full-time",
       "salary": "$90,000 - $110,000",
-      "description": "We are looking for a creative Marketing Manager to lead our branding and digital acquisition campaigns.",
-      "requirements": ["SEO", "Content Marketing", "Digital Branding", "Google Analytics", "4+ years experience"],
-      "responsibilities": ["Lead marketing team", "Execute SEO strategy", "Run digital ad campaigns"]
+      "description": "HireMate is looking for a dynamic Marketing Manager to amplify our brand presence and drive B2B customer acquisition. You will own the full funnel—from SEO and content strategy to digital advertising and brand positioning, directly impacting our ARR growth.\n\n### The Perks\nJoin a fully remote, globally distributed team. We provide premium health insurance, competitive equity, flexible PTO, paid parental leave, and a dedicated budget for professional development and marketing certifications.",
+      "requirements": [
+        "B2B SaaS Marketing (4+ years)",
+        "SEO, SEM, and Content Marketing",
+        "Proficiency with Google Analytics, Hubspot, and CRM tools",
+        "Digital Campaign Management & Budgeting",
+        "Strong copywriting and brand storytelling skills"
+      ],
+      "responsibilities": [
+        "Design and execute comprehensive go-to-market strategies",
+        "Manage SEO/SEM campaigns to drive qualified enterprise leads",
+        "Collaborate with sales to optimize the conversion funnel",
+        "Oversee content creation including whitepapers, case studies, and blog posts",
+        "Track and report on campaign ROI and key marketing KPIs"
+      ]
     }
   ],
   "candidates": [

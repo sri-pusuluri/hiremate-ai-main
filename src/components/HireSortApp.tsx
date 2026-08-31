@@ -14,17 +14,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const FLOW_SCREENS: { id: FlowScreen; label: string; description: string }[] = [
-  { id: 'job-dashboard', label: '1. Job Dashboard', description: 'Entry point with HireSort discovery' },
-  { id: 'onboarding-modal', label: '2. Onboarding Modal', description: 'First-time enable with trust messaging' },
-  { id: 'processing', label: '3. Processing State', description: 'Async background ranking' },
-  { id: 'ranked-list', label: '4. Ranked Candidates', description: 'Core AI-ranked list experience' },
-  { id: 'candidate-detail', label: '5. Candidate Detail', description: 'Explainability & feedback' },
-  { id: 'shortlist-review', label: '6. Shortlist Review', description: 'Pre-confirmation human ownership' },
-  // Hidden from flow preview but code kept for future use:
-  // { id: 'feedback', label: '7. Feedback Modal', description: 'Post-shortlist trust loop' },
-  // { id: 'edge-states', label: '8. Edge States', description: 'Poor JD, low volume, errors' },
-];
+
 
 const logAICosting = async (
   jobId: string,
@@ -107,6 +97,51 @@ const logAICosting = async (
   }
 };
 
+// --- SEMANTIC VECTOR MATH ---
+function computeCosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length) return 0;
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+async function getEmbeddings(text: string, provider: string, key: string): Promise<number[] | null> {
+  try {
+    if (provider === 'openai' && key) {
+      const res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+        body: JSON.stringify({ model: "text-embedding-3-small", input: text })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.data?.[0]?.embedding || null;
+      }
+    } else if (provider === 'gemini' && key) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: text }] } })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.embedding?.values || null;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to generate embedding:", err);
+  }
+  return null;
+}
+// ----------------------------
+
 export function HireSortApp() {
   const [currentView, setCurrentView] = useState('jobs');
   const [currentScreen, setCurrentScreen] = useState<FlowScreen>('job-dashboard');
@@ -116,7 +151,6 @@ export function HireSortApp() {
   const [showShortlist, setShowShortlist] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [shortlistCandidates, setShortlistCandidates] = useState<Candidate[]>([]);
-  const [showFlowNav, setShowFlowNav] = useState(true);
 
   const handleSelectJob = (job: Job) => {
     setSelectedJob(job);
@@ -245,6 +279,29 @@ export function HireSortApp() {
       }
 
       if (result && selectedJob) {
+        // --- TRUE SEMANTIC VECTOR MATH ---
+        // If the provider is openai or gemini, get real vector embeddings for JD and Resume
+        if (((provider === 'openai' && openaiKey) || (provider === 'gemini' && geminiKey)) && resumeText) {
+          const activeKey = provider === 'openai' ? openaiKey : geminiKey;
+          if (activeKey) {
+            console.log(`[Client AI] Computing true semantic vectors using ${provider}...`);
+            const [jdVector, resumeVector] = await Promise.all([
+              getEmbeddings(jobDesc, provider, activeKey),
+              getEmbeddings(resumeText, provider, activeKey)
+            ]);
+
+            if (jdVector && resumeVector) {
+              const trueSimilarity = computeCosineSimilarity(jdVector, resumeVector);
+              console.log(`[Client AI] True cosine similarity computed: ${trueSimilarity}`);
+              
+              // We'll append this to the result to override the LLM's guessed similarity
+              result.trueCosineSimilarity = trueSimilarity;
+              // We still keep result.similarity as the LLM's subjective score for comparison!
+            }
+          }
+        }
+        // ---------------------------------
+
         const activeModel = provider === 'openai' ? openaiModel : (provider === 'claude' ? claudeModel : geminiModel);
         await logAICosting(selectedJob.id, candidateName, provider, activeModel, prompt, result);
       }
@@ -290,7 +347,8 @@ export function HireSortApp() {
             );
 
             const score = analysis?.score || (i % 2 === 0 ? 'high' : 'medium');
-            const similarity = analysis?.similarity || (i % 2 === 0 ? 0.89 - (i * 0.02) : 0.68 - (i * 0.02));
+            const llmSimilarity = analysis?.similarity || (i % 2 === 0 ? 0.89 - (i * 0.02) : 0.68 - (i * 0.02));
+            const trueMathSimilarity = analysis?.trueCosineSimilarity || llmSimilarity; // Fallback to LLM if vectors failed/unsupported
             const passProb = analysis?.interviewPassProb || (i % 2 === 0 ? 92 : 68);
             const acceptProb = analysis?.offerAcceptanceProb || 80;
             const onboardingSuccess = analysis?.onboardingSuccessProb || (i % 2 === 0 ? 95 : 78);
@@ -305,10 +363,11 @@ export function HireSortApp() {
               .from('candidates')
               .update({
                 ai_score: score,
-                cosine_similarity: similarity,
+                cosine_similarity: trueMathSimilarity,
                 matched_skills: foundSkills,
                 missing_skills: lackSkills,
                 predictive_insights: {
+                  llmGuessedSimilarity: llmSimilarity,
                   interviewPassProb: passProb,
                   offerAcceptanceProb: acceptProb,
                   onboardingSuccessProb: onboardingSuccess,
@@ -354,33 +413,7 @@ export function HireSortApp() {
     setSelectedJob(null);
   };
 
-  const navigateToScreen = (screen: FlowScreen) => {
-    // Reset modals
-    setShowOnboarding(false);
-    setShowShortlist(false);
-    setShowFeedback(false);
-    setSelectedCandidate(null);
-    
-    // Handle special screens that are modals
-    if (screen === 'onboarding-modal') {
-      setCurrentScreen('job-dashboard');
-      setShowOnboarding(true);
-      setSelectedJob(selectedJob || mockJobs[0]);
-    } else if (screen === 'candidate-detail') {
-      setCurrentScreen('ranked-list');
-      setSelectedCandidate(selectedCandidate || mockCandidates[0]);
-    } else if (screen === 'shortlist-review') {
-      setCurrentScreen('ranked-list');
-      setShortlistCandidates(shortlistCandidates.length > 0 ? shortlistCandidates : mockCandidates.slice(0, 3));
-      setShowShortlist(true);
-    } else if (screen === 'feedback') {
-      setCurrentScreen('ranked-list');
-      setShortlistCandidates(shortlistCandidates.length > 0 ? shortlistCandidates : mockCandidates.slice(0, 3));
-      setShowFeedback(true);
-    } else {
-      setCurrentScreen(screen);
-    }
-  };
+
 
   const getTopBarProps = () => {
     switch (currentScreen) {
@@ -411,6 +444,7 @@ export function HireSortApp() {
           <ProcessingState
             jobTitle={selectedJob?.title || 'Job'}
             totalCandidates={selectedJob?.candidateCount || 100}
+            isActualProcessingComplete={selectedJob?.aiProcessingStatus === 'complete'}
             onComplete={handleProcessingComplete}
           />
         );
@@ -420,6 +454,10 @@ export function HireSortApp() {
             onSelectCandidate={handleSelectCandidate}
             onCreateShortlist={handleCreateShortlist}
             selectedJob={selectedJob || undefined}
+            onBack={() => {
+              setCurrentScreen('job-dashboard');
+              setSelectedJob(null);
+            }}
           />
         );
       case 'edge-states':
@@ -436,90 +474,9 @@ export function HireSortApp() {
 
   return (
     <div className="flex h-full">
-      {/* Flow Navigation Panel */}
-      {showFlowNav && (
-        <div className="w-72 bg-card border-r border-border flex flex-col">
-          <div className="p-4 border-b border-border">
-            <h2 className="font-semibold text-foreground flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              UX Flow Preview
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Click to navigate screens
-            </p>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-2">
-            <div className="space-y-1">
-              {FLOW_SCREENS.map((screen) => {
-                const isActive = currentScreen === screen.id || 
-                  (screen.id === 'onboarding-modal' && showOnboarding) ||
-                  (screen.id === 'candidate-detail' && selectedCandidate) ||
-                  (screen.id === 'shortlist-review' && showShortlist) ||
-                  (screen.id === 'feedback' && showFeedback);
-                
-                return (
-                  <button
-                    key={screen.id}
-                    onClick={() => navigateToScreen(screen.id)}
-                    className={cn(
-                      "w-full text-left p-3 rounded-lg transition-colors",
-                      isActive 
-                        ? "bg-primary text-primary-foreground" 
-                        : "hover:bg-accent"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={cn(
-                        "text-sm font-medium",
-                        isActive ? "text-primary-foreground" : "text-foreground"
-                      )}>
-                        {screen.label}
-                      </span>
-                      <ChevronRight className={cn(
-                        "w-4 h-4",
-                        isActive ? "text-primary-foreground" : "text-muted-foreground"
-                      )} />
-                    </div>
-                    <p className={cn(
-                      "text-xs mt-0.5",
-                      isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-                    )}>
-                      {screen.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="p-3 border-t border-border">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="w-full"
-              onClick={() => setShowFlowNav(false)}
-            >
-              Hide Navigator
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto relative">
         {renderMainContent()}
-        
-        {/* Show Navigator Button */}
-        {!showFlowNav && (
-          <button
-            onClick={() => setShowFlowNav(true)}
-            className="absolute top-4 left-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-primary/90 transition-colors"
-          >
-            <Eye className="w-4 h-4" />
-            Show Flow Navigator
-          </button>
-        )}
       </div>
 
       {/* Modals & Overlays */}
@@ -535,6 +492,7 @@ export function HireSortApp() {
       {selectedCandidate && (
         <CandidateDetail
           candidate={selectedCandidate}
+          job={selectedJob}
           onClose={() => setSelectedCandidate(null)}
           onFeedback={(type) => console.log('Feedback:', type)}
         />

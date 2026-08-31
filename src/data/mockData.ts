@@ -12,7 +12,13 @@ export const mockJobs: Job[] = [
     status: 'active',
     candidateCount: 847,
     hireSortEnabled: false,
-    description: 'We are looking for a Senior Frontend Engineer to join our core product team. You will be responsible for building and maintaining our customer-facing web applications, working closely with designers and backend engineers to deliver exceptional user experiences at scale.',
+    description: `We are looking for a Senior Frontend Engineer to join our core product engineering team at a pivotal stage of growth. In this role, you will own the architecture and delivery of mission-critical, customer-facing web applications used by thousands of recruiters and hiring managers globally.
+
+You will work in a cross-functional product squad alongside senior designers, backend engineers, and product managers — contributing not just code, but technical direction. This is a high-impact role where your decisions shape user experiences at scale.
+
+We value engineers who care deeply about performance, accessibility, and developer experience. If you've led major frontend migrations, championed component systems, or driven adoption of testing culture, you'll thrive here.
+
+Our stack: React 18, TypeScript, Vite, TailwindCSS, React Query, Supabase, and Vercel. We move fast, ship weekly, and invest heavily in code quality and developer tooling.`,
     responsibilities: [
       'Lead the development of complex React-based web applications',
       'Architect scalable frontend solutions and establish best practices',
@@ -60,7 +66,13 @@ export const mockJobs: Job[] = [
     hireSortEnabled: true,
     aiProcessingStatus: 'complete',
     lastRankedAt: '2024-01-10',
-    description: 'We are seeking an experienced Product Manager to drive the strategy and execution of our core platform features. You will work at the intersection of business, technology, and user experience to define product vision and deliver impactful solutions.',
+    description: `We are seeking a driven and strategic Product Manager to take ownership of our core hiring intelligence platform. This role sits at the intersection of AI innovation, recruiter workflows, and enterprise SaaS — and requires someone equally comfortable in a data deep-dive as they are in a customer discovery call.
+
+You will lead the end-to-end lifecycle of product features — from shaping the opportunity and writing detailed PRDs to working alongside engineers in sprint planning and measuring launch success through analytics. You'll have a direct line to the CEO and significant influence over our 12-month roadmap.
+
+This is not an execution-only PM role. We expect you to challenge assumptions, bring data-backed perspectives to leadership, and advocate fiercely for the users you serve — enterprise HR teams, talent acquisition leads, and recruiting coordinators.
+
+Our product philosophy: build fewer things better. We use Notion for specs, Linear for sprint tracking, Mixpanel for analytics, and Figma for design collaboration. Prior experience in HR-tech, recruitment automation, or B2B SaaS will give you a strong head start.`,
     responsibilities: [
       'Define product roadmap and prioritize features based on business impact',
       'Conduct user research and translate insights into product requirements',
@@ -107,7 +119,13 @@ export const mockJobs: Job[] = [
     hireSortEnabled: true,
     aiProcessingStatus: 'processing',
     aiProcessingProgress: 67,
-    description: 'Join our design team as a UX Designer to create intuitive, user-centered experiences for our recruitment platform. You will be responsible for the end-to-end design process, from research and ideation to high-fidelity prototypes and design system maintenance.',
+    description: `We are hiring a UX Designer who is passionate about designing enterprise tools that genuinely make people's working lives better. You will be the primary design voice for our recruitment intelligence platform — shaping experiences that help thousands of talent teams find, evaluate, and hire more effectively.
+
+This is a full-cycle design role. You will conduct discovery research to surface real recruiter pain points, facilitate design sprints, produce wireframes and interactive Figma prototypes, and see designs through to shipped product. You'll partner closely with our PM and engineering leads, and have full creative ownership of your problem space.
+
+As a growing team, your influence will extend beyond screens — you'll help evolve our design system, contribute to our brand language, and set the standard for accessibility across all products. We believe in design that's inclusive by default, not by afterthought.
+
+We use Figma for everything — from low-fidelity sketches to handoff-ready specs. Familiarity with Storybook for component documentation and basic HTML/CSS for design-engineering collaboration is a strong advantage. Remote-first culture with async-friendly rituals and quarterly in-person offsites.`,
     responsibilities: [
       'Conduct user research and usability testing',
       'Create wireframes, prototypes, and high-fidelity designs',
@@ -154,6 +172,7 @@ const getPredictiveInsights = (aiScore: 'high' | 'medium' | 'low') => {
       retentionRiskFactor: 'Strong cultural fit & career progression alignment.',
       timeToJoinEstimate: '2-3 weeks',
       assessment: "**Strong Contender**: This candidate shows exceptional alignment with the core requirements, particularly in technical skills and industry experience.\n\n**Key Factors**:\n• **High Skills Match**: The 90%+ match in React and TypeScript significantly boosts interview pass probability.\n• **Stable Career History**: A consistent track record suggests high retention potential.\n• **Cultural Alignment**: Previous experience in similar high-paced environments indicates a smooth onboarding process.",
+      resumeFormat: Math.random() > 0.5 ? 'AI Generated' : 'Human Written' as const,
     };
   } else if (aiScore === 'medium') {
     return {
@@ -164,6 +183,7 @@ const getPredictiveInsights = (aiScore: 'high' | 'medium' | 'low') => {
       retentionRiskFactor: 'Salary expectations slightly above band.',
       timeToJoinEstimate: '1 month',
       assessment: "**Moderate Potential**: The candidate meets the baseline requirements but may need support in specific areas.\n\n**Key Factors**:\n• **Skill Gaps**: Missing experience in some nice-to-have areas lowers the immediate interview pass probability.\n• **Salary Expectations**: Slightly above standard bands, which may impact offer acceptance.\n• **Growth Potential**: Strong foundational skills suggest good long-term potential despite initial ramp-up needs.",
+      resumeFormat: Math.random() > 0.5 ? 'AI Generated' : 'Human Written' as const,
     };
   } else {
     return {
@@ -174,6 +194,7 @@ const getPredictiveInsights = (aiScore: 'high' | 'medium' | 'low') => {
       retentionRiskFactor: 'High turnover history in previous roles.',
       timeToJoinEstimate: 'Unknown',
       assessment: "**Challenging Fit**: Significant misalignment with the role's core requirements.\n\n**Key Factors**:\n• **Experience Mismatch**: Lack of required senior-level experience is the primary driver for low interview probability.\n• **Retention Concerns**: Frequent job changes in the past 2 years flag a high retention risk.\n• **Skill Variance**: Core technical stack does not fully align with our current infrastructure.",
+      resumeFormat: Math.random() > 0.5 ? 'AI Generated' : 'Human Written' as const,
     };
   }
 };

@@ -13,14 +13,15 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
     if (!candidate.predictiveInsights) return null;
 
     const {
-        interviewPassProb,
-        offerAcceptanceProb,
-        retentionRisk,
+        interviewPassProb = 0,
+        offerAcceptanceProb = 0,
+        retentionRisk = 'medium',
         retentionRiskFactor,
         timeToJoinEstimate,
-        onboardingSuccessProb,
-        assessment
-    } = candidate.predictiveInsights;
+        onboardingSuccessProb = 0,
+        assessment,
+        resumeFormat = 'Human Written'
+    } = candidate.predictiveInsights as any;
 
     const getRiskColor = (risk: string) => {
         switch (risk) {
@@ -129,28 +130,38 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
                 </div>
 
                 {/* Risk & Time Factors */}
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div className={cn("p-3 rounded-lg border flex flex-col items-center justify-center text-center", getRiskBg(retentionRisk))}>
-                        <div className="flex items-center gap-2 mb-1">
-                            <AlertTriangle className={cn("w-4 h-4", getRiskColor(retentionRisk))} />
-                            <span className={cn("font-semibold capitalize", getRiskColor(retentionRisk))}>
-                                {retentionRisk} Retention Risk
+                <div className="space-y-3 pt-2">
+                    <div className={cn("p-3 rounded-lg border flex items-center justify-between", getRiskBg(retentionRisk))}>
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle className={cn("w-4 h-4", getRiskColor(retentionRisk))} />
+                                <span className={cn("font-semibold capitalize text-sm", getRiskColor(retentionRisk))}>
+                                    {retentionRisk} Risk
+                                </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground ml-6">
+                                {retentionRiskFactor || 'Standard risk profile'}
                             </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                            {retentionRiskFactor || 'Standard risk profile'}
+                    </div>
+
+                    <div className="p-3 rounded-lg border bg-muted/50 flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                            Est. Time to Join
+                        </span>
+                        <span className="font-semibold text-foreground text-sm">
+                            {timeToJoinEstimate || 'Unknown'}
                         </span>
                     </div>
 
-                    <div className="p-3 rounded-lg border bg-muted/50 flex flex-col items-center justify-center text-center">
-                        <div className="flex items-center gap-2 mb-1">
-                            <CheckCircle2 className="w-4 h-4 text-primary" />
-                            <span className="font-semibold text-foreground">
-                                {timeToJoinEstimate || 'Unknown'}
-                            </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                            Est. Time to Join
+                    <div className="p-3 rounded-lg border bg-muted/50 flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Sparkles className={cn("w-4 h-4", resumeFormat === 'AI Generated' ? 'text-ai-accent' : 'text-primary')} />
+                            Resume Format Check
+                        </span>
+                        <span className="font-semibold text-foreground text-sm">
+                            {resumeFormat}
                         </span>
                     </div>
                 </div>
