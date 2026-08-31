@@ -441,7 +441,7 @@ export function HireSortApp() {
       case 'edge-states':
         return { title: 'Edge States', subtitle: 'Handling exceptional scenarios' };
       default:
-        return { title: 'Hiresort GenAI', subtitle: '' };
+        return { title: 'HireSortAi', subtitle: '' };
     }
   };
 

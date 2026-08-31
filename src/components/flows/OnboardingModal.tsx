@@ -27,7 +27,7 @@ export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }
                 <Sparkles className="w-6 h-6 text-ai-accent" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-foreground">Enable Hiresort GenAI</h2>
+                <h2 className="text-xl font-semibold text-foreground">Enable HireSortAi</h2>
                 <p className="text-sm text-muted-foreground mt-0.5">For: {jobTitle}</p>
               </div>
             </div>
@@ -43,14 +43,14 @@ export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }
         {/* Content */}
         <div className="p-6">
           <p className="text-foreground mb-6">
-            Hiresort GenAI will analyze your <span className="font-semibold">{candidateCount} candidates</span> and 
+            HireSortAi will analyze your <span className="font-semibold">{candidateCount} candidates</span> and 
             rank them based on how well they match your job description.
           </p>
 
           {/* Trust Messaging - What AI does */}
           <div className="space-y-4 mb-6">
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-              What Hiresort GenAI does
+              What HireSortAi does
             </h3>
             
             <div className="space-y-3">
@@ -75,7 +75,7 @@ export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }
           {/* Trust Messaging - What AI does NOT do */}
           <div className="bg-muted rounded-lg p-4 mb-6">
             <h3 className="text-sm font-semibold text-foreground mb-2">
-              What Hiresort GenAI does NOT do
+              What HireSortAi does NOT do
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
@@ -110,7 +110,7 @@ export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }
             </Button>
             <Button variant="ai-primary" onClick={onEnable} className="flex-1">
               <Sparkles className="w-4 h-4" />
-              Enable Hiresort GenAI
+              Enable HireSortAi
             </Button>
           </div>
         </div>

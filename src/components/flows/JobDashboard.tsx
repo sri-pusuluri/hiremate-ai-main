@@ -487,7 +487,7 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD }: JobCardProps) {
                 }}
               >
                 <Sparkles className="w-4 h-4" />
-                Enable Hiresort GenAI
+                Enable HireSortAi
               </Button>
             )}
             <Button 

@@ -125,7 +125,7 @@ export default function Auth() {
             <span className="text-primary-foreground font-bold text-lg">TS</span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Hiresort GenAI</h1>
+            <h1 className="text-2xl font-bold text-foreground">HireSortAi</h1>
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Sparkles className="w-3.5 h-3.5 text-ai-accent" />
               <span>AI-Powered Hiring Platform</span>

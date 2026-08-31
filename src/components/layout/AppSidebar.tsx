@@ -33,7 +33,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
           <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <span className="text-sidebar-primary-foreground font-bold text-sm">HS</span>
           </div>
-          <span className="font-semibold text-lg">Hiresort GenAI</span>
+          <span className="font-semibold text-lg">HireSortAi</span>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
         <div className="mt-6 p-3 rounded-lg bg-sidebar-accent/30 border border-sidebar-border">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-4 h-4 text-sidebar-primary" />
-            <span className="text-xs font-semibold text-sidebar-primary">Hiresort GenAI</span>
+            <span className="text-xs font-semibold text-sidebar-primary">HireSortAi</span>
           </div>
           <p className="text-xs text-sidebar-foreground/60 leading-relaxed">
             AI-assisted resume ranking available on your job postings.

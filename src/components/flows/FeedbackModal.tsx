@@ -46,7 +46,7 @@ export function FeedbackModal({ shortlistSize, onComplete, onSkip }: FeedbackMod
         <div className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-ai-accent" />
-            <h3 className="font-medium text-foreground">How was Hiresort GenAI?</h3>
+            <h3 className="font-medium text-foreground">How was HireSortAi?</h3>
           </div>
 
           <p className="text-sm text-muted-foreground mb-4">

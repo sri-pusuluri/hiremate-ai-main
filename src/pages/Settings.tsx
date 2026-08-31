@@ -440,7 +440,7 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
-            Hiresort GenAI
+            HireSortAi
           </TabsTrigger>
           <TabsTrigger value="ats" className="flex items-center gap-2">
             <Briefcase className="w-4 h-4" />
@@ -577,7 +577,7 @@ export default function Settings() {
                   <div>
                     <p className="font-medium">AI Ranking Complete</p>
                     <p className="text-sm text-muted-foreground">
-                      Notify when Hiresort GenAI finishes ranking
+                      Notify when HireSortAi finishes ranking
                     </p>
                   </div>
                   <Switch
@@ -616,7 +616,7 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-ai-accent" />
-                Hiresort GenAI Settings
+                HireSortAi Settings
               </CardTitle>
               <CardDescription>
                 Customize how AI assists your hiring process
@@ -815,7 +815,7 @@ export default function Settings() {
                   <div>
                     <p className="font-medium text-foreground">AI Ethics & Transparency</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Hiresort GenAI is designed to assist, not replace, human decision-making.
+                      HireSortAi is designed to assist, not replace, human decision-making.
                       All rankings are explainable and overridable. We never auto-reject candidates.
                     </p>
                   </div>

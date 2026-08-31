@@ -1,8 +1,8 @@
-# HireSort GenAI
+# HireSortAi
 
 **AI-Powered Hiring Platform**
 
-HireSort GenAI is a modern recruitment management system designed to streamline the hiring process. It provides tools for managing job postings, tracking candidates, and collaborating with your hiring team, all wrapped in a sleek, responsive interface.
+HireSortAi is a modern recruitment management system designed to streamline the hiring process. It provides tools for managing job postings, tracking candidates, and collaborating with your hiring team, all wrapped in a sleek, responsive interface.
 
 ## 🚀 Features
 
