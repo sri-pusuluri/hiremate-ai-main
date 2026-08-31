@@ -153,11 +153,22 @@ export default function UserManagement() {
 
     setIsInviting(true);
     try {
-      const { error } = await supabase.functions.invoke('invite-user', {
+      const { data, error } = await supabase.functions.invoke('invite-user', {
         body: { email: inviteEmail, role: inviteRole }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Supabase functions invoke returns a FunctionsHttpError on non-2xx, 
+        // we can try to extract the real error message from the response if available.
+        let errorMessage = error.message;
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const errBody = await error.context.json();
+            if (errBody.error) errorMessage = errBody.error;
+          }
+        } catch (e) {}
+        throw new Error(errorMessage);
+      }
 
       toast({
         title: 'Invitation Sent',
@@ -182,10 +193,20 @@ export default function UserManagement() {
   };
   const handleResendInvite = async (email: string, role: string) => {
     try {
-      const { error } = await supabase.functions.invoke('invite-user', {
+      const { data, error } = await supabase.functions.invoke('invite-user', {
         body: { email, role }
       });
-      if (error) throw error;
+      
+      if (error) {
+        let errorMessage = error.message;
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const errBody = await error.context.json();
+            if (errBody.error) errorMessage = errBody.error;
+          }
+        } catch (e) {}
+        throw new Error(errorMessage);
+      }
       toast({
         title: 'Invitation Resent',
         description: `A new invitation email was sent to ${email}`,
@@ -206,10 +227,20 @@ export default function UserManagement() {
     }
 
     try {
-      const { error } = await supabase.functions.invoke('delete-user', {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
         body: { userId }
       });
-      if (error) throw error;
+      
+      if (error) {
+        let errorMessage = error.message;
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const errBody = await error.context.json();
+            if (errBody.error) errorMessage = errBody.error;
+          }
+        } catch (e) {}
+        throw new Error(errorMessage);
+      }
       
       toast({
         title: 'User Removed',

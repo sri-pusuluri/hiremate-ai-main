@@ -64,9 +64,12 @@ serve(async (req) => {
       }
     })
 
+    // Dynamically get the origin so redirects work for both localhost and production
+    const reqOrigin = req.headers.get('origin') || 'https://hiresortai.zool.in'
+    
     // Invite the user
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: 'https://hiresortai.zool.in/'
+      redirectTo: `${reqOrigin}/`
     })
     
     if (inviteError) {
