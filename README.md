@@ -13,6 +13,16 @@ HireSort GenAI is a modern recruitment management system designed to streamline 
 - **👥 User Management**: Administer team members and access controls.
 - **⚙️ Settings**: Configure your account and application preferences.
 - **🔒 Authentication**: Secure login and sign-up functionality (integrated with Supabase).
+- **🤖 AI Matching**: Real-time evaluation of candidates against job descriptions using LLMs, integrated directly via Supabase Edge Functions.
+- **✉️ Team Management**: Secure, invite-only team provisioning with role-based access control (Admin vs Recruiter). Fully integrates with Custom SMTP (Resend) for branded invite emails.
+
+## 🌟 Recent Updates (August 2026)
+
+- **Complete Invitation Flow**: Admins can seamlessly invite team members. Supabase Edge Functions (`invite-user` and `delete-user`) securely handle creating, resending, and deleting user access without exposing sensitive keys to the frontend.
+- **Dynamic Redirects**: Invite links intelligently redirect users back to their origin (e.g., `localhost:8080` for development or `hiresortai.zool.in` for production).
+- **Custom SMTP Integration**: Configured to use Resend for fully customizable, branded email templates.
+- **UI Refinements**: Standardized sentence-case tooltips across the app and refactored the Predictive Insights view into a highly readable row-based structure.
+- **State Management Polish**: Fixed local component state to ensure AI Processing details cleanly reset when navigating between different candidate records.
 
 ## 🛠️ Tech Stack
 
@@ -67,6 +77,10 @@ src/
 ├── lib/             # Utility functions and configurations
 ├── integrations/    # External service integrations (Supabase etc.)
 └── App.tsx          # Main application entry point with routing
+
+supabase/
+├── functions/       # Serverless Edge Functions (e.g., invite-user, delete-user)
+└── migrations/      # Database schema definitions and trigger setup
 ```
 
 ## 🚀 Deployment
