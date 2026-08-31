@@ -2,11 +2,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, TrendingUp } from 'lucide-react';
 
-export function RecruiterInsightsWidget() {
+interface RecruiterInsightsWidgetProps {
+  names?: string[];
+}
+
+export function RecruiterInsightsWidget({ names }: RecruiterInsightsWidgetProps) {
+    const displayNames = names && names.length >= 3 ? names : ['Sarah Chen', 'Mike Johnson', 'Priya Sharma'];
     const teamPerformance = [
-        { name: 'Sarah Chen', conversion: 78, trend: '+5%' },
-        { name: 'Mike Johnson', conversion: 62, trend: '-2%' },
-        { name: 'Priya Sharma', conversion: 85, trend: '+8%' },
+        { name: displayNames[0], conversion: 78, trend: '+5%' },
+        { name: displayNames[1], conversion: 62, trend: '-2%' },
+        { name: displayNames[2], conversion: 85, trend: '+8%' },
     ];
 
     return (

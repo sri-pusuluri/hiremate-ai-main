@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sparkles, Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import { isMockMode, enableMockMode, disableMockMode } from '@/integrations/supabase/client';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -20,6 +21,19 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  
+  // Local Mock State
+  const [mockActive, setMockActive] = useState(isMockMode());
+
+  const handleToggleMockMode = () => {
+    if (mockActive) {
+      disableMockMode();
+    } else {
+      enableMockMode();
+    }
+    setMockActive(!mockActive);
+    window.location.reload();
+  };
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('');
@@ -262,6 +276,35 @@ export default function Auth() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Database Mode Switcher */}
+        <div className="mt-6 p-4 rounded-lg border border-border bg-card shadow-sm text-center">
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-left">
+              <p className="text-xs font-semibold text-foreground">Database Connectivity</p>
+              <p className="text-[11px] text-muted-foreground">
+                {mockActive ? 'Offline (Local Mock Mode)' : 'Online (Supabase Connection)'}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs h-8" 
+              onClick={handleToggleMockMode}
+            >
+              Switch to {mockActive ? 'Supabase' : 'Offline Mock'}
+            </Button>
+          </div>
+          {mockActive && (
+            <div className="mt-3 pt-3 border-t border-border text-left">
+              <p className="text-[11px] text-muted-foreground font-semibold">Offline Demo Accounts:</p>
+              <ul className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                <li>• Admin: <code className="bg-muted px-1 py-0.5 rounded font-mono">admin@hiremate.ai</code> / <code className="bg-muted px-1 py-0.5 rounded font-mono">admin123</code></li>
+                <li>• Recruiter: <code className="bg-muted px-1 py-0.5 rounded font-mono">recruiter@hiremate.ai</code> / <code className="bg-muted px-1 py-0.5 rounded font-mono">recruiter123</code></li>
+              </ul>
+            </div>
+          )}
+        </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
           By continuing, you agree to our Terms of Service and Privacy Policy.

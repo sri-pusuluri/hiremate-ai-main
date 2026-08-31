@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Candidate, Job } from '@/types/hiresort';
 import { mockCandidates } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/components/ui/ai-badges';
 import { ResumeViewerModal } from './ResumeViewerModal';
@@ -33,13 +34,73 @@ type FilterMode = 'all' | 'high' | 'medium' | 'low';
 type CandidateTab = 'all' | 'applied' | 'talent-pool';
 
 export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, selectedJob }: RankedCandidatesListProps) {
-  const [candidates] = useState<Candidate[]>(mockCandidates);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>('ai-rank');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [resumeCandidate, setResumeCandidate] = useState<Candidate | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [activeTab, setActiveTab] = useState<CandidateTab>('all');
+
+  useEffect(() => {
+    async function fetchCandidates() {
+      if (!selectedJob) {
+        setCandidates([]);
+        setLoading(false);
+        return;
+      }
+
+      // If it is a mock job from demo navigation (which starts with 'job-'), use mockCandidates
+      if (selectedJob.id.startsWith('job-')) {
+        setCandidates(mockCandidates);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data } = await supabase
+          .from('candidates')
+          .select('*')
+          .eq('job_id', selectedJob.id);
+
+        if (data && data.length > 0) {
+          const mapped = data.map((c: any) => ({
+            id: c.id,
+            jobId: c.job_id,
+            name: c.full_name,
+            email: c.email,
+            phone: c.phone || '',
+            experience: c.experience,
+            location: c.location || 'Remote',
+            appliedDate: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            matchedSkills: c.matched_skills || c.matchedSkills || [],
+            missingSkills: c.missing_skills || c.missingSkills || [],
+            aiScore: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
+              ? c.ai_score 
+              : ((c.cosineSimilarity !== null && c.cosineSimilarity !== undefined) ? c.aiScore : 'pending'),
+            cosineSimilarity: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
+              ? c.cosine_similarity 
+              : ((c.cosineSimilarity !== null && c.cosineSimilarity !== undefined) ? c.cosineSimilarity : null),
+            predictiveInsights: c.predictive_insights || c.predictiveInsights || {},
+            aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
+            isPinned: c.is_pinned || c.ai_score === 'high' || false,
+            company: c.company || 'Tech Solutions',
+            currentRole: c.current_role || c.currentRole || 'Software Engineer',
+            resumeText: c.resume_text || c.resumeText || ''
+          }));
+          setCandidates(mapped);
+        } else {
+          setCandidates([]);
+        }
+      } catch (err) {
+        console.error("Error loading candidates from Supabase:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCandidates();
+  }, [selectedJob]);
 
   // Filter candidates by source (applied vs talent pool)
   const { appliedCandidates, talentPoolCandidates } = useMemo(() => {
@@ -107,6 +168,16 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
     setResumeCandidate(candidate);
     setShowResumeModal(true);
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground animate-pulse">Loading candidates...</p>
+        </div>
+      </div>
+    );
+  }
 
   const selectedCandidates = currentCandidates.filter((c) => selectedIds.has(c.id));
 
@@ -246,7 +317,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             displayRank={index + 1}
             isSelected={selectedIds.has(candidate.id)}
             onSelect={() => toggleSelect(candidate.id)}
-            onClick={() => onSelectCandidate(candidate)}
+            onClick={() => onSelectCandidate({ ...candidate, aiRank: index + 1 })}
             onViewResume={() => handleViewResume(candidate)}
           />
         ))}
@@ -311,15 +382,16 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
         {/* Rank Badge - use displayRank for consistent numbering */}
         <RankBadge rank={displayRank} score={candidate.aiScore || 'low'} />
 
-        {/* Cosine Similarity Score */}
         <div className="flex flex-col items-center min-w-[60px]">
           <span className={cn(
             "text-sm font-bold tabular-nums",
-            (candidate.cosineSimilarity || 0) >= 0.8 && "text-success",
-            (candidate.cosineSimilarity || 0) >= 0.5 && (candidate.cosineSimilarity || 0) < 0.8 && "text-warning",
-            (candidate.cosineSimilarity || 0) < 0.5 && "text-muted-foreground"
+            candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.8 && "text-success",
+            candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.5 && candidate.cosineSimilarity < 0.8 && "text-warning",
+            (candidate.cosineSimilarity === null || candidate.cosineSimilarity === undefined || candidate.cosineSimilarity < 0.5) && "text-muted-foreground"
           )}>
-            {((candidate.cosineSimilarity || 0) * 100).toFixed(0)}%
+            {candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined 
+              ? `${(candidate.cosineSimilarity * 100).toFixed(0)}%` 
+              : "--%"}
           </span>
           <span className="text-[10px] text-muted-foreground">match</span>
         </div>

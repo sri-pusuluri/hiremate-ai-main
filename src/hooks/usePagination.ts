@@ -37,7 +37,7 @@ export function usePagination<T>({
   const endIndex = Math.min(currentPage * itemsPerPage, data.length);
 
   const goToPage = (page: number) => {
-    const pageNumber = Math.min(Math.max(1, page), totalPages);
+    const pageNumber = totalPages > 0 ? Math.min(Math.max(1, page), totalPages) : 1;
     setCurrentPage(pageNumber);
   };
 
@@ -53,9 +53,11 @@ export function usePagination<T>({
     }
   };
 
-  // Reset to page 1 when data changes significantly
+  // Reset to page 1 when data changes significantly or goes out of bounds
   useMemo(() => {
     if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    } else if (currentPage < 1) {
       setCurrentPage(1);
     }
   }, [totalPages, currentPage]);

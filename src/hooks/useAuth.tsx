@@ -59,6 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch(err => {
+      console.error('Error loading session:', err);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

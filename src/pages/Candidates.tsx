@@ -30,11 +30,119 @@ import {
   Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 type TabType = 'all' | 'applied' | 'talent-pool';
 
+const jobUuidMap: Record<string, string> = {
+  'job-1': '11111111-1111-1111-1111-111111111111',
+  'job-2': '22222222-2222-2222-2222-222222222222',
+  'job-3': '33333333-3333-3333-3333-333333333333',
+  'job-4': '44444444-4444-4444-4444-444444444444',
+  'job-5': '55555555-5555-5555-5555-555555555555',
+};
+
+const candidateUuidMap: Record<string, string> = {
+  'cand-1': 'a1111111-1111-1111-1111-111111111111',
+  'cand-2': 'a2222222-2222-2222-2222-222222222222',
+  'cand-3': 'a3333333-3333-3333-3333-333333333333',
+  'cand-4': 'a4444444-4444-4444-4444-444444444444',
+  'cand-5': 'a5555555-5555-5555-5555-555555555555',
+  'cand-6': 'a6666666-6666-6666-6666-666666666666',
+  'cand-7': 'a7777777-7777-7777-7777-777777777777',
+  'cand-8': 'a8888888-8888-8888-8888-888888888888',
+  'cand-9': 'a9999999-9999-9999-9999-999999999999',
+  'cand-10': 'b1111111-1111-1111-1111-111111111111',
+  'cand-11': 'b2222222-2222-2222-2222-222222222222',
+  'cand-12': 'b3333333-3333-3333-3333-333333333333',
+  'cand-13': 'b4444444-4444-4444-4444-444444444444',
+  'cand-14': 'b5555555-5555-5555-5555-555555555555',
+  'cand-15': 'b6666666-6666-6666-6666-666666666666',
+  'cand-16': 'b7777777-7777-7777-7777-777777777777',
+};
+
 export default function Candidates() {
-  const [candidates] = useState<Candidate[]>(mockCandidates);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data: dbJobs } = await supabase.from('jobs').select('*');
+        const { data: dbCandidates } = await supabase.from('candidates').select('*');
+
+        const mappedMockJobs = mockJobs.map(j => ({
+          ...j,
+          id: jobUuidMap[j.id] || j.id
+        }));
+
+        const mappedMockCandidates = mockCandidates.map(c => ({
+          ...c,
+          id: candidateUuidMap[c.id] || c.id,
+          jobId: jobUuidMap[c.jobId] || c.jobId
+        }));
+
+        if (dbJobs && dbJobs.length > 0) {
+          const mappedJobs = dbJobs.map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            department: j.department,
+            location: j.location,
+            type: j.type,
+            salary: j.salary,
+            description: j.description,
+            responsibilities: j.responsibilities || [],
+            requirements: j.requirements || [],
+            niceToHave: j.nice_to_have || [],
+            hireSortEnabled: j.hire_sort_enabled,
+            aiProcessingStatus: j.ai_processing_status,
+            lastRankedAt: j.last_ranked_at,
+            candidateCount: j.candidate_count || 0
+          }));
+          setJobs(mappedJobs);
+        } else {
+          setJobs([]);
+        }
+
+        if (dbCandidates && dbCandidates.length > 0) {
+          const mappedCandidates = dbCandidates.map((c: any) => ({
+            id: c.id,
+            jobId: c.job_id,
+            name: c.full_name,
+            email: c.email,
+            phone: c.phone || '',
+            experience: c.experience,
+            location: c.location || 'Remote',
+            appliedDate: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            matchedSkills: c.matched_skills || c.matchedSkills || [],
+            missingSkills: c.missing_skills || c.missingSkills || [],
+            aiScore: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
+              ? c.ai_score 
+              : ((c.cosineSimilarity !== null && c.cosineSimilarity !== undefined) ? c.aiScore : 'pending'),
+            cosineSimilarity: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
+              ? c.cosine_similarity 
+              : ((c.cosineSimilarity !== null && c.cosineSimilarity !== undefined) ? c.cosineSimilarity : null),
+            predictiveInsights: c.predictive_insights || c.predictiveInsights || {},
+            aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
+            company: c.company || 'Tech Solutions',
+            currentRole: c.current_role || c.currentRole || 'Software Engineer'
+          }));
+          setCandidates(mappedCandidates);
+        } else {
+          setCandidates([]);
+        }
+      } catch (err) {
+        console.error('Error fetching Supabase data:', err);
+        setJobs([]);
+        setCandidates([]);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    loadData();
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterScore, setFilterScore] = useState<string>('all');
   const [filterJob, setFilterJob] = useState<string>('all');
@@ -44,9 +152,9 @@ export default function Candidates() {
   // Create a job lookup map for efficient access
   const jobMap = useMemo(() => {
     const map: Record<string, Job> = {};
-    mockJobs.forEach(job => { map[job.id] = job; });
+    jobs.forEach(job => { map[job.id] = job; });
     return map;
-  }, []);
+  }, [jobs]);
 
   const selectedJob = filterJob !== 'all' ? jobMap[filterJob] : undefined;
 
@@ -64,10 +172,10 @@ export default function Candidates() {
   const filteredCandidates = useMemo(() => {
     return candidates.filter((candidate) => {
       const matchesSearch = 
-        candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.currentRole.toLowerCase().includes(searchQuery.toLowerCase());
+        (candidate.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (candidate.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (candidate.company || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (candidate.currentRole || '').toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesFilter = 
         filterScore === 'all' || 
@@ -213,7 +321,7 @@ export default function Candidates() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Jobs</SelectItem>
-              {mockJobs.map((job) => (
+              {jobs.map((job) => (
                 <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
               ))}
             </SelectContent>
@@ -307,13 +415,20 @@ export default function Candidates() {
                   </p>
                 </td>
                 <td className="px-4 py-4">
-                  {candidate.source === 'applied' && candidate.aiRank && candidate.aiScore ? (
+                  {candidate.aiScore && candidate.aiScore !== 'pending' ? (
                     <div className="flex items-center gap-2">
-                      <RankBadge rank={candidate.aiRank} score={candidate.aiScore} />
+                      {candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && (
+                        <span className={cn(
+                          "text-sm font-bold tabular-nums",
+                          candidate.cosineSimilarity >= 0.8 && "text-success",
+                          candidate.cosineSimilarity >= 0.5 && candidate.cosineSimilarity < 0.8 && "text-warning",
+                          candidate.cosineSimilarity < 0.5 && "text-muted-foreground"
+                        )}>
+                          {Math.round(candidate.cosineSimilarity * 100)}%
+                        </span>
+                      )}
                       <RelevanceLabel score={candidate.aiScore} />
                     </div>
-                  ) : candidate.source === 'talent-pool' ? (
-                    <span className="text-sm text-muted-foreground">—</span>
                   ) : (
                     <span className="text-sm text-muted-foreground">Not ranked</span>
                   )}

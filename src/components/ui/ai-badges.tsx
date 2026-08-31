@@ -45,7 +45,7 @@ export function RankBadge({ rank, score, className }: RankBadgeProps) {
 }
 
 interface RelevanceLabelProps {
-  score: 'high' | 'medium' | 'low';
+  score?: 'high' | 'medium' | 'low' | 'pending' | null;
   className?: string;
 }
 
@@ -54,19 +54,23 @@ export function RelevanceLabel({ score, className }: RelevanceLabelProps) {
     high: 'Strong Match',
     medium: 'Potential Match',
     low: 'Low Match',
+    pending: 'Pending Analysis',
   };
+
+  const currentScore = score || 'pending';
 
   return (
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-        score === 'high' && "bg-success-muted text-success",
-        score === 'medium' && "bg-warning-muted text-warning",
-        score === 'low' && "bg-muted text-muted-foreground",
+        currentScore === 'high' && "bg-success-muted text-success",
+        currentScore === 'medium' && "bg-warning-muted text-warning",
+        currentScore === 'low' && "bg-muted text-muted-foreground",
+        currentScore === 'pending' && "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
         className
       )}
     >
-      {labels[score]}
+      {labels[currentScore] || 'Pending Analysis'}
     </span>
   );
 }

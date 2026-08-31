@@ -1,0 +1,236 @@
+{
+  "jobs": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "title": "Senior Frontend Engineer",
+      "department": "Engineering",
+      "location": "Bangalore, India",
+      "type": "Full-time",
+      "salary": "$90,000 - $120,000",
+      "description": "We are seeking a Senior Frontend Engineer to build high-performance React applications, coordinate team features, and optimize browser rendering performance.",
+      "requirements": ["React", "TypeScript", "TailwindCSS", "Webpack", "Vite", "Next.js", "5+ years experience"],
+      "responsibilities": ["Lead frontend architecture", "Optimize web page performance", "Mentor junior developers"]
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222222",
+      "title": "Product Manager",
+      "department": "Product",
+      "location": "Singapore",
+      "type": "Full-time",
+      "salary": "$110,000 - $140,000",
+      "description": "We are looking for a Product Manager to guide product development, draft specifications, align cross-functional stakeholder agendas, and track metrics.",
+      "requirements": ["Product Lifecycle Management", "Agile Methodologies", "User Research", "KPI Analytics", "4+ years experience"],
+      "responsibilities": ["Define product roadmap", "Write detailed product requirements (PRDs)", "Conduct market analysis"]
+    },
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "title": "UX Designer",
+      "department": "Design",
+      "location": "Remote",
+      "type": "Full-time",
+      "salary": "$80,000 - $105,000",
+      "description": "We are seeking a UX Designer to create wireframes, user journeys, prototypes, and UI specifications using Figma.",
+      "requirements": ["Figma", "User Research", "Wireframing", "Interaction Design", "Prototyping", "3+ years experience"],
+      "responsibilities": ["Design high-fidelity mockups", "Perform usability testing", "Coordinate with frontend engineers"]
+    },
+    {
+      "id": "e98c56c2-0731-482a-bc91-236b2f42a11b",
+      "title": "Full Stack Developer",
+      "department": "Engineering",
+      "location": "Remote",
+      "type": "Full-time",
+      "salary": "$100,000 - $130,000",
+      "description": "We are seeking a skilled Full Stack Developer proficient in React, Node.js, and PostgreSQL to join our team.",
+      "requirements": ["React", "Node.js", "PostgreSQL", "Express", "REST APIs", "3+ years experience"],
+      "responsibilities": ["Develop frontend features", "Build REST APIs", "Manage PostgreSQL queries"]
+    },
+    {
+      "id": "f87b45b1-0620-471a-ab80-125a1e31a00a",
+      "title": "Marketing Manager",
+      "department": "Marketing",
+      "location": "New York, NY",
+      "type": "Full-time",
+      "salary": "$90,000 - $110,000",
+      "description": "We are looking for a creative Marketing Manager to lead our branding and digital acquisition campaigns.",
+      "requirements": ["SEO", "Content Marketing", "Digital Branding", "Google Analytics", "4+ years experience"],
+      "responsibilities": ["Lead marketing team", "Execute SEO strategy", "Run digital ad campaigns"]
+    }
+  ],
+  "candidates": [
+    {
+      "job_id": "11111111-1111-1111-1111-111111111111",
+      "full_name": "Priya Patel",
+      "email": "priya.patel@example.com",
+      "experience": 6,
+      "resume_text": "# Priya Patel\nEmail: priya.patel@example.com\nExperience: 6 years\nSkills: React, TypeScript, TailwindCSS, Next.js, Redux, Performance Optimization, Vite."
+    },
+    {
+      "job_id": "11111111-1111-1111-1111-111111111111",
+      "full_name": "Sarah Jenkins",
+      "email": "sarah.jenkins@example.com",
+      "experience": 5,
+      "resume_text": "# Sarah Jenkins\nEmail: sarah.jenkins@example.com\nExperience: 5 years\nSkills: React, JavaScript, TypeScript, Webpack, TailwindCSS, CSS3, Jest, testing-library."
+    },
+    {
+      "job_id": "11111111-1111-1111-1111-111111111111",
+      "full_name": "Michael Chang",
+      "email": "michael.chang@example.com",
+      "experience": 7,
+      "resume_text": "# Michael Chang\nEmail: michael.chang@example.com\nExperience: 7 years\nSkills: React, Angular, TypeScript, Webpack, TailwindCSS, Node.js, Frontend Architecture, GraphQL."
+    },
+    {
+      "job_id": "11111111-1111-1111-1111-111111111111",
+      "full_name": "Amit Sharma",
+      "email": "amit.sharma@example.com",
+      "experience": 4,
+      "resume_text": "# Amit Sharma\nEmail: amit.sharma@example.com\nExperience: 4 years\nSkills: React, HTML5, CSS3, JavaScript, Bootstrap, jQuery, Git, Responsive Web Design."
+    },
+    {
+      "job_id": "11111111-1111-1111-1111-111111111111",
+      "full_name": "Jessica Taylor",
+      "email": "jessica.taylor@example.com",
+      "experience": 8,
+      "resume_text": "# Jessica Taylor\nEmail: jessica.taylor@example.com\nExperience: 8 years\nSkills: React, TypeScript, Next.js, Webpack, Vue.js, TailwindCSS, Browser Rendering Optimization."
+    },
+    {
+      "job_id": "22222222-2222-2222-2222-222222222222",
+      "full_name": "David Kim",
+      "email": "david.kim@example.com",
+      "experience": 5,
+      "resume_text": "# David Kim\nEmail: david.kim@example.com\nExperience: 5 years\nSkills: Product Lifecycle, Agile, Scrum, JIRA, User Research, SQL, PRD Drafting, Stakeholder Alignment."
+    },
+    {
+      "job_id": "22222222-2222-2222-2222-222222222222",
+      "full_name": "Emily Taylor",
+      "email": "emily.taylor@example.com",
+      "experience": 4,
+      "resume_text": "# Emily Taylor\nEmail: emily.taylor@example.com\nExperience: 4 years\nSkills: Agile PM, Product Management, JIRA, User Interviews, A/B Testing, Google Analytics, Market Analysis."
+    },
+    {
+      "job_id": "22222222-2222-2222-2222-222222222222",
+      "full_name": "James Wilson",
+      "email": "james.wilson@example.com",
+      "experience": 6,
+      "resume_text": "# James Wilson\nEmail: james.wilson@example.com\nExperience: 6 years\nSkills: Product Roadmapping, Scrum Master, Kanban, SQL, Analytics, Product Growth Strategy, PRDs."
+    },
+    {
+      "job_id": "22222222-2222-2222-2222-222222222222",
+      "full_name": "Sofia Rodriguez",
+      "email": "sofia.rodriguez@example.com",
+      "experience": 5,
+      "resume_text": "# Sofia Rodriguez\nEmail: sofia.rodriguez@example.com\nExperience: 5 years\nSkills: Agile Methodologies, Product Lifecycle Management, Customer Success, JIRA, Amplitude, User Journeys."
+    },
+    {
+      "job_id": "22222222-2222-2222-2222-222222222222",
+      "full_name": "Robert Chen",
+      "email": "robert.chen@example.com",
+      "experience": 7,
+      "resume_text": "# Robert Chen\nEmail: robert.chen@example.com\nExperience: 7 years\nSkills: B2B Product Management, Roadmap definition, Agile/Scrum, Tableau, KPI Metrics Tracker, SQL."
+    },
+    {
+      "job_id": "33333333-3333-3333-3333-333333333333",
+      "full_name": "Elena Rostova",
+      "email": "elena.rostova@example.com",
+      "experience": 4,
+      "resume_text": "# Elena Rostova\nEmail: elena.rostova@example.com\nExperience: 4 years\nSkills: Figma, UI/UX Design, Wireframing, High-fidelity Mockups, Interactive Prototyping, Design Systems."
+    },
+    {
+      "job_id": "33333333-3333-3333-3333-333333333333",
+      "full_name": "Liam O'Connor",
+      "email": "liam.oconnor@example.com",
+      "experience": 5,
+      "resume_text": "# Liam O'Connor\nEmail: liam.oconnor@example.com\nExperience: 5 years\nSkills: Figma, User Research, Information Architecture, Adobe XD, Usability Testing, Visual Design."
+    },
+    {
+      "job_id": "33333333-3333-3333-3333-333333333333",
+      "full_name": "Chloe Dubois",
+      "email": "chloe.dubois@example.com",
+      "experience": 3,
+      "resume_text": "# Chloe Dubois\nEmail: chloe.dubois@example.com\nExperience: 3 years\nSkills: Figma, UI Design, Wireframing, Web Design, Vector Design, Mobile UX Design, Design Systems."
+    },
+    {
+      "job_id": "33333333-3333-3333-3333-333333333333",
+      "full_name": "Hiroshi Tanaka",
+      "email": "hiroshi.tanaka@example.com",
+      "experience": 6,
+      "resume_text": "# Hiroshi Tanaka\nEmail: hiroshi.tanaka@example.com\nExperience: 6 years\nSkills: Figma, User Research, Interactive Mockups, Sketch, Wireframing, UX Writing, Responsive layouts."
+    },
+    {
+      "job_id": "33333333-3333-3333-3333-333333333333",
+      "full_name": "Alice Peterson",
+      "email": "alice.peterson@example.com",
+      "experience": 4,
+      "resume_text": "# Alice Peterson\nEmail: alice.peterson@example.com\nExperience: 4 years\nSkills: UI Design, UX Research, Figma, User Flow Diagrams, Usability Testing, Visual Design, HTML/CSS."
+    },
+    {
+      "job_id": "e98c56c2-0731-482a-bc91-236b2f42a11b",
+      "full_name": "Alex Rivera",
+      "email": "alex.rivera@example.com",
+      "experience": 4,
+      "resume_text": "# Alex Rivera\nEmail: alex.rivera@example.com\nExperience: 4 years\nSkills: React, Node.js, JavaScript, HTML, CSS, SQL, Git, Express.js."
+    },
+    {
+      "job_id": "e98c56c2-0731-482a-bc91-236b2f42a11b",
+      "full_name": "John Doe",
+      "email": "john.doe@example.com",
+      "experience": 5,
+      "resume_text": "# John Doe\nEmail: john.doe@example.com\nExperience: 5 years\nSkills: React, TypeScript, Node.js, PostgreSQL, Docker, Express, REST APIs, Git."
+    },
+    {
+      "job_id": "e98c56c2-0731-482a-bc91-236b2f42a11b",
+      "full_name": "Vikram Singh",
+      "email": "vikram.singh@example.com",
+      "experience": 4,
+      "resume_text": "# Vikram Singh\nEmail: vikram.singh@example.com\nExperience: 4 years\nSkills: React, Redux, Node.js, Express, PostgreSQL, MongoDB, REST APIs, TypeScript."
+    },
+    {
+      "job_id": "e98c56c2-0731-482a-bc91-236b2f42a11b",
+      "full_name": "Aisha Rahman",
+      "email": "aisha.rahman@example.com",
+      "experience": 3,
+      "resume_text": "# Aisha Rahman\nEmail: aisha.rahman@example.com\nExperience: 3 years\nSkills: JavaScript, React, Node.js, Express, PostgreSQL, Knex.js, TailwindCSS, REST APIs."
+    },
+    {
+      "job_id": "e98c56c2-0731-482a-bc91-236b2f42a11b",
+      "full_name": "Tom Harris",
+      "email": "tom.harris@example.com",
+      "experience": 5,
+      "resume_text": "# Tom Harris\nEmail: tom.harris@example.com\nExperience: 5 years\nSkills: Fullstack Engineer, React, Node.js, Express, PostgreSQL, REST APIs, Docker, CI/CD pipelines."
+    },
+    {
+      "job_id": "f87b45b1-0620-471a-ab80-125a1e31a00a",
+      "full_name": "Maria Lopez",
+      "email": "maria.lopez@example.com",
+      "experience": 3,
+      "resume_text": "# Maria Lopez\nEmail: maria.lopez@example.com\nExperience: 3 years\nSkills: UI/UX, Figma, HTML, CSS, Digital Marketing, SEO, copywriting, Google Analytics."
+    },
+    {
+      "job_id": "f87b45b1-0620-471a-ab80-125a1e31a00a",
+      "full_name": "Ryan Peterson",
+      "email": "ryan.peterson@example.com",
+      "experience": 5,
+      "resume_text": "# Ryan Peterson\nEmail: ryan.peterson@example.com\nExperience: 5 years\nSkills: Content Marketing, SEO, Google Search Console, Google Ads, Branding Campaign Manager."
+    },
+    {
+      "job_id": "f87b45b1-0620-471a-ab80-125a1e31a00a",
+      "full_name": "Emma Watson",
+      "email": "emma.watson@example.com",
+      "experience": 4,
+      "resume_text": "# Emma Watson\nEmail: emma.watson@example.com\nExperience: 4 years\nSkills: Digital Branding, Social Media Marketing, SEO Content, Campaign Optimization, Google Analytics."
+    },
+    {
+      "job_id": "f87b45b1-0620-471a-ab80-125a1e31a00a",
+      "full_name": "Fatima Al-Sayed",
+      "email": "fatima.alsayed@example.com",
+      "experience": 6,
+      "resume_text": "# Fatima Al-Sayed\nEmail: fatima.alsayed@example.com\nExperience: 6 years\nSkills: SEO, Growth Marketing, Lead Generation, Hubspot Email Automation, Google Analytics, Branding."
+    },
+    {
+      "job_id": "f87b45b1-0620-471a-ab80-125a1e31a00a",
+      "full_name": "Carlos Mendez",
+      "email": "carlos.mendez@example.com",
+      "experience": 5,
+      "resume_text": "# Carlos Mendez\nEmail: carlos.mendez@example.com\nExperience: 5 years\nSkills: Digital Marketing manager, PPC campaigns, Google Ads, SEO Search strategies, Brand Strategy."
+    }
+  ]
+}

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RelevanceLabel, AIBadge } from '@/components/ui/ai-badges';
+import { RelevanceLabel, AIBadge, RankBadge } from '@/components/ui/ai-badges';
 import { CandidateDetail } from '@/components/flows/CandidateDetail';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { usePagination } from '@/hooks/usePagination';
@@ -30,14 +30,118 @@ import {
   Filter,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+
+const jobUuidMap: Record<string, string> = {
+  'job-1': '11111111-1111-1111-1111-111111111111',
+  'job-2': '22222222-2222-2222-2222-222222222222',
+  'job-3': '33333333-3333-3333-3333-333333333333',
+  'job-4': '44444444-4444-4444-4444-444444444444',
+  'job-5': '55555555-5555-5555-5555-555555555555',
+};
+
+const candidateUuidMap: Record<string, string> = {
+  'cand-1': 'a1111111-1111-1111-1111-111111111111',
+  'cand-2': 'a2222222-2222-2222-2222-222222222222',
+  'cand-3': 'a3333333-3333-3333-3333-333333333333',
+  'cand-4': 'a4444444-4444-4444-4444-444444444444',
+  'cand-5': 'a5555555-5555-5555-5555-555555555555',
+  'cand-6': 'a6666666-6666-6666-6666-666666666666',
+  'cand-7': 'a7777777-7777-7777-7777-777777777777',
+  'cand-8': 'a8888888-8888-8888-8888-888888888888',
+  'cand-9': 'a9999999-9999-9999-9999-999999999999',
+  'cand-10': 'b1111111-1111-1111-1111-111111111111',
+  'cand-11': 'b2222222-2222-2222-2222-222222222222',
+  'cand-12': 'b3333333-3333-3333-3333-333333333333',
+  'cand-13': 'b4444444-4444-4444-4444-444444444444',
+  'cand-14': 'b5555555-5555-5555-5555-555555555555',
+  'cand-15': 'b6666666-6666-6666-6666-666666666666',
+  'cand-16': 'b7777777-7777-7777-7777-777777777777',
+};
 
 export default function Shortlisted() {
-  // For demo, shortlisted candidates are those with high AI score or isPinned
-  const shortlistedCandidates = useMemo(() => 
-    mockCandidates.filter(c => c.aiScore === 'high' || c.isPinned),
-  []);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data: dbJobs } = await supabase.from('jobs').select('*');
+        const { data: dbCandidates } = await supabase.from('candidates').select('*');
+
+        const mappedMockJobs = mockJobs.map(j => ({
+          ...j,
+          id: jobUuidMap[j.id] || j.id
+        }));
+
+        const mappedMockCandidates = mockCandidates.map(c => ({
+          ...c,
+          id: candidateUuidMap[c.id] || c.id,
+          jobId: jobUuidMap[c.jobId] || c.jobId
+        }));
+
+        let mappedJobs: Job[] = [];
+        if (dbJobs && dbJobs.length > 0) {
+          mappedJobs = dbJobs.map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            department: j.department,
+            location: j.location,
+            type: j.type,
+            salary: j.salary,
+            description: j.description,
+            responsibilities: j.responsibilities || [],
+            requirements: j.requirements || [],
+            niceToHave: j.nice_to_have || [],
+            nice_to_have: j.nice_to_have || [],
+            hireSortEnabled: j.hire_sort_enabled,
+            aiProcessingStatus: j.ai_processing_status,
+            lastRankedAt: j.last_ranked_at,
+            candidateCount: j.candidate_count || 0
+          }));
+        }
+        setJobs(mappedJobs);
+
+        let mappedCandidates: Candidate[] = [];
+        if (dbCandidates && dbCandidates.length > 0) {
+          mappedCandidates = dbCandidates.map((c: any) => ({
+            id: c.id,
+            jobId: c.job_id,
+            name: c.full_name,
+            email: c.email,
+            phone: c.phone || '',
+            experience: c.experience,
+            location: c.location || 'Remote',
+            appliedDate: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            matchedSkills: c.matched_skills || c.matchedSkills || [],
+            missingSkills: c.missing_skills || c.missingSkills || [],
+            aiScore: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
+              ? c.ai_score 
+              : ((c.cosineSimilarity !== null && c.cosineSimilarity !== undefined) ? c.aiScore : 'pending'),
+            cosineSimilarity: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
+              ? c.cosine_similarity 
+              : ((c.cosineSimilarity !== null && c.cosineSimilarity !== undefined) ? c.cosineSimilarity : null),
+            predictiveInsights: c.predictive_insights || c.predictiveInsights || {},
+            aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
+            isPinned: c.is_pinned || c.ai_score === 'high' || c.aiScore === 'high' || false,
+            company: c.company || 'Tech Solutions',
+            currentRole: c.current_role || c.currentRole || 'Software Engineer'
+          }));
+        }
+        const filteredShortlisted = mappedCandidates.filter(c => c.aiScore === 'high' || c.isPinned);
+        setCandidates(filteredShortlisted);
+      } catch (err) {
+        console.error('Error loading shortlisted candidates:', err);
+        setJobs([]);
+        setCandidates([]);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    loadData();
+  }, []);
   
-  const [candidates] = useState<Candidate[]>(shortlistedCandidates);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterJob, setFilterJob] = useState<string>('all');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
@@ -45,21 +149,26 @@ export default function Shortlisted() {
   // Create a job lookup map for efficient access
   const jobMap = useMemo(() => {
     const map: Record<string, Job> = {};
-    mockJobs.forEach(job => { map[job.id] = job; });
+    jobs.forEach(job => { map[job.id] = job; });
     return map;
-  }, []);
+  }, [jobs]);
 
   const filteredCandidates = useMemo(() => {
-    return candidates.filter((candidate) => {
+    const filtered = candidates.filter((candidate) => {
       const matchesSearch = 
-        candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.currentRole.toLowerCase().includes(searchQuery.toLowerCase());
+        (candidate.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (candidate.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (candidate.company || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (candidate.currentRole || '').toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesJob = filterJob === 'all' || candidate.jobId === filterJob;
 
       return matchesSearch && matchesJob;
+    });
+    return [...filtered].sort((a, b) => {
+      const simA = a.cosineSimilarity || 0;
+      const simB = b.cosineSimilarity || 0;
+      return simB - simA;
     });
   }, [candidates, searchQuery, filterJob]);
 
@@ -140,7 +249,7 @@ export default function Shortlisted() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Jobs</SelectItem>
-              {mockJobs.map(job => (
+              {jobs.map(job => (
                 <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
               ))}
             </SelectContent>
@@ -183,7 +292,7 @@ export default function Shortlisted() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {mockJobs.filter(j => j.hireSortEnabled).length}
+                {jobs.filter(j => j.hireSortEnabled).length}
               </p>
               <p className="text-sm text-muted-foreground">Active Jobs</p>
             </div>
@@ -195,7 +304,8 @@ export default function Shortlisted() {
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full">
           <thead className="bg-muted/50 border-b border-border">
-            <tr>
+             <tr>
+              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground w-16">Rank</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Candidate</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Applied For</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Current Role</th>
@@ -206,7 +316,7 @@ export default function Shortlisted() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {paginatedData.map((candidate) => (
+            {paginatedData.map((candidate, index) => (
               <tr 
                 key={candidate.id}
                 className={cn(
@@ -215,6 +325,9 @@ export default function Shortlisted() {
                 )}
                 onClick={() => handleViewCandidate(candidate)}
               >
+                <td className="px-4 py-4">
+                  <RankBadge rank={startIndex + index + 1} score={candidate.aiScore || 'low'} />
+                </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -252,11 +365,13 @@ export default function Shortlisted() {
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "text-sm font-bold tabular-nums",
-                      (candidate.cosineSimilarity || 0) >= 0.8 && "text-success",
-                      (candidate.cosineSimilarity || 0) >= 0.5 && (candidate.cosineSimilarity || 0) < 0.8 && "text-warning",
-                      (candidate.cosineSimilarity || 0) < 0.5 && "text-muted-foreground"
+                      candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.8 && "text-success",
+                      candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.5 && candidate.cosineSimilarity < 0.8 && "text-warning",
+                      (candidate.cosineSimilarity === null || candidate.cosineSimilarity === undefined || candidate.cosineSimilarity < 0.5) && "text-muted-foreground"
                     )}>
-                      {((candidate.cosineSimilarity || 0) * 100).toFixed(0)}%
+                      {candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined 
+                        ? `${(candidate.cosineSimilarity * 100).toFixed(0)}%` 
+                        : "--%"}
                     </span>
                     <RelevanceLabel score={candidate.aiScore || 'low'} />
                   </div>

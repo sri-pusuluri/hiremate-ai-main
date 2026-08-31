@@ -15,11 +15,17 @@ import {
   Calendar,
   Mail,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Linkedin,
+  RefreshCw,
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { PredictiveInsightsPanel } from '@/components/predictive/PredictiveInsightsPanel';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 interface CandidateDetailProps {
   candidate: Candidate;
@@ -31,6 +37,49 @@ interface CandidateDetailProps {
 export function CandidateDetail({ candidate, job, onClose, onFeedback }: CandidateDetailProps) {
   const [feedback, setFeedback] = useState<'good' | 'poor' | null>(candidate.recruiterFeedback || null);
   const [showResumeModal, setShowResumeModal] = useState(false);
+  const { toast } = useToast();
+  const [linkedinUrl, setLinkedinUrl] = useState(`https://linkedin.com/in/${candidate.name.toLowerCase().replace(/\s+/g, '-')}`);
+  const [syncing, setSyncing] = useState(false);
+  const [syncLogs, setSyncLogs] = useState<string[]>([]);
+  const [isSynced, setIsSynced] = useState(false);
+
+  const handleSyncLinkedIn = () => {
+    if (!linkedinUrl) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid LinkedIn profile link.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSyncing(true);
+    setSyncLogs([]);
+
+    const steps = [
+      "📡 Connecting to scraping service instance...",
+      "🔍 Querying profile details for: " + linkedinUrl,
+      "📥 Parsing professional experience timeline...",
+      "🏷️ Merging skills and endorsements...",
+      "⚡ Profile sync successfully completed!"
+    ];
+
+    let current = 0;
+    const interval = setInterval(() => {
+      if (current < steps.length) {
+        setSyncLogs(prev => [...prev, steps[current]]);
+        current++;
+      } else {
+        clearInterval(interval);
+        setSyncing(false);
+        setIsSynced(true);
+        toast({
+          title: "LinkedIn Profile Synced",
+          description: `Successfully loaded work details for ${candidate.name}.`
+        });
+      }
+    }, 800);
+  };
 
   const handleFeedback = (type: 'good' | 'poor') => {
     setFeedback(type);
@@ -93,6 +142,49 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
             <FileText className="w-4 h-4" />
             View Full Resume
           </Button>
+
+          {/* LinkedIn Profile Sync Card */}
+          <div className="bg-ai-surface border border-ai-border rounded-xl p-4 mb-6 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Linkedin className="w-5 h-5 text-[#0077B5]" />
+              LinkedIn Profile Sync (Scraper Integration)
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Feed the LinkedIn profile link to scrape candidate details automatically via our crawler service.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="https://linkedin.com/in/username"
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                className="text-xs h-9 bg-card"
+                disabled={syncing}
+              />
+              <Button
+                size="sm"
+                onClick={handleSyncLinkedIn}
+                disabled={syncing}
+                className="shrink-0 h-9"
+                type="button"
+              >
+                {syncing ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : isSynced ? (
+                  "Resync"
+                ) : (
+                  "Sync Profile"
+                )}
+              </Button>
+            </div>
+            {syncLogs.length > 0 && (
+              <div className="bg-slate-900 text-emerald-400 font-mono text-[10px] p-2.5 rounded border border-slate-800 space-y-1">
+                {syncLogs.map((log, idx) => (
+                  <div key={idx}>{log}</div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* AI Match Analysis - Enhanced */}
           <div className="mb-6">

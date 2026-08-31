@@ -21,11 +21,13 @@ interface AIMatchAnalysisProps {
 }
 
 export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnalysisProps) {
+  const isUnranked = candidate.cosineSimilarity === null || candidate.cosineSimilarity === undefined;
+
   // Calculate match scores
   const totalRequiredSkills = job?.requirements?.length || 6;
-  const matchedCount = candidate.matchedSkills?.length || 0;
-  const missingCount = candidate.missingSkills?.length || 0;
-  const skillMatchPercentage = Math.round((matchedCount / (matchedCount + missingCount || 1)) * 100);
+  const matchedCount = isUnranked ? 0 : (candidate.matchedSkills?.length || 0);
+  const missingCount = isUnranked ? 0 : (candidate.missingSkills?.length || 0);
+  const skillMatchPercentage = isUnranked ? null : Math.round((matchedCount / (matchedCount + missingCount || 1)) * 100);
   
   // Experience match calculation
   const requiredExp = 5; // Default from JD
@@ -33,7 +35,7 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
   const expMatchPercentage = Math.min(100, Math.round((candidate.experience / requiredExp) * 100));
   
   // Overall score - use cosineSimilarity for consistency with the list view
-  const overallScore = Math.round((candidate.cosineSimilarity || 0) * 100);
+  const overallScore = isUnranked ? null : Math.round(candidate.cosineSimilarity * 100);
 
   if (compact) {
     return (
@@ -46,17 +48,17 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
         <div className="grid grid-cols-3 gap-3">
           <ScoreCircle 
             label="Overall" 
-            value={overallScore} 
+            value={overallScore !== null ? `${overallScore}%` : '--'} 
             color={candidate.aiScore === 'high' ? 'success' : candidate.aiScore === 'medium' ? 'warning' : 'muted'}
           />
           <ScoreCircle 
             label="Skills" 
-            value={skillMatchPercentage} 
-            color={skillMatchPercentage >= 70 ? 'success' : skillMatchPercentage >= 50 ? 'warning' : 'muted'}
+            value={skillMatchPercentage !== null ? `${skillMatchPercentage}%` : '--'} 
+            color={skillMatchPercentage !== null && skillMatchPercentage >= 70 ? 'success' : (skillMatchPercentage !== null && skillMatchPercentage >= 50 ? 'warning' : 'muted')}
           />
           <ScoreCircle 
             label="Experience" 
-            value={expMatchPercentage} 
+            value={`${expMatchPercentage}%`} 
             color={expMatchPercentage >= 80 ? 'success' : expMatchPercentage >= 60 ? 'warning' : 'muted'}
           />
         </div>
@@ -78,9 +80,9 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
             "text-lg font-bold",
             candidate.aiScore === 'high' && "text-success",
             candidate.aiScore === 'medium' && "text-warning",
-            candidate.aiScore === 'low' && "text-muted-foreground"
+            (candidate.aiScore === 'low' || isUnranked) && "text-muted-foreground"
           )}>
-            {overallScore}%
+            {overallScore !== null ? `${overallScore}%` : '--%'}
           </span>
         </div>
       </div>
@@ -96,25 +98,25 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
             step={1} 
             title="Document Embedding" 
             description="Generated vector embeddings from resume content using RAG pipeline"
-            status="complete"
+            status={isUnranked ? "pending" : "complete"}
           />
           <AnalysisStep 
             step={2} 
             title="Semantic Matching" 
             description={`Computed cosine similarity between resume and ${totalRequiredSkills} JD requirements`}
-            status="complete"
+            status={isUnranked ? "pending" : "complete"}
           />
           <AnalysisStep 
             step={3} 
             title="RAG-based Experience Analysis" 
             description={`Retrieved and compared ${candidate.experience} years of experience against contextual embeddings`}
-            status="complete"
+            status={isUnranked ? "pending" : "complete"}
           />
           <AnalysisStep 
             step={4} 
             title="Embedding Similarity Scoring" 
             description="Ranked candidates using vector distance metrics and semantic relevance"
-            status="complete"
+            status={isUnranked ? "pending" : "complete"}
           />
         </div>
       </div>
@@ -130,18 +132,18 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
             </div>
             <span className={cn(
               "text-sm font-bold",
-              skillMatchPercentage >= 70 ? "text-success" : skillMatchPercentage >= 50 ? "text-warning" : "text-muted-foreground"
+              skillMatchPercentage !== null && skillMatchPercentage >= 70 ? "text-success" : (skillMatchPercentage !== null && skillMatchPercentage >= 50 ? "text-warning" : "text-muted-foreground")
             )}>
-              {skillMatchPercentage}%
+              {skillMatchPercentage !== null ? `${skillMatchPercentage}%` : '--%'}
             </span>
           </div>
           <Progress 
-            value={skillMatchPercentage} 
+            value={skillMatchPercentage !== null ? skillMatchPercentage : 0} 
             className="h-2 mb-2"
           />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{matchedCount} matched</span>
-            <span>{missingCount} gaps</span>
+            <span>{isUnranked ? "Pending analysis" : `${matchedCount} matched`}</span>
+            <span>{isUnranked ? "" : `${missingCount} gaps`}</span>
           </div>
         </div>
 
@@ -218,8 +220,8 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
           <BarChart3 className="w-4 h-4 text-ai-accent" />
           AI Assessment
         </h4>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {candidate.aiExplanation}
+        <p className="text-sm text-muted-foreground leading-relaxed italic">
+          {candidate.aiExplanation || "This candidate is pending GenAI analysis. Trigger the ranking process on the Active Jobs page to generate embedding match summaries, skill alignment insights, and AI recruiter scorecards."}
         </p>
         
         {/* Experience Alignment Detail */}
@@ -243,7 +245,7 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
 
 interface ScoreCircleProps {
   label: string;
-  value: number;
+  value: string;
   color: 'success' | 'warning' | 'muted';
 }
 
@@ -256,7 +258,7 @@ function ScoreCircle({ label, value, color }: ScoreCircleProps) {
         color === 'warning' && "bg-warning-muted text-warning",
         color === 'muted' && "bg-muted text-muted-foreground"
       )}>
-        {value}%
+        {value}
       </div>
       <p className="text-xs text-muted-foreground mt-1">{label}</p>
     </div>
