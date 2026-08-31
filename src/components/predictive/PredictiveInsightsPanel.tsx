@@ -20,8 +20,11 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
         timeToJoinEstimate,
         onboardingSuccessProb = 0,
         assessment,
-        resumeFormat = 'Human Written'
+        aiGeneratedProbability = 0,
+        aiGeneratedReasoning = 'Insufficient data to determine.'
     } = candidate.predictiveInsights as any;
+
+    const resumeFormat = aiGeneratedProbability > 65 ? 'AI Generated' : 'Human Written';
 
     const getRiskColor = (risk: string) => {
         switch (risk) {
@@ -159,8 +162,19 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
                         <span className="text-sm text-muted-foreground flex items-center gap-2">
                             <Sparkles className={cn("w-4 h-4", resumeFormat === 'AI Generated' ? 'text-ai-accent' : 'text-primary')} />
                             Resume Format Check
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Info className="w-3.5 h-3.5 text-muted-foreground/70" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="max-w-xs text-xs font-semibold mb-1">{aiGeneratedProbability}% AI Probability</p>
+                                        <p className="max-w-xs text-xs">{aiGeneratedReasoning}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </span>
-                        <span className="font-semibold text-foreground text-sm">
+                        <span className={cn("font-semibold text-sm", resumeFormat === 'AI Generated' ? 'text-ai-accent' : 'text-foreground')}>
                             {resumeFormat}
                         </span>
                     </div>

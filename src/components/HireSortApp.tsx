@@ -225,7 +225,9 @@ export function HireSortApp() {
       "timeToJoinEstimate": "estimated time to join, e.g. 15 days, 30 days, Immediate",
       "assessment": "detailed recruiter assessment of candidate fit",
       "matchedSkills": ["skill1", "skill2"],
-      "missingSkills": ["skill1", "skill2"]
+      "missingSkills": ["skill1", "skill2"],
+      "aiGeneratedProbability": number (0 to 100, probability that the resume was written by AI like ChatGPT),
+      "aiGeneratedReasoning": "short reason why you think it is AI or human generated"
     }
     
     Return ONLY the raw JSON object. Do not include markdown blocks or wrappers.`;
@@ -362,6 +364,10 @@ export function HireSortApp() {
             const risk = analysis?.retentionRisk || 'low';
             const riskFactor = analysis?.retentionRiskFactor || (i % 2 === 0 ? 'Stable 3+ year average tenure' : 'Previous short tenure');
             const joinEstimate = analysis?.timeToJoinEstimate || (i % 2 === 0 ? '15 days' : '30 days');
+            
+            const aiGenProb = analysis?.aiGeneratedProbability ?? (i % 2 === 0 ? 85 : 15);
+            const aiGenReason = analysis?.aiGeneratedReasoning || (aiGenProb > 50 ? 'Highly structured, generic buzzwords, lacks personal voice.' : 'Natural formatting, personal anecdotes, specific metrics.');
+
             const textAssessment = analysis?.assessment || `Demo Mode: No AI API key configured in Settings. This is a simulated evaluation.`;
             const foundSkills = analysis?.matchedSkills || [];
             const lackSkills = analysis?.missingSkills || [];
@@ -381,7 +387,9 @@ export function HireSortApp() {
                   retentionRisk: risk,
                   retentionRiskFactor: riskFactor,
                   timeToJoinEstimate: joinEstimate,
-                  assessment: textAssessment
+                  assessment: textAssessment,
+                  aiGeneratedProbability: aiGenProb,
+                  aiGeneratedReasoning: aiGenReason
                 }
               })
               .eq('id', cand.id);
