@@ -60,6 +60,7 @@ export default function UserManagement() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'recruiter'>('recruiter');
+  const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -143,6 +144,42 @@ export default function UserManagement() {
     }
   };
 
+  const handleInvite = async () => {
+    if (!inviteEmail) {
+      toast({ title: 'Error', description: 'Please enter an email address', variant: 'destructive' });
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      const { error } = await supabase.functions.invoke('invite-user', {
+        body: { email: inviteEmail, role: inviteRole }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Invitation Sent',
+        description: `Invitation sent to ${inviteEmail}`,
+      });
+      setInviteDialogOpen(false);
+      setInviteEmail('');
+      setInviteRole('recruiter');
+      
+      // Refresh the user list
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Error inviting user:', error);
+      toast({
+        title: 'Invitation Failed',
+        description: error.message || 'Could not send invitation. They might already exist.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   const filteredUsers = users.filter((u) =>
     u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -213,18 +250,18 @@ export default function UserManagement() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setInviteDialogOpen(false)} disabled={isInviting}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast({
-                  title: 'Invitation Sent',
-                  description: `Invitation sent to ${inviteEmail}`,
-                });
-                setInviteDialogOpen(false);
-                setInviteEmail('');
-              }}>
-                Send Invitation
+              <Button onClick={handleInvite} disabled={isInviting}>
+                {isInviting ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Invitation'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
