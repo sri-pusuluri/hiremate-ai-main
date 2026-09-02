@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Briefcase, Globe, Sparkles } from 'lucide-react';
@@ -159,7 +159,7 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-primary" />
@@ -246,15 +246,22 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description - Rich Text Editor */}
           <div className="space-y-1.5">
-            <Label htmlFor="job-desc">Job Description & Responsibilities *</Label>
-            <Textarea 
-              id="job-desc"
-              rows={5}
-              placeholder="Detail the role, mission, expected qualifications, and what a typical day looks like..."
+            <div className="flex items-center justify-between">
+              <Label htmlFor="job-desc" className="text-xs font-semibold">
+                Job Description & Responsibilities *
+              </Label>
+              <span className="text-[11px] text-muted-foreground">
+                Rich text, bullet lists & markdown supported
+              </span>
+            </div>
+            <RichTextEditor
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
+              placeholder="Detail the mission, role expectations, daily responsibilities, and required qualifications..."
+              jobTitle={formData.title}
+              minHeight="170px"
             />
           </div>
 
