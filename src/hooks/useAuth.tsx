@@ -151,12 +151,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setRole(null);
-    setProfile(null);
-    setNeedsPasswordReset(false);
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setUser(null);
+      setSession(null);
+      setRole(null);
+      setProfile(null);
+      setNeedsPasswordReset(false);
+      
+      // Force clear Supabase local storage tokens just in case the API call failed
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
   };
 
   const updatePassword = async (password: string) => {
