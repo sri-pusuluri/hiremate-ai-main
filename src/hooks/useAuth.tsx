@@ -46,8 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!error && (type === 'recovery' || type === 'invite' || searchParams.has('reset'))) {
           setNeedsPasswordReset(true);
         }
-        // Clean up URL after processing token_hash
-        window.history.replaceState({}, '', window.location.pathname);
+        // Safely remove token_hash and type
+        searchParams.delete('token_hash');
+        searchParams.delete('type');
+        const newSearch = searchParams.toString();
+        window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
       }).catch(err => {
         console.error("Error verifying OTP token_hash", err);
       });
@@ -55,10 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Check initial state from the client for normal hash fragments or ?reset=true flags
       if (getNeedsPasswordReset() || window.location.search.includes('reset=true')) {
         setNeedsPasswordReset(true);
-        // Clean up URL if it has reset=true
-        if (window.location.search.includes('reset=true')) {
-          window.history.replaceState({}, '', window.location.pathname);
-        }
+        
+        // Defer URL cleanup to allow Supabase JS to process ?code= PKCE flows first
+        setTimeout(() => {
+          if (window.location.search.includes('reset=true')) {
+            const params = new URLSearchParams(window.location.search);
+            params.delete('reset');
+            // Do NOT delete 'code', let Supabase handle it if needed
+            const newSearch = params.toString();
+            window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+          }
+        }, 2000);
       }
     }
 
