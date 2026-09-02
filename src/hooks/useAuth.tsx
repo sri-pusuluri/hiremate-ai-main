@@ -35,12 +35,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
-    // Check initial state from the client
-    if (getNeedsPasswordReset() || window.location.search.includes('reset=true')) {
-      setNeedsPasswordReset(true);
-      // Clean up URL if it has reset=true
-      if (window.location.search.includes('reset=true')) {
+    // Check for PKCE token_hash from server-side emails (like invites or server-initiated resets)
+    const searchParams = new URLSearchParams(window.location.search);
+    const tokenHash = searchParams.get('token_hash');
+    const type = searchParams.get('type') as any;
+    
+    if (tokenHash && type) {
+      setLoading(true);
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(({ error }) => {
+        if (!error && (type === 'recovery' || type === 'invite' || searchParams.has('reset'))) {
+          setNeedsPasswordReset(true);
+        }
+        // Clean up URL after processing token_hash
         window.history.replaceState({}, '', window.location.pathname);
+      }).catch(err => {
+        console.error("Error verifying OTP token_hash", err);
+      });
+    } else {
+      // Check initial state from the client for normal hash fragments or ?reset=true flags
+      if (getNeedsPasswordReset() || window.location.search.includes('reset=true')) {
+        setNeedsPasswordReset(true);
+        // Clean up URL if it has reset=true
+        if (window.location.search.includes('reset=true')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       }
     }
 
