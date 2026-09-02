@@ -80,6 +80,40 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setError(null);
+    setSuccess(null);
+    
+    if (!loginEmail) {
+      setError('Please enter your email address above first to reset your password.');
+      return;
+    }
+    
+    try {
+      emailSchema.parse(loginEmail);
+    } catch (err) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+      redirectTo: `${window.location.origin}/?reset=true`,
+    });
+    setIsSubmitting(false);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess('Password reset link sent! Please check your email.');
+      toast({
+        title: "Reset link sent",
+        description: "Check your email for the password reset link.",
+      });
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -200,6 +234,17 @@ export default function Auth() {
                         required
                       />
                     </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-xs text-primary hover:underline"
+                      disabled={isSubmitting}
+                    >
+                      Forgot Password?
+                    </button>
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
