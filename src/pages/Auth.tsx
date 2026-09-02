@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/components/ui/use-toast';
 import { Sparkles, Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import { isMockMode, enableMockMode, disableMockMode } from '@/integrations/supabase/client';
@@ -21,6 +22,7 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { toast } = useToast();
   
   // Local Mock State
   const [mockActive, setMockActive] = useState(isMockMode());
@@ -53,6 +55,7 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     
     try {
       emailSchema.parse(loginEmail);
@@ -104,7 +107,12 @@ export default function Auth() {
         setError(error.message);
       }
     } else {
-      setSuccess('Account created successfully! You are now logged in.');
+      const msg = 'Account created successfully! Please check your email for a verification link to log in.';
+      setSuccess(msg);
+      toast({
+        title: "Check your email",
+        description: msg,
+      });
     }
   };
 
