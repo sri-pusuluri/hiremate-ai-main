@@ -20,8 +20,10 @@ import {
   Users,
   Database,
   Clock,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -50,6 +52,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
   const [resumeCandidate, setResumeCandidate] = useState<Candidate | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [activeTab, setActiveTab] = useState<CandidateTab>('all');
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchCandidates() {
@@ -59,8 +62,9 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
         return;
       }
 
-      // If it is a mock job from demo navigation (which starts with 'job-'), use mockCandidates
-      if (selectedJob.id.startsWith('job-')) {
+      // Only load mockCandidates for the demo template 'job-1' if mock mode is explicitly enabled
+      const isMockMode = localStorage.getItem('use_mock_supabase') === 'true';
+      if (selectedJob.id === 'job-1' && isMockMode) {
         setCandidates(mockCandidates);
         setLoading(false);
         return;
@@ -412,8 +416,33 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
       </div>
 
       {sortedCandidates.length === 0 && (
-        <div className="p-12 text-center bg-card border border-border rounded-lg">
-          <p className="text-muted-foreground">No candidates found matching your criteria.</p>
+        <div className="p-12 text-center bg-card border border-border rounded-xl space-y-4 max-w-lg mx-auto my-8 animate-fade-in shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-semibold text-lg text-foreground">No Applicants Yet</h3>
+            <p className="text-sm text-muted-foreground">
+              {candidates.length === 0
+                ? "This job is active and waiting for applicants. Candidates who apply via your public careers link or embed widget will appear here and be ranked by HireSort AI."
+                : "No candidates match the active filter or search criteria."}
+            </p>
+          </div>
+          {selectedJob?.slug && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-xs"
+              onClick={() => {
+                const url = `${window.location.origin}/careers/zool/${selectedJob.slug}`;
+                navigator.clipboard.writeText(url);
+                toast({ title: 'Link Copied', description: 'Public job application URL copied to clipboard.' });
+              }}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Copy Careers Application Link
+            </Button>
+          )}
         </div>
       )}
 

@@ -121,7 +121,7 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
             slug: (data as any).slug,
           }
         : {
-            id: `job-${Date.now()}`,
+            id: crypto.randomUUID(),
             ...formData,
             postedDate: new Date().toISOString().split('T')[0],
             candidateCount: 0,
