@@ -15,6 +15,10 @@ const navItems = [
   { id: 'shortlisted', label: 'Shortlisted', icon: Star },
 ];
 
+const bottomItems = [
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
+
 export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
   const { isAdmin, isSuperAdmin, client, profile, signOut } = useAuth();
 
