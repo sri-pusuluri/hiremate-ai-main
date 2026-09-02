@@ -1,0 +1,107 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1831 >>
+stream
+BT
+/F1 18 Tf
+50 750 Td
+(David Chen) Tj
+/F2 9 Tf
+0 -16 Td
+(Email: david.chen@clouddev.net | Phone: +1 415-892-3341 | LinkedIn: linkedin.com/in/davidchen-devops | Seattle, WA) Tj
+0 -16 Td
+ET
+q 0.15 0.39 0.92 rg 50 714 512 2 re f Q
+BT
+50 695 Td
+/F1 12 Tf
+(PROFESSIONAL SUMMARY) Tj
+/F2 10 Tf
+0 -14 Td
+(Senior DevOps & Cloud Architect with 7+ years designing multi-region cloud) Tj
+0 -12 Td
+(infrastructure, Kubernetes clusters, and zero-downtime deployment pipelines. AWS Certified) Tj
+0 -12 Td
+(Solutions Architect Professional.) Tj
+0 -16 Td
+/F1 12 Tf
+(CORE COMPETENCIES & SKILLS) Tj
+/F2 9.5 Tf
+0 -14 Td
+(Cloud & Infrastructure: AWS [EKS, RDS, S3, CloudFront], GCP, Terraform, Ansible, Pulumi) Tj
+0 -12 Td
+(Containers & Orchestration: Kubernetes, Docker, Helm, Istio Service Mesh) Tj
+0 -12 Td
+(CI/CD & Observability: GitHub Actions, ArgoCD, Prometheus, Grafana, Datadog) Tj
+0 -12 Td
+0 -6 Td
+/F1 12 Tf
+(EXPERIENCE) Tj
+0 -14 Td
+/F1 10 Tf
+(Staff DevOps Engineer - Apex Cloud Solutions [Seattle, WA]) Tj
+/F3 9 Tf
+ ( 2021 - Present ) Tj
+/F2 9 Tf
+0 -12 Td
+(   * Architected multi-cluster Kubernetes platform supporting 60+ production microservices.) Tj
+0 -11 Td
+(   * Implemented GitOps deployment workflows via ArgoCD, cutting deployment time to 8 mins.) Tj
+0 -11 Td
+(   * Reduced AWS compute spend by 34% [$180K/year] using automated spot instance groups.) Tj
+0 -11 Td
+0 -4 Td
+/F1 10 Tf
+(DevOps Engineer - Vanguard Systems [San Jose, CA]) Tj
+/F3 9 Tf
+ ( 2018 - 2021 ) Tj
+/F2 9 Tf
+0 -12 Td
+(   * Maintained high-availability AWS infrastructure with Terraform, achieving 99.99% uptime.) Tj
+0 -11 Td
+(   * Standardized automated container security scanning in CI/CD pipeline.) Tj
+0 -11 Td
+0 -4 Td
+0 -4 Td
+/F1 12 Tf
+(EDUCATION) Tj
+/F2 9.5 Tf
+0 -14 Td
+(B.S. in Electrical & Computer Engineering - University of Washington [2014 - 2018]) Tj
+ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000261 00000 n 
+0000002144 00000 n 
+0000002219 00000 n 
+0000002289 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+2367
+%%EOF
