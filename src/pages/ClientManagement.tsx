@@ -268,18 +268,12 @@ export default function ClientManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner / Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-primary" />
-            Client Tenant Management
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Manage multi-tenant client accounts, branded careers portals, and subscription tiers.
-          </p>
-        </div>
+    <div className="p-6 space-y-6 animate-fade-in max-w-7xl">
+      {/* Top Actions */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {clients.length} registered client tenants with isolated workspace partitions and custom branding
+        </p>
 
         <Button 
           onClick={() => {

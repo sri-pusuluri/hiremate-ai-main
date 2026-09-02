@@ -29,7 +29,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col h-screen">
+    <aside className="w-64 shrink-0 min-w-[16rem] bg-sidebar text-sidebar-foreground flex flex-col h-screen border-r border-sidebar-border select-none">
       {/* Logo & Tenant Context */}
       <div className="p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-2">

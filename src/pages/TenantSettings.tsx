@@ -212,18 +212,7 @@ export default function TenantSettings() {
   const careersUrl = `${window.location.origin}/careers/${slug}`;
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Layers className="w-6 h-6 text-primary" />
-          Workspace Settings & Resource Libraries
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Configure branding, careers portal slugs, and reusable libraries (departments, titles, screening questions) for <strong>{name}</strong>.
-        </p>
-      </div>
-
+    <div className="p-6 space-y-6 max-w-5xl animate-fade-in">
       <Tabs defaultValue="branding" className="space-y-6">
         <TabsList className="bg-muted p-1 rounded-lg">
           <TabsTrigger value="branding" className="gap-2">
