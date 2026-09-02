@@ -221,6 +221,28 @@ export default function UserManagement() {
     }
   };
 
+  const handleSendPasswordReset = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Password Reset Sent',
+        description: `A password reset email has been sent to ${email}`,
+      });
+    } catch (error: any) {
+      console.error('Error sending password reset:', error);
+      toast({
+        title: 'Failed to send reset email',
+        description: error.message || 'An error occurred while sending the password reset email.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDeleteUser = async (userId: string, email: string) => {
     if (!window.confirm(`Are you sure you want to completely remove ${email}? This action cannot be undone.`)) {
       return;
@@ -474,6 +496,11 @@ export default function UserManagement() {
                             onClick={() => handleResendInvite(u.email || '', u.role)}
                           >
                             Resend Invitation
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleSendPasswordReset(u.email || '')}
+                          >
+                            Send Password Reset
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 

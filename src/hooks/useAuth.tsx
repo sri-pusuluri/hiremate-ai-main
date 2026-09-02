@@ -17,8 +17,11 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  updatePassword: (password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
+  needsPasswordReset: boolean;
+  setNeedsPasswordReset: (val: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,11 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [loading, setLoading] = useState(true);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setNeedsPasswordReset(true);
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -132,6 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setRole(null);
     setProfile(null);
+    setNeedsPasswordReset(false);
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (!error) {
+      setNeedsPasswordReset(false);
+    }
+    return { error: error as Error | null };
   };
 
   return (
@@ -144,8 +161,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signIn,
         signUp,
+        updatePassword,
         signOut,
         isAdmin: role === 'admin',
+        needsPasswordReset,
+        setNeedsPasswordReset,
       }}
     >
       {children}
