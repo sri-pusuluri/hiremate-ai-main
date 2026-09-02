@@ -2,12 +2,24 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, getNeedsPasswordReset } from '@/integrations/supabase/client';
 
-type AppRole = 'admin' | 'recruiter';
+import { ClientTenant } from '@/types/hiresort';
+
+export type AppRole = 'super_admin' | 'admin' | 'client_admin' | 'recruiter';
+
+export const DEFAULT_ZOOL_CLIENT: ClientTenant = {
+  id: '00000000-0000-0000-0000-000000000001',
+  name: 'Zool',
+  slug: 'zool',
+  themeColor: '#2563eb',
+  subscriptionTier: 'pro',
+};
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: AppRole | null;
+  client: ClientTenant | null;
+  clientId: string | null;
   profile: {
     id: string;
     email: string | null;
@@ -20,6 +32,9 @@ interface AuthContextType {
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  isClientAdmin: boolean;
+  setClient: (client: ClientTenant | null) => void;
   needsPasswordReset: boolean;
   setNeedsPasswordReset: (val: boolean) => void;
 }
@@ -30,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [client, setClient] = useState<ClientTenant | null>(DEFAULT_ZOOL_CLIENT);
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [loading, setLoading] = useState(true);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
@@ -143,15 +159,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Fetch role
+      // Fetch role and client_id
       const { data: roleData } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role, client_id')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (roleData) {
-        setRole(roleData.role as AppRole);
+        setRole((roleData as any).role as AppRole);
+        const assignedClientId = (roleData as any).client_id;
+        if (assignedClientId) {
+          try {
+            const { data: clientData } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('id', assignedClientId)
+              .maybeSingle();
+
+            if (clientData) {
+              setClient({
+                id: (clientData as any).id,
+                name: (clientData as any).name,
+                slug: (clientData as any).slug,
+                logoUrl: (clientData as any).logo_url,
+                themeColor: (clientData as any).theme_color || '#2563eb',
+                subscriptionTier: (clientData as any).subscription_tier || 'pro',
+                stripeCustomerId: (clientData as any).stripe_customer_id,
+              });
+            }
+          } catch (cErr) {
+            console.warn('Could not load client details, using default:', cErr);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -194,6 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setRole(null);
       setProfile(null);
+      setClient(DEFAULT_ZOOL_CLIENT);
       setNeedsPasswordReset(false);
       
       // Force clear Supabase local storage tokens just in case the API call failed
@@ -213,19 +254,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
+  const isSuperAdmin = role === 'super_admin' || role === 'admin' || user?.email?.includes('admin');
+  const isClientAdmin = isSuperAdmin || role === 'client_admin';
+
   return (
     <AuthContext.Provider
       value={{
         user,
         session,
         role,
+        client,
+        clientId: client?.id || DEFAULT_ZOOL_CLIENT.id,
         profile,
         loading,
         signIn,
         signUp,
         updatePassword,
         signOut,
-        isAdmin: role === 'admin',
+        isAdmin: role === 'admin' || role === 'super_admin' || role === 'client_admin',
+        isSuperAdmin,
+        isClientAdmin,
+        setClient,
         needsPasswordReset,
         setNeedsPasswordReset,
       }}

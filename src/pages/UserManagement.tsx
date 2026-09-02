@@ -24,9 +24,10 @@ import {
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
+  Building2,
   Users, 
-  Search, 
   UserPlus, 
+  Search, 
   Shield, 
   Mail,
   Calendar,
@@ -40,8 +41,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { ClientTenant } from '@/types/hiresort';
 
 interface UserWithRole {
   id: string;
@@ -49,18 +54,22 @@ interface UserWithRole {
   full_name: string | null;
   avatar_url: string | null;
   created_at: string;
-  role: 'admin' | 'recruiter';
+  role: 'super_admin' | 'admin' | 'client_admin' | 'recruiter';
+  clientId?: string | null;
+  clientName?: string | null;
 }
 
 export default function UserManagement() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isSuperAdmin, user, client: activeClient } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
+  const [clients, setClients] = useState<ClientTenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'admin' | 'recruiter'>('recruiter');
+  const [inviteRole, setInviteRole] = useState<'super_admin' | 'admin' | 'client_admin' | 'recruiter'>('recruiter');
+  const [inviteClientId, setInviteClientId] = useState<string>(activeClient?.id || '00000000-0000-0000-0000-000000000001');
   const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {
@@ -69,6 +78,16 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
+      // Fetch clients list
+      const { data: clientsData } = await supabase.from('clients').select('*');
+      const loadedClients: ClientTenant[] = (clientsData || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        themeColor: c.theme_color,
+      }));
+      setClients(loadedClients);
+
       // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -86,13 +105,18 @@ export default function UserManagement() {
       // Combine data
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
+        const userClientId = (userRole as any)?.client_id;
+        const matchedClient = loadedClients.find(c => c.id === userClientId);
+
         return {
           id: profile.id,
           email: profile.email,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           created_at: profile.created_at,
-          role: (userRole?.role as 'admin' | 'recruiter') || 'recruiter',
+          role: ((userRole?.role as any) || 'recruiter'),
+          clientId: userClientId || (activeClient?.id || '00000000-0000-0000-0000-000000000001'),
+          clientName: matchedClient?.name || activeClient?.name || 'Zool',
         };
       });
 
@@ -106,6 +130,33 @@ export default function UserManagement() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAssignClient = async (userId: string, targetClientId: string) => {
+    try {
+      const targetClient = clients.find(c => c.id === targetClientId);
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ client_id: targetClientId } as any)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, clientId: targetClientId, clientName: targetClient?.name || 'Zool' } : u
+      ));
+
+      toast({
+        title: 'Workspace Assigned',
+        description: `Assigned user to ${targetClient?.name || 'client'} workspace`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Assignment Failed',
+        description: err.message || 'Could not assign workspace.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -334,19 +385,38 @@ export default function UserManagement() {
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as 'admin' | 'recruiter')}>
+                <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as any)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="recruiter">Recruiter</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="client_admin">Client Admin</SelectItem>
+                    {isSuperAdmin && <SelectItem value="admin">Platform Admin</SelectItem>}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Admins can manage users and settings. Recruiters can manage jobs and candidates.
+                  Client Admins can manage workspace branding and team members. Recruiters manage jobs and candidates.
                 </p>
               </div>
+
+              {clients.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Assign to Client Workspace</Label>
+                  <Select value={inviteClientId} onValueChange={(v) => setInviteClientId(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Workspace" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} ({c.slug})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setInviteDialogOpen(false)} disabled={isInviting}>
@@ -469,13 +539,20 @@ export default function UserManagement() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    {/* Workspace Tag */}
+                    <Badge variant="outline" className="text-xs font-normal border-border flex items-center gap-1">
+                      <Building2 className="w-3 h-3 text-primary" />
+                      {u.clientName || 'Zool'}
+                    </Badge>
+
+                    {/* Role Tag */}
                     <Badge 
-                      variant={u.role === 'admin' ? 'default' : 'secondary'}
-                      className={u.role === 'admin' ? 'bg-ai-accent text-white' : ''}
+                      variant={u.role === 'admin' || u.role === 'super_admin' ? 'default' : 'secondary'}
+                      className={u.role === 'admin' || u.role === 'super_admin' ? 'bg-primary text-primary-foreground' : ''}
                     >
                       <Shield className="w-3 h-3 mr-1" />
-                      {u.role}
+                      {u.role === 'client_admin' ? 'Client Admin' : u.role}
                     </Badge>
                     
                     {u.id !== user?.id && (
@@ -491,6 +568,27 @@ export default function UserManagement() {
                           >
                             Change to {u.role === 'admin' ? 'Recruiter' : 'Admin'}
                           </DropdownMenuItem>
+
+                          {/* Assign Workspace Submenu */}
+                          {clients.length > 0 && (
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>
+                                <Building2 className="w-4 h-4 mr-2" />
+                                Assign Workspace
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                {clients.map((c) => (
+                                  <DropdownMenuItem 
+                                    key={c.id} 
+                                    onClick={() => handleAssignClient(u.id, c.id)}
+                                  >
+                                    {c.name} {u.clientId === c.id ? '✓' : ''}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                          )}
+
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onClick={() => handleResendInvite(u.email || '', u.role)}

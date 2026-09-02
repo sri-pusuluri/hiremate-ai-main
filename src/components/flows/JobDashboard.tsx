@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { Job } from '@/types/hiresort';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { AIBadge } from '@/components/ui/ai-badges';
 import { JobDescriptionModal } from './JobDescriptionModal';
+import { JobEmbedModal } from '@/components/ats/JobEmbedModal';
+import { CreateJobModal } from '@/components/ats/CreateJobModal';
 import { useToast } from '@/components/ui/use-toast';
 import samplePayload from '../../../samples/ats_import_payload.json';
 import { 
@@ -17,7 +20,10 @@ import {
   CheckCircle2,
   FileText,
   RefreshCw,
-  Loader2
+  Loader2,
+  Code2,
+  Plus,
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +37,9 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
   const [loading, setLoading] = useState(true);
   const [selectedJobForJD, setSelectedJobForJD] = useState<Job | null>(null);
   const [showJDModal, setShowJDModal] = useState(false);
+  const [selectedJobForEmbed, setSelectedJobForEmbed] = useState<Job | null>(null);
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [importingSample, setImportingSample] = useState(false);
   const { toast } = useToast();
 
@@ -311,29 +320,39 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       {/* Page Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-foreground mb-1">Active Jobs</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-1">Active Jobs & ATS</h2>
           <p className="text-muted-foreground">
-            Manage your job postings and review candidates
+            Manage your job postings, candidate pipelines, and public web embed listings
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={handleImportSample} 
-          disabled={importingSample}
-          className="flex items-center gap-2"
-        >
-          {importingSample ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Syncing ATS...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4" />
-              Sync with ATS
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button 
+            variant="outline" 
+            onClick={handleImportSample} 
+            disabled={importingSample}
+            className="flex items-center gap-2"
+          >
+            {importingSample ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Syncing ATS...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Sync with ATS
+              </>
+            )}
+          </Button>
+
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="gap-2 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Post New Job
+          </Button>
+        </div>
       </div>
 
       {/* Jobs Grid / Empty State */}
@@ -342,15 +361,24 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
           <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-1">No Active Jobs Yet</h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
-            You can upload a custom ATS webhook payload in Settings, or click below to import the default template payload instantly.
+            You can post a new custom job opening with ATS screening questions, or import sample data instantly.
           </p>
-          <Button 
-            onClick={handleImportSample} 
-            disabled={importingSample}
-            className="mt-2"
-          >
-            {importingSample ? "Importing sample..." : "Import Sample Webhook Data (1-Click)"}
-          </Button>
+          <div className="flex items-center justify-center gap-3">
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Post First Job
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleImportSample} 
+              disabled={importingSample}
+            >
+              {importingSample ? "Importing sample..." : "Import Sample Webhook Data"}
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -361,6 +389,10 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
               onSelect={() => onSelectJob(job)}
               onEnableHireSort={() => onEnableHireSort(job)}
               onViewJD={() => handleViewJD(job)}
+              onEmbed={() => {
+                setSelectedJobForEmbed(job);
+                setShowEmbedModal(true);
+              }}
             />
           ))}
         </div>
@@ -372,6 +404,25 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         open={showJDModal}
         onOpenChange={setShowJDModal}
       />
+
+      {/* Embed / Share Modal */}
+      <JobEmbedModal
+        job={selectedJobForEmbed}
+        open={showEmbedModal}
+        onOpenChange={setShowEmbedModal}
+        onJobUpdated={(updated) => {
+          setJobs(prev => prev.map(j => j.id === updated.id ? updated : j));
+        }}
+      />
+
+      {/* Create Job Modal */}
+      <CreateJobModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onJobCreated={(newJob) => {
+          setJobs(prev => [newJob, ...prev]);
+        }}
+      />
     </div>
   );
 }
@@ -381,9 +432,10 @@ interface JobCardProps {
   onSelect: () => void;
   onEnableHireSort: () => void;
   onViewJD: () => void;
+  onEmbed: () => void;
 }
 
-function JobCard({ job, onSelect, onEnableHireSort, onViewJD }: JobCardProps) {
+function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed }: JobCardProps) {
   const getAIStatusDisplay = () => {
     if (!job.hireSortEnabled) {
       return null;
@@ -429,6 +481,11 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD }: JobCardProps) {
               {job.title}
             </h3>
             {job.hireSortEnabled && <AIBadge size="sm" />}
+            {job.isPublic && (
+              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 flex items-center gap-1 font-medium">
+                <Globe className="w-3 h-3" /> Public Listing
+              </Badge>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
@@ -477,6 +534,19 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD }: JobCardProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEmbed();
+              }}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Code2 className="w-4 h-4 mr-1 text-primary" />
+              Embed & Share
+            </Button>
+
             {!job.hireSortEnabled && (
               <Button 
                 variant="ai" 

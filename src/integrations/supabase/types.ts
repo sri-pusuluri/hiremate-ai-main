@@ -41,22 +41,295 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          logo_url: string | null
+          theme_color: string | null
+          subscription_tier: string | null
+          stripe_customer_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          logo_url?: string | null
+          theme_color?: string | null
+          subscription_tier?: string | null
+          stripe_customer_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          logo_url?: string | null
+          theme_color?: string | null
+          subscription_tier?: string | null
+          stripe_customer_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          id: string
+          client_id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          name?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      positions: {
+        Row: {
+          id: string
+          client_id: string
+          title: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          title: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          title?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      question_bank: {
+        Row: {
+          id: string
+          client_id: string
+          question_text: string
+          question_type: string
+          options: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          question_text: string
+          question_type: string
+          options?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          question_text?: string
+          question_type?: string
+          options?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          id: string
+          client_id: string | null
+          title: string
+          department: string | null
+          department_id: string | null
+          position_id: string | null
+          location: string | null
+          type: string | null
+          salary: string | null
+          description: string
+          responsibilities: string[] | null
+          requirements: string[] | null
+          nice_to_have: string[] | null
+          is_public: boolean | null
+          slug: string | null
+          status: string | null
+          custom_questions: Json | null
+          hire_sort_enabled: boolean | null
+          ai_processing_status: string | null
+          last_ranked_at: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          client_id?: string | null
+          title: string
+          department?: string | null
+          department_id?: string | null
+          position_id?: string | null
+          location?: string | null
+          type?: string | null
+          salary?: string | null
+          description: string
+          responsibilities?: string[] | null
+          requirements?: string[] | null
+          nice_to_have?: string[] | null
+          is_public?: boolean | null
+          slug?: string | null
+          status?: string | null
+          custom_questions?: Json | null
+          hire_sort_enabled?: boolean | null
+          ai_processing_status?: string | null
+          last_ranked_at?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          client_id?: string | null
+          title?: string
+          department?: string | null
+          department_id?: string | null
+          position_id?: string | null
+          location?: string | null
+          type?: string | null
+          salary?: string | null
+          description?: string
+          responsibilities?: string[] | null
+          requirements?: string[] | null
+          nice_to_have?: string[] | null
+          is_public?: boolean | null
+          slug?: string | null
+          status?: string | null
+          custom_questions?: Json | null
+          hire_sort_enabled?: boolean | null
+          ai_processing_status?: string | null
+          last_ranked_at?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: []
+      }
+      candidates: {
+        Row: {
+          id: string
+          client_id: string | null
+          job_id: string | null
+          full_name: string
+          email: string
+          phone: string | null
+          experience: number | null
+          skills: string[] | null
+          matched_skills: string[] | null
+          missing_skills: string[] | null
+          resume_url: string | null
+          resume_text: string | null
+          source: string | null
+          status: string | null
+          pipeline_stage: string | null
+          custom_answers: Json | null
+          ai_score: string | null
+          cosine_similarity: number | null
+          predictive_insights: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id?: string | null
+          job_id?: string | null
+          full_name: string
+          email: string
+          phone?: string | null
+          experience?: number | null
+          skills?: string[] | null
+          matched_skills?: string[] | null
+          missing_skills?: string[] | null
+          resume_url?: string | null
+          resume_text?: string | null
+          source?: string | null
+          status?: string | null
+          pipeline_stage?: string | null
+          custom_answers?: Json | null
+          ai_score?: string | null
+          cosine_similarity?: number | null
+          predictive_insights?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string | null
+          job_id?: string | null
+          full_name?: string
+          email?: string
+          phone?: string | null
+          experience?: number | null
+          skills?: string[] | null
+          matched_skills?: string[] | null
+          missing_skills?: string[] | null
+          resume_url?: string | null
+          resume_text?: string | null
+          source?: string | null
+          status?: string | null
+          pipeline_stage?: string | null
+          custom_answers?: Json | null
+          ai_score?: string | null
+          cosine_similarity?: number | null
+          predictive_insights?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      candidate_notes: {
+        Row: {
+          id: string
+          candidate_id: string
+          author_id: string | null
+          note_text: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          candidate_id: string
+          author_id?: string | null
+          note_text: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          candidate_id?: string
+          author_id?: string | null
+          note_text?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
           id: string
+          client_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          client_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          client_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -80,7 +353,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "recruiter"
+      app_role: "super_admin" | "admin" | "client_admin" | "recruiter"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -208,7 +481,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "recruiter"],
+      app_role: ["super_admin", "admin", "client_admin", "recruiter"],
     },
   },
 } as const

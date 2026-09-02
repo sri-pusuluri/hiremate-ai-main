@@ -45,6 +45,13 @@ export interface Candidate {
     assessment?: string; // Detailed predictive assessment
     resumeFormat?: 'AI Generated' | 'Human Written' | 'Mixed';
   };
+  // ATS Fields
+  clientId?: string;
+  pipelineStage?: 'applied' | 'ai_screened' | 'interviewing' | 'offered' | 'rejected';
+  phone?: string;
+  linkedInUrl?: string;
+  portfolioUrl?: string;
+  customAnswers?: Record<string, any>;
 }
 
 export interface Job {
@@ -78,6 +85,63 @@ export interface Job {
     weaknesses: string[];
     suggestions: string[];
   };
+
+  // ATS & Multi-Tenancy
+  clientId?: string;
+  isPublic?: boolean;
+  slug?: string;
+  departmentId?: string;
+  positionId?: string;
+  customQuestions?: Array<{
+    id: string;
+    question: string;
+    type: 'text' | 'choice' | 'boolean';
+    required?: boolean;
+    options?: string[];
+  }>;
+}
+
+export interface ClientTenant {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+  themeColor?: string;
+  subscriptionTier?: 'free' | 'pro' | 'enterprise';
+  stripeCustomerId?: string | null;
+  createdAt?: string;
+}
+
+export interface Department {
+  id: string;
+  clientId: string;
+  name: string;
+  createdAt?: string;
+}
+
+export interface Position {
+  id: string;
+  clientId: string;
+  title: string;
+  createdAt?: string;
+}
+
+export interface QuestionBankItem {
+  id: string;
+  clientId: string;
+  questionText: string;
+  questionType: 'text' | 'choice' | 'boolean';
+  options?: string[];
+  createdAt?: string;
+}
+
+export interface CandidateNote {
+  id: string;
+  candidateId: string;
+  authorId: string;
+  authorName?: string;
+  noteText: string;
+  createdAt: string;
 }
 
 export interface AIProcessingState {
@@ -105,3 +169,4 @@ export type FlowScreen =
   | 'shortlist-review'
   | 'feedback'
   | 'edge-states';
+

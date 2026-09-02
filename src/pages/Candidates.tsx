@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type TabType = 'all' | 'applied' | 'talent-pool';
 
@@ -71,6 +72,7 @@ const candidateUuidMap: Record<string, string> = {
 export default function Candidates() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const { toast } = useToast();
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -146,7 +148,8 @@ export default function Candidates() {
             aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
             company: c.company || 'Tech Solutions',
             currentRole: c.current_role || c.currentRole || 'Software Engineer',
-            source: c.source || (c.email.length % 3 === 0 ? 'talent-pool' : 'applied')
+            source: c.source || (c.email.length % 3 === 0 ? 'talent-pool' : 'applied'),
+            pipelineStage: c.pipeline_stage || (c.pipelineStage || 'applied'),
           }));
           setCandidates(mappedCandidates);
         } else {
@@ -166,8 +169,22 @@ export default function Candidates() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterScore, setFilterScore] = useState<string>('all');
   const [filterJob, setFilterJob] = useState<string>('all');
+  const [filterStage, setFilterStage] = useState<string>('all');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
+
+  const handleStageChange = async (candidateId: string, newStage: any) => {
+    setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, pipelineStage: newStage } : c));
+    try {
+      await supabase.from('candidates').update({ pipeline_stage: newStage } as any).eq('id', candidateId);
+      toast({ 
+        title: 'Stage Updated', 
+        description: `Candidate moved to ${newStage.replace('_', ' ').toUpperCase()}` 
+      });
+    } catch (err) {
+      console.warn('Could not update stage in db:', err);
+    }
+  };
 
   // Create a job lookup map for efficient access
   const jobMap = useMemo(() => {
@@ -210,9 +227,14 @@ export default function Candidates() {
         (activeTab === 'applied' && candidate.source === 'applied') ||
         (activeTab === 'talent-pool' && candidate.source === 'talent-pool');
 
-      return matchesSearch && matchesFilter && matchesJob && matchesTab;
+      // Filter by pipeline stage
+      const matchesStage = 
+        filterStage === 'all' || 
+        (candidate.pipelineStage || 'applied') === filterStage;
+
+      return matchesSearch && matchesFilter && matchesJob && matchesTab && matchesStage;
     });
-  }, [candidates, searchQuery, filterScore, filterJob, activeTab]);
+  }, [candidates, searchQuery, filterScore, filterJob, filterStage, activeTab]);
 
   // Pagination
   const {
@@ -384,6 +406,21 @@ export default function Candidates() {
             </SelectContent>
           </Select>
 
+          {/* Pipeline Stage Filter */}
+          <Select value={filterStage} onValueChange={setFilterStage}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Pipeline Stage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Stages</SelectItem>
+              <SelectItem value="applied">Applied</SelectItem>
+              <SelectItem value="ai_screened">AI Screened</SelectItem>
+              <SelectItem value="interviewing">Interviewing</SelectItem>
+              <SelectItem value="offered">Offered</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Button variant="outline" size="sm">
             <SlidersHorizontal className="w-4 h-4" />
             More Filters
@@ -401,6 +438,7 @@ export default function Candidates() {
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Current Role</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Experience</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Location</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Pipeline Stage</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">AI Score</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Applied</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground"></th>
@@ -457,6 +495,30 @@ export default function Candidates() {
                     <MapPin className="w-3 h-3" />
                     {candidate.location}
                   </p>
+                </td>
+                <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                  <Select 
+                    value={candidate.pipelineStage || 'applied'} 
+                    onValueChange={(val) => handleStageChange(candidate.id, val)}
+                  >
+                    <SelectTrigger className={cn(
+                      "h-7 text-xs font-semibold px-2 py-0 border rounded-md w-[130px]",
+                      candidate.pipelineStage === 'offered' && "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800",
+                      candidate.pipelineStage === 'interviewing' && "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
+                      candidate.pipelineStage === 'ai_screened' && "bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800",
+                      candidate.pipelineStage === 'rejected' && "bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400",
+                      (!candidate.pipelineStage || candidate.pipelineStage === 'applied') && "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800"
+                    )}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="applied">Applied</SelectItem>
+                      <SelectItem value="ai_screened">AI Screened</SelectItem>
+                      <SelectItem value="interviewing">Interviewing</SelectItem>
+                      <SelectItem value="offered">Offered</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td className="px-4 py-4">
                   {candidate.jobId && jobMap[candidate.jobId]?.hireSortEnabled && candidate.aiScore && candidate.aiScore !== 'pending' ? (

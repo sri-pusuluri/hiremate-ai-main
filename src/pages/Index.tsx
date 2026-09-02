@@ -7,6 +7,8 @@ import Candidates from './Candidates';
 import Shortlisted from './Shortlisted';
 import UserManagement from './UserManagement';
 import Settings from './Settings';
+import ClientManagement from './ClientManagement';
+import TenantSettings from './TenantSettings';
 import { HireSortApp } from '@/components/HireSortApp';
 import { Loader2 } from 'lucide-react';
 
@@ -31,15 +33,19 @@ const Index = () => {
       case 'dashboard':
         return { title: 'Dashboard', subtitle: 'Overview of your hiring pipeline', component: <Dashboard /> };
       case 'jobs':
-        return { title: 'Jobs', subtitle: 'Manage job postings', component: <HireSortApp /> };
+        return { title: 'Jobs & ATS', subtitle: 'Manage job postings, publishing, and screening questions', component: <HireSortApp /> };
       case 'candidates':
         return { title: undefined, subtitle: undefined, component: <Candidates /> };
       case 'shortlisted':
         return { title: undefined, subtitle: undefined, component: <Shortlisted /> };
       case 'users':
-        return { title: 'User Management', subtitle: 'Manage team members', component: <UserManagement /> };
+        return { title: 'User Management', subtitle: 'Manage team members and client roles', component: <UserManagement /> };
+      case 'tenant-settings':
+        return { title: 'Workspace Libraries', subtitle: 'Departments, Positions, and Question Bank', component: <TenantSettings /> };
+      case 'clients':
+        return { title: 'Client Tenants', subtitle: 'Manage multi-tenant client accounts and subscriptions', component: <ClientManagement /> };
       case 'settings':
-        return { title: 'Settings', subtitle: 'Account preferences', component: <Settings /> };
+        return { title: 'Settings', subtitle: 'Account preferences and AI keys', component: <Settings /> };
       default:
         return { title: 'Dashboard', subtitle: '', component: <Dashboard /> };
     }
