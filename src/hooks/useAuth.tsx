@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getNeedsPasswordReset } from '@/integrations/supabase/client';
 
 type AppRole = 'admin' | 'recruiter';
 
@@ -35,6 +35,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
+    // Check initial state from the client
+    if (getNeedsPasswordReset() || window.location.search.includes('reset=true')) {
+      setNeedsPasswordReset(true);
+      // Clean up URL if it has reset=true
+      if (window.location.search.includes('reset=true')) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+
+    // Listen to custom event to avoid race conditions
+    const handleRecoveryEvent = () => setNeedsPasswordReset(true);
+    window.addEventListener('password_recovery_event', handleRecoveryEvent);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -72,7 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('password_recovery_event', handleRecoveryEvent);
+    };
   }, []);
 
   const fetchUserData = async (userId: string) => {

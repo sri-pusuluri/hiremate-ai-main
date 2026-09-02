@@ -15,6 +15,20 @@ const realSupabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_K
   }
 });
 
+let globalNeedsPasswordReset = false;
+realSupabase.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    globalNeedsPasswordReset = true;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('password_recovery_event'));
+    }
+  }
+});
+
+export function getNeedsPasswordReset() {
+  return globalNeedsPasswordReset;
+}
+
 // Mock state management keys
 const MOCK_USERS_KEY = 'hiremate_mock_users';
 const MOCK_PROFILES_KEY = 'hiremate_mock_profiles';
