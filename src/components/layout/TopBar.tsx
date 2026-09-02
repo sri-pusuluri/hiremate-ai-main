@@ -1,5 +1,6 @@
 import { Bell, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TopBarProps {
   title: string;
@@ -7,6 +8,24 @@ interface TopBarProps {
 }
 
 export function TopBar({ title, subtitle }: TopBarProps) {
+  const { profile, user } = useAuth();
+  
+  const getInitials = () => {
+    const nameToUse = profile?.full_name || user?.user_metadata?.full_name;
+    if (nameToUse) {
+      const names = nameToUse.trim().split(' ');
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+      }
+      return nameToUse.substring(0, 2).toUpperCase();
+    }
+    const emailToUse = profile?.email || user?.email;
+    if (emailToUse) {
+      return emailToUse.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
       <div>
@@ -34,7 +53,7 @@ export function TopBar({ title, subtitle }: TopBarProps) {
 
         {/* User Avatar */}
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-sm font-medium text-primary">RK</span>
+          <span className="text-sm font-medium text-primary">{getInitials()}</span>
         </div>
       </div>
     </header>
