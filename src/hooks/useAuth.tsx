@@ -135,6 +135,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: profileData.full_name,
           avatar_url: profileData.avatar_url,
         });
+      } else {
+        // If the profile is null, it means the user was hard-deleted from the database
+        // but their browser still holds an unexpired JWT token. We must forcefully log them out.
+        console.warn('User profile not found. Forcing logout...');
+        await signOut();
+        return;
       }
 
       // Fetch role
