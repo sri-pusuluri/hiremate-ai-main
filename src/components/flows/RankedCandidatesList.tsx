@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/components/ui/ai-badges';
 import { ResumeViewerModal } from './ResumeViewerModal';
+import { JobDescriptionModal } from './JobDescriptionModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowUpDown, 
@@ -51,6 +52,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [resumeCandidate, setResumeCandidate] = useState<Candidate | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
+  const [showJDModal, setShowJDModal] = useState(false);
   const [activeTab, setActiveTab] = useState<CandidateTab>('all');
   const { toast } = useToast();
 
@@ -237,9 +239,21 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             <h2 className="text-2xl font-semibold text-foreground">Candidates</h2>
             {selectedJob?.hireSortEnabled && <AIBadge />}
           </div>
-          <p className="text-muted-foreground">
-            {selectedJob ? `${selectedJob.title} • ` : ''}{candidates.length} total candidates • {sortedCandidates.length} shown
-          </p>
+          <div className="flex flex-wrap items-center gap-2.5 text-muted-foreground mt-1">
+            <span>
+              {selectedJob ? `${selectedJob.title} • ` : ''}{candidates.length} total candidates • {sortedCandidates.length} shown
+            </span>
+            {selectedJob && (
+              <button 
+                onClick={() => setShowJDModal(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-full border border-primary/20 transition-all cursor-pointer shadow-2xs"
+                title="View Job Description, Responsibilities & Requirements"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                View JD
+              </button>
+            )}
+          </div>
         </div>
 
         {selectedIds.size > 0 && (
@@ -451,6 +465,13 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
         candidate={resumeCandidate}
         open={showResumeModal}
         onOpenChange={setShowResumeModal}
+      />
+
+      {/* JD Modal */}
+      <JobDescriptionModal 
+        job={selectedJob}
+        open={showJDModal}
+        onOpenChange={setShowJDModal}
       />
     </div>
   );
