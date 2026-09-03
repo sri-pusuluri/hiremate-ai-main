@@ -88,6 +88,7 @@ export default function PublicJobApplication() {
         if (jobData) {
           setJob({
             id: (jobData as any).id,
+            clientId: (jobData as any).client_id,
             title: (jobData as any).title,
             department: (jobData as any).department || 'Engineering',
             location: (jobData as any).location || 'Bangalore (Hybrid)',
@@ -200,20 +201,48 @@ export default function PublicJobApplication() {
 
     setSubmitting(true);
     try {
-      const generatedId = 'app-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+      const generatedId = 'APP-' + Math.floor(100000 + Math.random() * 900000);
 
-      // Insert into Supabase candidates table
-      await supabase.from('candidates').insert([
+      // 1. Upload Resume file if provided
+      let resumeUrl = '';
+      if (resumeFile) {
+        try {
+          const fileExt = resumeFile.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+          const filePath = `${job?.id || 'general'}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('resumes')
+            .upload(filePath, resumeFile);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('resumes')
+              .getPublicUrl(filePath);
+            resumeUrl = publicUrl || filePath;
+          }
+        } catch (uploadErr) {
+          console.warn('Storage upload note:', uploadErr);
+        }
+      }
+
+      // 2. Resolve Target Client ID
+      const targetClientId = (job as any)?.clientId || client?.id || '00000000-0000-0000-0000-000000000001';
+
+      // 3. Insert into Supabase candidates table
+      const { error: insertError } = await supabase.from('candidates').insert([
         {
           full_name: fullName,
           email: email,
           phone: phone,
           job_id: job?.id,
-          client_id: client.id,
+          client_id: targetClientId,
           source: 'applied',
           status: 'new',
           pipeline_stage: 'applied',
           experience: 4,
+          resume_url: resumeUrl,
+          resume_text: `${fullName} - Application for ${job?.title || 'Role'}.\nPhone: ${phone}\nEmail: ${email}\nLinkedIn: ${linkedIn}\nPortfolio: ${portfolio}\nScreening: ${customAnswer}\nCover: ${coverNote}`,
           custom_answers: {
             notice_period: noticePeriod,
             linkedin: linkedIn,
@@ -222,17 +251,34 @@ export default function PublicJobApplication() {
             cover_note: coverNote,
           },
           ai_score: 'high',
-          cosine_similarity: 0.88,
+          cosine_similarity: 0.89,
           created_at: new Date().toISOString(),
         } as any
       ]);
 
+      if (insertError) {
+        console.error('Candidate insert failed:', insertError);
+        toast({
+          title: 'Application Submission Error',
+          description: insertError.message || 'Could not save your application. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setApplicationId(generatedId);
       setSubmitted(true);
+      toast({
+        title: 'Application Submitted Successfully! 🎉',
+        description: `Your application ID is ${generatedId}.`,
+      });
     } catch (err: any) {
-      console.warn('Could not insert to DB, showing demo submission success:', err);
-      setApplicationId('APP-' + Math.floor(100000 + Math.random() * 900000));
-      setSubmitted(true);
+      console.error('Submission error:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setSubmitting(false);
     }

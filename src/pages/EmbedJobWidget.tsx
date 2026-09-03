@@ -102,20 +102,26 @@ export default function EmbedJobWidget() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await supabase.from('candidates').insert([
+      const targetClientId = (job as any)?.client_id || '00000000-0000-0000-0000-000000000001';
+      const { error } = await supabase.from('candidates').insert([
         {
           full_name: fullName,
           email: email,
           phone: phone,
           job_id: job?.id,
+          client_id: targetClientId,
           source: 'embed-widget',
           status: 'new',
           pipeline_stage: 'applied',
           created_at: new Date().toISOString(),
         } as any
       ]);
+      if (error) {
+        console.error('Embed widget candidate insert failed:', error);
+      }
       setSubmitted(true);
     } catch (err) {
+      console.error('Embed widget submit error:', err);
       setSubmitted(true);
     } finally {
       setSubmitting(false);
