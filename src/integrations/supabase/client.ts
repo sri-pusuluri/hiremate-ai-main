@@ -270,12 +270,12 @@ class MockQueryBuilder {
   }
 
   update(data: any) {
-    this.updateData = data;
+    this.updateData = Array.isArray(data) ? data[0] : data;
     return this;
   }
 
   insert(data: any) {
-    this.updateData = data; // use insert mode
+    this.updateData = Array.isArray(data) ? data[0] : data;
     this.filters = []; // clear filters for insert
     return this;
   }
@@ -415,23 +415,27 @@ class MockQueryBuilder {
         });
 
         if (!updated && this.filters.length === 0) {
+          const payload = Array.isArray(this.updateData) ? this.updateData[0] : (this.updateData || {});
           const newJob = {
-            id: 'job-' + Math.random().toString(36).substring(2, 9),
-            title: this.updateData.title,
-            department: this.updateData.department || 'General',
-            location: this.updateData.location || 'Remote',
-            type: this.updateData.type || 'full-time',
+            id: payload.id || 'job-' + Math.random().toString(36).substring(2, 9),
+            title: payload.title || 'Untitled Role',
+            department: payload.department || 'Engineering',
+            location: payload.location || 'Bangalore, India',
+            type: payload.type || 'full-time',
             postedDate: new Date().toISOString().split('T')[0],
-            screeningEndDate: this.updateData.screeningEndDate || null,
-            status: 'active',
+            screeningEndDate: payload.screeningEndDate || null,
+            status: payload.status || 'active',
             candidateCount: 0,
-            hireSortEnabled: false,
-            description: this.updateData.description || '',
-            responsibilities: this.updateData.responsibilities || [],
-            requirements: this.updateData.requirements || [],
-            niceToHave: this.updateData.niceToHave || [],
-            salary: this.updateData.salary || 'Competitive',
-            predictiveEffectiveness: this.updateData.predictiveEffectiveness || null
+            hireSortEnabled: payload.hire_sort_enabled !== undefined ? payload.hire_sort_enabled : true,
+            description: payload.description || '',
+            responsibilities: payload.responsibilities || [],
+            requirements: payload.requirements || [],
+            niceToHave: payload.nice_to_have || payload.niceToHave || [],
+            salary: payload.salary || '₹25-40 LPA',
+            isPublic: payload.is_public !== undefined ? payload.is_public : true,
+            is_public: payload.is_public !== undefined ? payload.is_public : true,
+            slug: payload.slug,
+            predictiveEffectiveness: payload.predictiveEffectiveness || null
           };
           jobs.push(newJob);
           data = [newJob];
@@ -461,20 +465,24 @@ class MockQueryBuilder {
         });
 
         if (!updated && this.filters.length === 0) {
+          const payload = Array.isArray(this.updateData) ? this.updateData[0] : (this.updateData || {});
           const newCandidate = {
-            id: 'cand-' + Math.random().toString(36).substring(2, 9),
-            name: this.updateData.name || this.updateData.full_name || 'Anonymous Applicant',
-            email: this.updateData.email || 'anonymous@example.com',
-            experience: Number(this.updateData.experience) || 0,
-            location: this.updateData.location || 'Remote',
+            id: payload.id || 'cand-' + Math.random().toString(36).substring(2, 9),
+            name: payload.full_name || payload.name || 'Anonymous Applicant',
+            full_name: payload.full_name || payload.name || 'Anonymous Applicant',
+            email: payload.email || 'applicant@example.com',
+            phone: payload.phone || null,
+            job_id: payload.job_id,
+            experience: Number(payload.experience) || 0,
+            location: payload.location || 'Remote',
             appliedDate: new Date().toISOString().split('T')[0],
-            matchedSkills: this.updateData.matchedSkills || [],
-            missingSkills: this.updateData.missingSkills || [],
-            aiScore: this.updateData.aiScore || 'medium',
-            cosineSimilarity: this.updateData.cosineSimilarity || 0.6,
-            predictiveInsights: this.updateData.predictiveInsights || {},
-            resumeUrl: this.updateData.resumeUrl || null,
-            resumeText: this.updateData.resumeText || ''
+            matchedSkills: payload.matched_skills || payload.matchedSkills || [],
+            missingSkills: payload.missing_skills || payload.missingSkills || [],
+            aiScore: payload.ai_score || payload.aiScore || 'medium',
+            cosineSimilarity: payload.cosine_similarity || payload.cosineSimilarity || 0.75,
+            predictiveInsights: payload.predictive_insights || payload.predictiveInsights || {},
+            resumeUrl: payload.resume_url || payload.resumeUrl || null,
+            resumeText: payload.resume_text || payload.resumeText || ''
           };
           candidates.push(newCandidate);
           data = [newCandidate];

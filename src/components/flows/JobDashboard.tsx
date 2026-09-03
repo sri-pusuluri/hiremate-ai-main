@@ -67,7 +67,17 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       const { error } = await supabase.from('jobs').delete().eq('id', jobToDelete.id);
       if (error) throw error;
 
-      // 3. Update state
+      // 3. Clear from mock localStorage if present
+      try {
+        const rawMock = localStorage.getItem('hiremate_mock_jobs');
+        if (rawMock) {
+          const parsed = JSON.parse(rawMock);
+          const cleaned = parsed.filter((j: any) => j.id !== jobToDelete.id);
+          localStorage.setItem('hiremate_mock_jobs', JSON.stringify(cleaned));
+        }
+      } catch (e) {}
+
+      // 4. Update state
       setJobs(prev => prev.filter(j => j.id !== jobToDelete.id));
 
       toast({
@@ -191,26 +201,42 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         const { data: candData } = await supabase.from('candidates').select('job_id');
 
         if (jobData && jobData.length > 0) {
-          const mappedJobs = jobData.map((j: any) => {
-            const count = candData ? candData.filter((c: any) => c.job_id === j.id).length : 0;
-            return {
-              id: j.id,
-              title: j.title,
-              department: j.department,
-              location: j.location,
-              type: j.type,
-              salary: j.salary,
-              description: j.description,
-              responsibilities: j.responsibilities || [],
-              requirements: j.requirements || [],
-              niceToHave: j.nice_to_have || [],
-              hireSortEnabled: j.hire_sort_enabled,
-              aiProcessingStatus: j.ai_processing_status,
-              lastRankedAt: j.last_ranked_at,
-              candidateCount: count,
-              postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-            };
-          });
+          // Clean up any phantom/empty jobs from mock localStorage cache
+          try {
+            const rawMock = localStorage.getItem('hiremate_mock_jobs');
+            if (rawMock) {
+              const parsed = JSON.parse(rawMock);
+              const cleaned = parsed.filter((j: any) => j.title && j.title.trim().length > 0);
+              if (cleaned.length !== parsed.length) {
+                localStorage.setItem('hiremate_mock_jobs', JSON.stringify(cleaned));
+              }
+            }
+          } catch (e) {}
+
+          const mappedJobs = jobData
+            .filter((j: any) => j.title && j.title.trim().length > 0)
+            .map((j: any) => {
+              const count = candData ? candData.filter((c: any) => c.job_id === j.id).length : 0;
+              return {
+                id: j.id,
+                title: j.title,
+                department: j.department || 'Engineering',
+                location: j.location || 'Remote',
+                type: j.type || 'full-time',
+                salary: j.salary,
+                description: j.description || '',
+                responsibilities: j.responsibilities || [],
+                requirements: j.requirements || [],
+                niceToHave: j.nice_to_have || j.niceToHave || [],
+                hireSortEnabled: j.hire_sort_enabled ?? j.hireSortEnabled,
+                aiProcessingStatus: j.ai_processing_status || j.aiProcessingStatus,
+                lastRankedAt: j.last_ranked_at || j.lastRankedAt,
+                candidateCount: count,
+                isPublic: j.is_public ?? j.isPublic,
+                slug: j.slug,
+                postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+              };
+            });
           setJobs(mappedJobs);
         } else {
           setJobs([]);
