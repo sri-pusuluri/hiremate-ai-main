@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Job, ClientTenant } from '@/types/hiresort';
 import { DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
@@ -21,7 +21,9 @@ import {
 
 export default function PublicCareers() {
   const { clientSlug } = useParams<{ clientSlug: string }>();
+  const { pathname } = useLocation();
   const slug = clientSlug || 'zool';
+  const isEmbedMode = pathname.startsWith('/embed');
 
   const [client, setClient] = useState<ClientTenant>(DEFAULT_ZOOL_CLIENT);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -147,54 +149,82 @@ export default function PublicCareers() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Brand Hero Header */}
-      <header 
-        className="relative border-b border-border py-16 px-6 overflow-hidden"
-        style={{
-          background: `radial-gradient(ellipse at 50% 0%, ${client.themeColor || '#2563eb'}22 0%, transparent 70%)`
-        }}
-      >
-        <div className="max-w-4xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card/80 backdrop-blur shadow-sm">
+    <div className={isEmbedMode ? "bg-background text-foreground flex flex-col p-4 font-sans" : "min-h-screen bg-background text-foreground flex flex-col"}>
+      {/* Header: Compact Widget in Embed Mode vs Full Brand Hero Header */}
+      {isEmbedMode ? (
+        <header className="pb-4 mb-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div 
-              className="w-4 h-4 rounded-full" 
+              className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" 
               style={{ backgroundColor: client.themeColor || '#2563eb' }}
             />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Careers at {client.name}
-            </span>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-foreground leading-none">
+                Careers at {client.name}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {jobs.length} open position{jobs.length === 1 ? '' : 's'} available
+              </p>
+            </div>
           </div>
+          <a 
+            href={`/careers/${slug}`} 
+            target="_blank" 
+            rel="noreferrer" 
+            className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-muted/60 px-2.5 py-1.5 rounded-md border border-border"
+          >
+            <span>Full Portal</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </header>
+      ) : (
+        <header 
+          className="relative border-b border-border py-16 px-6 overflow-hidden"
+          style={{
+            background: `radial-gradient(ellipse at 50% 0%, ${client.themeColor || '#2563eb'}22 0%, transparent 70%)`
+          }}
+        >
+          <div className="max-w-4xl mx-auto text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card/80 backdrop-blur shadow-sm">
+              <div 
+                className="w-4 h-4 rounded-full" 
+                style={{ backgroundColor: client.themeColor || '#2563eb' }}
+              />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Careers at {client.name}
+              </span>
+            </div>
 
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-            Build the future with us.
-          </h1>
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
+              Build the future with us.
+            </h1>
 
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            We are hiring ambitious innovators, engineers, and creators. Explore open roles and join our team.
-          </p>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              We are hiring ambitious innovators, engineers, and creators. Explore open roles and join our team.
+            </p>
 
-          <div className="pt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-              Fast-Track AI Screening
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-              Competitive Compensation
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-              Remote & Hybrid Flexibility
-            </span>
+            <div className="pt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                Fast-Track AI Screening
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                Competitive Compensation
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                Remote & Hybrid Flexibility
+              </span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Jobs Listing */}
-      <main className="max-w-4xl mx-auto w-full px-6 py-10 flex-1 space-y-8">
+      <main className={isEmbedMode ? "w-full flex-1 space-y-5" : "max-w-4xl mx-auto w-full px-6 py-10 flex-1 space-y-8"}>
         {/* Search & Dept Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -241,6 +271,8 @@ export default function PublicCareers() {
             <Link 
               key={job.id} 
               to={`/careers/${client.slug}/${job.slug || job.id}`}
+              target={isEmbedMode ? "_blank" : undefined}
+              rel={isEmbedMode ? "noopener noreferrer" : undefined}
               className="block group"
             >
               <Card className="border-border hover:border-primary/50 hover:shadow-md transition-all duration-200 bg-card">
@@ -305,10 +337,12 @@ export default function PublicCareers() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8 px-6 text-center text-xs text-muted-foreground mt-auto bg-muted/20">
-        <p>© {new Date().getFullYear()} {client.name}. Powered by HireSortAi Multi-Tenant ATS.</p>
-      </footer>
+      {/* Footer (hidden in embed mode for clean host integration) */}
+      {!isEmbedMode && (
+        <footer className="border-t border-border py-8 px-6 text-center text-xs text-muted-foreground mt-auto bg-muted/20">
+          <p>© {new Date().getFullYear()} {client.name}. Powered by HireSortAi Multi-Tenant ATS.</p>
+        </footer>
+      )}
     </div>
   );
 }

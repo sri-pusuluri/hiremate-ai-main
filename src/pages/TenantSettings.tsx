@@ -20,7 +20,9 @@ import {
   Check, 
   Save, 
   Sparkles,
-  Layers
+  Layers,
+  Code2,
+  Copy
 } from 'lucide-react';
 import {
   Select,
@@ -333,6 +335,69 @@ export default function TenantSettings() {
                   <Save className="w-4 h-4" />
                   {savingBranding ? 'Saving...' : 'Save Branding'}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Embed All Jobs Code Card */}
+          <Card className="border-border mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Code2 className="w-5 h-5 text-primary" />
+                  <span>Embed All Jobs Widget on Client Site ({name})</span>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  Responsive iFrame
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                Copy this HTML code snippet to display all active {name} jobs directly on your corporate website (e.g. zool.com/careers, Webflow, WordPress, React).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase">
+                    HTML Embed Code for Zool Site
+                  </Label>
+                  <a 
+                    href={`${window.location.origin}/embed/careers/${slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-primary hover:underline flex items-center gap-1 font-normal"
+                  >
+                    <span>Preview Embed Widget</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <div className="relative">
+                  <pre className="p-3.5 bg-muted/70 border border-border rounded-lg text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">
+{`<iframe 
+  src="${window.location.origin}/embed/careers/${slug}" 
+  width="100%" 
+  height="750" 
+  style="border:none; border-radius:12px; overflow:hidden;" 
+  title="Careers at ${name}"
+></iframe>`}
+                  </pre>
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    className="absolute top-2.5 right-2.5 shadow-sm gap-1.5 text-xs"
+                    onClick={() => {
+                      const snippet = `<iframe \n  src="${window.location.origin}/embed/careers/${slug}" \n  width="100%" \n  height="750" \n  style="border:none; border-radius:12px; overflow:hidden;" \n  title="Careers at ${name}"\n></iframe>`;
+                      navigator.clipboard.writeText(snippet);
+                      toast({ title: 'Embed Code Copied', description: 'Paste this snippet into your corporate website HTML.' });
+                    }}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Copy Embed Code
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ⚡ <strong>Dynamic sync:</strong> Whenever you post, edit, or close jobs in this ATS dashboard, the embedded board on your client site updates instantly!
+                </p>
               </div>
             </CardContent>
           </Card>
