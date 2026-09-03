@@ -13,7 +13,7 @@ import { HireSortApp } from '@/components/HireSortApp';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperAdmin } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
 
   if (loading) {
@@ -43,6 +43,9 @@ const Index = () => {
       case 'tenant-settings':
         return { title: 'Workspace Libraries', subtitle: 'Departments, Positions, and Question Bank', component: <TenantSettings /> };
       case 'clients':
+        if (!isSuperAdmin) {
+          return { title: 'Dashboard', subtitle: 'Overview of your hiring pipeline', component: <Dashboard /> };
+        }
         return { title: 'Client Tenants', subtitle: 'Manage multi-tenant client accounts and subscriptions', component: <ClientManagement /> };
       case 'settings':
         return { title: 'Settings', subtitle: 'Account preferences and AI keys', component: <Settings /> };
