@@ -101,34 +101,34 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
         .select()
         .single();
 
-      const createdJob: Job = data
-        ? {
-            id: (data as any).id,
-            title: (data as any).title,
-            department: (data as any).department,
-            location: (data as any).location,
-            type: (data as any).type,
-            salary: (data as any).salary,
-            description: (data as any).description,
-            responsibilities: (data as any).responsibilities || [],
-            requirements: (data as any).requirements || [],
-            niceToHave: (data as any).nice_to_have || [],
-            hireSortEnabled: true,
-            status: 'active',
-            postedDate: new Date().toISOString().split('T')[0],
-            candidateCount: 0,
-            isPublic: (data as any).is_public,
-            slug: (data as any).slug,
-          }
-        : {
-            id: crypto.randomUUID(),
-            ...formData,
-            postedDate: new Date().toISOString().split('T')[0],
-            candidateCount: 0,
-            hireSortEnabled: true,
-            status: 'active',
-            slug: slug,
-          };
+      if (error) {
+        console.error('Job creation error:', error);
+        toast({
+          title: 'Failed to create job',
+          description: error.message || 'An error occurred while saving the job.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const createdJob: Job = {
+        id: (data as any).id,
+        title: (data as any).title,
+        department: (data as any).department,
+        location: (data as any).location,
+        type: (data as any).type,
+        salary: (data as any).salary,
+        description: (data as any).description,
+        responsibilities: (data as any).responsibilities || [],
+        requirements: (data as any).requirements || [],
+        niceToHave: (data as any).nice_to_have || [],
+        hireSortEnabled: true,
+        status: (data as any).status || 'active',
+        postedDate: new Date().toISOString().split('T')[0],
+        candidateCount: 0,
+        isPublic: (data as any).is_public,
+        slug: (data as any).slug,
+      };
 
       onJobCreated(createdJob);
       toast({
