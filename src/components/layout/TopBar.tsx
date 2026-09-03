@@ -62,19 +62,9 @@ export function TopBar({ title, subtitle }: TopBarProps) {
         </div>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon-sm">
+        <Button variant="ghost" size="icon-sm" title="Notifications">
           <Bell className="w-5 h-5" />
         </Button>
-
-        {/* Role Badge */}
-        <Badge variant="secondary" className="hidden lg:inline-flex text-[11px] font-normal">
-          {getRoleLabel()}
-        </Badge>
-
-        {/* User Avatar */}
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-sm font-medium text-primary">{getInitials()}</span>
-        </div>
       </div>
     </header>
   );
