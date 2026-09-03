@@ -24,7 +24,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
 
   const adminItems = [
     { id: 'users', label: 'User Management', icon: UserCog },
-    { id: 'tenant-settings', label: 'Workspace Libraries & Branding', icon: Layers },
+    { id: 'tenant-settings', label: 'Workspace Libraries', icon: Layers },
     { id: 'clients', label: 'Client Tenants', icon: Building2 },
   ];
 
@@ -69,14 +69,14 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
               <button
                 onClick={() => onNavigate(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
                   currentView === item.id
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                {item.label}
+                <item.icon className="w-5 h-5 shrink-0" />
+                <span className="truncate">{item.label}</span>
               </button>
             </li>
           ))}
@@ -86,14 +86,14 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
             <button
               onClick={() => onNavigate('candidates')}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
                 currentView === 'candidates'
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
               )}
             >
-              <Users className="w-5 h-5" />
-              All Candidates
+              <Users className="w-5 h-5 shrink-0" />
+              <span className="truncate">All Candidates</span>
             </button>
           </li>
         </ul>
@@ -108,14 +108,14 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
                   <button
                     onClick={() => onNavigate(item.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
                       currentView === item.id
                         ? "bg-sidebar-accent text-sidebar-accent-foreground"
                         : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     )}
                   >
-                    <item.icon className="w-5 h-5" />
-                    {item.label}
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    <span className="truncate">{item.label}</span>
                   </button>
                 </li>
               ))}
