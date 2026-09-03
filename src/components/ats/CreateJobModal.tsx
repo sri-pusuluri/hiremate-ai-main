@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Job } from '@/types/hiresort';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,8 @@ import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Briefcase, Globe, Sparkles, Clock } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Briefcase, Globe, Sparkles, Clock, ListChecks, Check, Trash2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -54,6 +55,41 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
     return d.toISOString().split('T')[0];
   });
 
+  const [bankQuestions, setBankQuestions] = useState<Array<{ id: string; text: string; type: string; options?: string[] }>>([]);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
+  const [showAddCustomQuestion, setShowAddCustomQuestion] = useState(false);
+  const [customQText, setCustomQText] = useState('');
+  const [customQType, setCustomQType] = useState<'text' | 'choice' | 'boolean'>('text');
+  const [customQOptions, setCustomQOptions] = useState('');
+  const [customQuestionsList, setCustomQuestionsList] = useState<Array<{ id: string; text: string; type: string; options?: string[] }>>([]);
+
+  useEffect(() => {
+    async function loadBank() {
+      try {
+        let query = supabase.from('question_bank').select('*');
+        if (clientId) {
+          query = query.eq('client_id', clientId);
+        }
+        const { data } = await query;
+        if (data && data.length > 0) {
+          const mapped = data.map((q: any) => ({
+            id: q.id,
+            text: q.question_text,
+            type: q.question_type,
+            options: q.options ? (Array.isArray(q.options) ? q.options : JSON.parse(q.options)) : undefined
+          }));
+          setBankQuestions(mapped);
+          setSelectedQuestionIds(mapped.map(m => m.id));
+        }
+      } catch (e) {
+        console.error("Error loading question bank:", e);
+      }
+    }
+    if (open) {
+      loadBank();
+    }
+  }, [open, clientId]);
+
   const handleTitleChange = (title: string) => {
     setFormData(prev => ({ ...prev, title }));
   };
@@ -84,6 +120,11 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
         expiresAt = new Date(Date.now() + days * 86400000).toISOString();
       }
 
+      const finalQuestions = [
+        ...bankQuestions.filter(q => selectedQuestionIds.includes(q.id)),
+        ...customQuestionsList
+      ];
+
       const newJobRecord = {
         title: formData.title,
         department: formData.department,
@@ -98,6 +139,7 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
         ai_processing_status: 'idle',
         status: 'active',
         expires_at: expiresAt,
+        custom_questions: finalQuestions,
         responsibilities: [
           'Lead feature development across the stack',
           'Collaborate with product and design to craft intuitive UX',
@@ -324,6 +366,160 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
                 />
               </div>
             )}
+          </div>
+
+          {/* Pre-Screening Questions Section */}
+          <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <ListChecks className="w-4 h-4 text-primary" />
+                  <Label className="font-semibold text-xs">Application Screening Questions</Label>
+                  <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                    {selectedQuestionIds.length + customQuestionsList.length} Selected
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Select questions from your Workspace Question Bank or add custom questions to appear on candidate application forms.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddCustomQuestion(!showAddCustomQuestion)}
+                className="h-7 text-xs gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Custom Question
+              </Button>
+            </div>
+
+            {/* Custom Question Creator Form */}
+            {showAddCustomQuestion && (
+              <div className="p-3 bg-card border border-border rounded-lg space-y-2.5 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold">New Custom Question for This Job</span>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowAddCustomQuestion(false)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <Input
+                  placeholder="e.g. How many years of experience do you have with React 18?"
+                  value={customQText}
+                  onChange={(e) => setCustomQText(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                <div className="flex items-center gap-2">
+                  <Select value={customQType} onValueChange={(val: any) => setCustomQType(val)}>
+                    <SelectTrigger className="w-[140px] h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Text Response</SelectItem>
+                      <SelectItem value="choice">Multiple Choice</SelectItem>
+                      <SelectItem value="boolean">Yes / No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {customQType === 'choice' && (
+                    <Input
+                      placeholder="Comma separated options (e.g. 1-2 Yrs, 3-5 Yrs, 5+ Yrs)"
+                      value={customQOptions}
+                      onChange={(e) => setCustomQOptions(e.target.value)}
+                      className="h-7 text-xs flex-1"
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      if (!customQText.trim()) return;
+                      const opts = customQType === 'choice' 
+                        ? customQOptions.split(',').map(s => s.trim()).filter(Boolean)
+                        : (customQType === 'boolean' ? ['Yes', 'No'] : undefined);
+                      const newQ = {
+                        id: `custom-${Date.now()}`,
+                        text: customQText.trim(),
+                        type: customQType,
+                        options: opts
+                      };
+                      setCustomQuestionsList(prev => [...prev, newQ]);
+                      setCustomQText('');
+                      setCustomQOptions('');
+                      setShowAddCustomQuestion(false);
+                    }}
+                    className="h-7 text-xs"
+                  >
+                    Add to Job
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Questions Checklist */}
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 divide-y divide-border/60">
+              {bankQuestions.map((q) => {
+                const isSelected = selectedQuestionIds.includes(q.id);
+                return (
+                  <label 
+                    key={q.id} 
+                    className="pt-1.5 flex items-start gap-2.5 cursor-pointer hover:bg-muted/40 p-1.5 rounded-md transition-colors"
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedQuestionIds(prev => [...prev, q.id]);
+                        } else {
+                          setSelectedQuestionIds(prev => prev.filter(id => id !== q.id));
+                        }
+                      }}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-foreground leading-tight">
+                          {q.text}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] uppercase px-1 py-0 shrink-0 font-mono">
+                          {q.type === 'choice' ? 'Choice' : q.type === 'boolean' ? 'Yes/No' : 'Text'}
+                        </Badge>
+                      </div>
+                      {q.options && q.options.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                          Options: {q.options.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+
+              {/* Custom Questions attached */}
+              {customQuestionsList.map((cq) => (
+                <div key={cq.id} className="pt-1.5 flex items-center justify-between gap-2 p-1.5 rounded-md bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="text-xs font-medium text-foreground truncate">{cq.text}</span>
+                    <Badge variant="secondary" className="text-[9px] uppercase px-1 py-0 shrink-0">
+                      Custom
+                    </Badge>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCustomQuestionsList(prev => prev.filter(q => q.id !== cq.id))}
+                    className="text-muted-foreground hover:text-destructive shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Public Toggle Card */}

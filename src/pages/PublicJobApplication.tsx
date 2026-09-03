@@ -24,9 +24,18 @@ import {
   Clock, 
   Loader2,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  HelpCircle
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function PublicJobApplication() {
   const { clientSlug, jobSlug } = useParams<{ clientSlug: string; jobSlug: string }>();
@@ -55,6 +64,8 @@ export default function PublicJobApplication() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [applicationId, setApplicationId] = useState('');
+  const [jobQuestions, setJobQuestions] = useState<Array<{ id: string; text: string; type: string; options?: string[] }>>([]);
+  const [screeningAnswers, setScreeningAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function loadJobDetails() {
@@ -120,6 +131,17 @@ export default function PublicJobApplication() {
             isPublic: true,
             slug: (jobData as any).slug || (jobData as any).id,
           });
+
+          if ((jobData as any).custom_questions && Array.isArray((jobData as any).custom_questions) && (jobData as any).custom_questions.length > 0) {
+            setJobQuestions((jobData as any).custom_questions);
+          } else {
+            setJobQuestions([
+              { id: 'q-notice', text: 'What is your current notice period?', type: 'choice', options: ['Immediate (0-15 days)', '30 Days', '60 Days', '90 Days'] },
+              { id: 'q-hybrid', text: 'Are you comfortable working in a hybrid / on-site setting?', type: 'boolean', options: ['Yes', 'No'] },
+              { id: 'q-github', text: 'Please share a link to your GitHub or portfolio showcasing relevant projects.', type: 'text' },
+              { id: 'q-ctc', text: 'What is your expected CTC (annual compensation)?', type: 'text' }
+            ]);
+          }
         } else {
           // Fallback demo job
           setJob({
@@ -251,12 +273,11 @@ export default function PublicJobApplication() {
           pipeline_stage: 'applied',
           experience: 4,
           resume_url: resumeUrl,
-          resume_text: `${fullName} - Application for ${job?.title || 'Role'}.\nPhone: ${phone}\nEmail: ${email}\nLinkedIn: ${linkedIn}\nPortfolio: ${portfolio}\nScreening: ${customAnswer}\nCover: ${coverNote}`,
+          resume_text: `${fullName} - Application for ${job?.title || 'Role'}.\nPhone: ${phone}\nEmail: ${email}\nLinkedIn: ${linkedIn}\nPortfolio: ${portfolio}\n${Object.entries(screeningAnswers).map(([k, v]) => `${k}: ${v}`).join('\n')}\nCover: ${coverNote}`,
           custom_answers: {
-            notice_period: noticePeriod,
+            ...screeningAnswers,
             linkedin: linkedIn,
             portfolio: portfolio,
-            screening_answer: customAnswer,
             cover_note: coverNote,
           },
           ai_score: 'high',
@@ -541,19 +562,67 @@ export default function PublicJobApplication() {
                   />
                 </div>
 
-                {/* 6. Custom Question */}
-                <div className="space-y-1">
-                  <Label htmlFor="custom-q" className="text-xs">
-                    Relevant Skills & Project Highlights
-                  </Label>
-                  <Textarea 
-                    id="custom-q"
-                    rows={3}
-                    placeholder="Briefly describe key technologies or products you have shipped..."
-                    value={customAnswer}
-                    onChange={(e) => setCustomAnswer(e.target.value)}
-                  />
-                </div>
+                {/* 6. Dynamic Pre-Screening Questions */}
+                {jobQuestions.length > 0 && (
+                  <div className="pt-2 border-t border-border space-y-3.5">
+                    <div className="flex items-center gap-1.5">
+                      <HelpCircle className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Screening Questions
+                      </span>
+                    </div>
+
+                    {jobQuestions.map((q, idx) => (
+                      <div key={q.id || idx} className="space-y-1.5">
+                        <Label className="text-xs font-medium text-foreground">
+                          {idx + 1}. {q.text}
+                        </Label>
+
+                        {q.type === 'choice' && q.options && q.options.length > 0 ? (
+                          <Select 
+                            value={screeningAnswers[q.text] || ''} 
+                            onValueChange={(val) => setScreeningAnswers(prev => ({ ...prev, [q.text]: val }))}
+                          >
+                            <SelectTrigger className="h-9 text-xs bg-background">
+                              <SelectValue placeholder="Select an option..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {q.options.map((opt) => (
+                                <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : q.type === 'boolean' ? (
+                          <div className="flex items-center gap-2">
+                            {['Yes', 'No'].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setScreeningAnswers(prev => ({ ...prev, [q.text]: opt }))}
+                                className={cn(
+                                  "px-4 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer",
+                                  screeningAnswers[q.text] === opt 
+                                    ? "bg-primary text-primary-foreground border-primary shadow-xs" 
+                                    : "bg-muted/40 hover:bg-muted text-foreground border-border"
+                                )}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <Textarea
+                            rows={2}
+                            placeholder="Type your response here..."
+                            value={screeningAnswers[q.text] || ''}
+                            onChange={(e) => setScreeningAnswers(prev => ({ ...prev, [q.text]: e.target.value }))}
+                            className="text-xs bg-background"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* 7. GDPR Consent & Turnstile Badge */}
                 <div className="pt-2 space-y-3">
