@@ -20,8 +20,11 @@ import {
   Linkedin,
   RefreshCw,
   Globe,
-  Sparkles
+  Sparkles,
+  Star,
+  Trash2
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { PredictiveInsightsPanel } from '@/components/predictive/PredictiveInsightsPanel';
@@ -33,10 +36,24 @@ interface CandidateDetailProps {
   candidate: Candidate;
   job?: Job;
   onClose: () => void;
-  onFeedback: (type: 'good' | 'poor') => void;
+  onFeedback?: (type: 'good' | 'poor') => void;
+  onTogglePin?: (candidateId: string) => void;
+  onBoost?: (candidateId: string) => void;
+  onDemote?: (candidateId: string) => void;
+  onToggleShortlist?: (candidateId: string, isShortlisted: boolean) => void;
+  isAIEnabled?: boolean;
 }
 
-export function CandidateDetail({ candidate, job, onClose, onFeedback }: CandidateDetailProps) {
+export function CandidateDetail({ 
+  candidate, 
+  job, 
+  onClose, 
+  onFeedback,
+  onTogglePin,
+  onBoost,
+  onDemote,
+  onToggleShortlist
+}: CandidateDetailProps) {
   const [feedback, setFeedback] = useState<'good' | 'poor' | null>(candidate.recruiterFeedback || null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const { toast } = useToast();
@@ -50,6 +67,15 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
   const effectiveAIEnabled = isAIEnabled || localAIEnabled;
   const [isReanalyzing, setIsReanalyzing] = useState(false);
 
+  const initialIsShortlisted = Boolean(
+    candidate.isPinned || 
+    (candidate as any).is_pinned || 
+    candidate.status === 'shortlisted' || 
+    (candidate as any).pipeline_stage === 'shortlisted'
+  );
+  const [isShortlisted, setIsShortlisted] = useState<boolean>(initialIsShortlisted);
+  const [updatingShortlist, setUpdatingShortlist] = useState(false);
+
   useEffect(() => {
     setFeedback(candidate.recruiterFeedback || null);
     setShowResumeModal(false);
@@ -59,7 +85,51 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
     setIsSynced(false);
     setLocalAIEnabled(false);
     setIsReanalyzing(false);
-  }, [candidate.id, candidate.name, candidate.recruiterFeedback]);
+    setIsShortlisted(Boolean(
+      candidate.isPinned || 
+      (candidate as any).is_pinned || 
+      candidate.status === 'shortlisted' || 
+      (candidate as any).pipeline_stage === 'shortlisted'
+    ));
+  }, [candidate.id, candidate.name, candidate.recruiterFeedback, candidate.isPinned, candidate.status]);
+
+  const handleToggleShortlist = async () => {
+    const nextState = !isShortlisted;
+    setIsShortlisted(nextState);
+    setUpdatingShortlist(true);
+
+    try {
+      const nextStatus = nextState ? 'shortlisted' : 'pending';
+      await supabase
+        .from('candidates')
+        .update({
+          is_pinned: nextState,
+          status: nextStatus,
+          pipeline_stage: nextStatus,
+        })
+        .eq('id', candidate.id);
+
+      onToggleShortlist?.(candidate.id, nextState);
+      onTogglePin?.(candidate.id);
+
+      toast({
+        title: nextState ? "Added to Shortlist ⭐" : "Removed from Shortlist",
+        description: nextState 
+          ? `${candidate.name} has been added to your shortlist for next interview stage.`
+          : `${candidate.name} has been removed from your shortlist.`,
+      });
+    } catch (err: any) {
+      console.error("Failed to update shortlist status:", err);
+      setIsShortlisted(!nextState);
+      toast({
+        title: "Update Failed",
+        description: err.message || "Could not update shortlist status.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingShortlist(false);
+    }
+  };
 
   const handleSyncLinkedIn = () => {
     if (!linkedinUrl) {
@@ -342,28 +412,64 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
         {/* Footer Actions */}
         <div className="border-t border-border p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
-              <Pin className="w-4 h-4" />
-              Pin
+            <Button 
+              variant={isShortlisted ? "secondary" : "ghost"} 
+              size="sm"
+              onClick={handleToggleShortlist}
+              className={cn("cursor-pointer transition-colors", isShortlisted ? "text-amber-500 font-medium" : "")}
+              title={isShortlisted ? "Unpin candidate" : "Pin candidate"}
+            >
+              <Pin className={cn("w-4 h-4", isShortlisted && "fill-amber-500 text-amber-500")} />
+              {isShortlisted ? "Pinned" : "Pin"}
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onBoost?.(candidate.id)}
+              className="cursor-pointer"
+            >
               <ArrowUp className="w-4 h-4" />
               Boost
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onDemote?.(candidate.id)}
+              className="cursor-pointer"
+            >
               <ArrowDown className="w-4 h-4" />
               Demote
             </Button>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowResumeModal(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowResumeModal(true)} className="cursor-pointer">
               <FileText className="w-4 h-4" />
               View Resume
             </Button>
-            <Button size="sm">
-              Add to Shortlist
-            </Button>
+            {isShortlisted ? (
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={updatingShortlist}
+                onClick={handleToggleShortlist}
+                className="border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40 cursor-pointer transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1 text-rose-500" />
+                Remove from Shortlist
+              </Button>
+            ) : (
+              <Button 
+                variant="default" 
+                size="sm"
+                disabled={updatingShortlist}
+                onClick={handleToggleShortlist}
+                className="bg-primary hover:bg-primary/90 cursor-pointer shadow-sm transition-all"
+              >
+                <Star className="w-3.5 h-3.5 mr-1 fill-white text-white" />
+                Add to Shortlist
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -224,6 +224,15 @@ export default function Shortlisted() {
     setSelectedCandidate(null);
   };
 
+  const handleToggleShortlist = (candidateId: string, isShortlisted: boolean) => {
+    if (!isShortlisted) {
+      setCandidates(prev => prev.filter(c => c.id !== candidateId));
+      setSelectedCandidate(null);
+    } else {
+      setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, isPinned: true, status: 'shortlisted' } : c));
+    }
+  };
+
   const handleFeedback = (type: 'good' | 'poor') => {
     console.log('Feedback:', type, 'for candidate:', selectedCandidate?.id);
   };
@@ -471,6 +480,7 @@ export default function Shortlisted() {
           job={jobs.find(j => j.id === selectedCandidate.jobId)}
           onClose={handleCloseDetail}
           onFeedback={handleFeedback}
+          onToggleShortlist={handleToggleShortlist}
         />
       )}
     </div>
