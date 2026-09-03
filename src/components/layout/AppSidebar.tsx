@@ -99,9 +99,9 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-64 shrink-0 min-w-[16rem] bg-sidebar text-sidebar-foreground flex flex-col h-screen border-r border-sidebar-border select-none">
+    <aside className="w-64 shrink-0 min-w-[16rem] bg-sidebar text-sidebar-foreground flex flex-col h-screen max-h-screen border-r border-sidebar-border select-none overflow-hidden">
       {/* Logo & Tenant Context */}
-      <div className="p-5 border-b border-sidebar-border">
+      <div className="p-4 border-b border-sidebar-border shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <span className="text-sidebar-primary-foreground font-bold text-sm">HS</span>
@@ -198,7 +198,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 p-3">
+      <nav className="flex-1 p-3 overflow-y-auto min-h-0 space-y-1">
         <ul className="space-y-1">
           {navItems.map((item) => (
             <li key={item.id}>
@@ -285,32 +285,32 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
         )}
 
         {/* HireSort AI Badge */}
-        <div className="mt-6 p-3 rounded-lg bg-sidebar-accent/30 border border-sidebar-border">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-sidebar-primary" />
+        <div className="mt-4 p-2.5 rounded-lg bg-sidebar-accent/30 border border-sidebar-border">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-sidebar-primary" />
             <span className="text-xs font-semibold text-sidebar-primary">HireSortAi</span>
           </div>
-          <p className="text-xs text-sidebar-foreground/60 leading-relaxed">
-            AI-assisted resume ranking available on your job postings.
+          <p className="text-[11px] text-sidebar-foreground/60 leading-tight">
+            AI-assisted resume ranking active.
           </p>
         </div>
       </nav>
 
-      {/* Bottom Navigation */}
-      <div className="p-3 border-t border-sidebar-border">
+      {/* Bottom Navigation & User Profile */}
+      <div className="p-3 border-t border-sidebar-border shrink-0 bg-sidebar z-10">
         <ul className="space-y-1">
           {bottomItems.map((item) => (
             <li key={item.id}>
               <button
                 onClick={() => onNavigate(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   currentView === item.id
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 )}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className="w-4 h-4" />
                 {item.label}
               </button>
             </li>
@@ -318,19 +318,23 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
         </ul>
         
         {/* User Info & Logout */}
-        <div className="mt-3 pt-3 border-t border-sidebar-border">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-9 h-9 rounded-full bg-sidebar-primary/20 flex items-center justify-center shrink-0">
+        <div className="mt-2 pt-2 border-t border-sidebar-border">
+          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-sidebar-accent/30">
+            <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center shrink-0">
               <span className="text-xs font-semibold text-sidebar-primary">
                 {profile?.full_name?.split(' ').map(n => n[0]).join('') || (user?.email ? user.email.substring(0, 2).toUpperCase() : 'SR')}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate text-sidebar-foreground">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">{profile?.email || user?.email}</p>
+              <p className="text-xs font-semibold truncate text-sidebar-foreground leading-tight">
+                {profile?.full_name || user?.email?.split('@')[0] || 'User'}
+              </p>
+              <p className="text-[11px] text-sidebar-foreground/60 truncate leading-tight">
+                {profile?.email || user?.email}
+              </p>
               <div className="mt-1">
                 <span className={cn(
-                  "inline-block px-1.5 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wider",
+                  "inline-block px-1.5 py-0.2 text-[9px] font-semibold rounded uppercase tracking-wider",
                   isSuperAdmin 
                     ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" 
                     : isAdmin 
@@ -345,10 +349,10 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="w-full mt-2 text-sidebar-foreground/70 hover:bg-white/10 hover:text-white"
+            className="w-full mt-2 h-8 text-xs text-sidebar-foreground/70 hover:bg-white/10 hover:text-white cursor-pointer"
             onClick={() => signOut()}
           >
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut className="w-3.5 h-3.5 mr-2" />
             Sign Out
           </Button>
         </div>
