@@ -500,6 +500,7 @@ export function HireSortApp() {
         <OnboardingModal
           jobTitle={selectedJob.title}
           candidateCount={selectedJob.candidateCount}
+          isReenabling={Boolean(selectedJob.hireSortEnabled)}
           onEnable={handleConfirmOnboarding}
           onCancel={() => setShowOnboarding(false)}
         />

@@ -658,7 +658,20 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete 
               Delete
             </Button>
 
-            {!job.hireSortEnabled && (
+            {job.hireSortEnabled ? (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEnableHireSort();
+                }}
+              >
+                <Sparkles className="w-4 h-4 mr-1 text-ai-accent" />
+                Re-enable HireSortAi
+              </Button>
+            ) : (
               <Button 
                 variant="ai" 
                 size="sm"
@@ -667,7 +680,7 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete 
                   onEnableHireSort();
                 }}
               >
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4 mr-1" />
                 Enable HireSortAi
               </Button>
             )}

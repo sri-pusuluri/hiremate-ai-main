@@ -4,11 +4,12 @@ import { Sparkles, Shield, Eye, ThumbsUp, X } from 'lucide-react';
 interface OnboardingModalProps {
   jobTitle: string;
   candidateCount: number;
+  isReenabling?: boolean;
   onEnable: () => void;
   onCancel: () => void;
 }
 
-export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }: OnboardingModalProps) {
+export function OnboardingModal({ jobTitle, candidateCount, isReenabling = false, onEnable, onCancel }: OnboardingModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
@@ -27,7 +28,9 @@ export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }
                 <Sparkles className="w-6 h-6 text-ai-accent" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-foreground">Enable HireSortAi</h2>
+                <h2 className="text-xl font-semibold text-foreground">
+                  {isReenabling ? 'Re-enable HireSortAi' : 'Enable HireSortAi'}
+                </h2>
                 <p className="text-sm text-muted-foreground mt-0.5">For: {jobTitle}</p>
               </div>
             </div>
@@ -43,8 +46,8 @@ export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }
         {/* Content */}
         <div className="p-6">
           <p className="text-foreground mb-6">
-            HireSortAi will analyze your <span className="font-semibold">{candidateCount} candidates</span> and 
-            rank them based on how well they match your job description.
+            HireSortAi will {isReenabling ? 're-analyze' : 'analyze'} your <span className="font-semibold">{candidateCount} candidates</span> and 
+            {isReenabling ? ' update their rankings' : ' rank them'} based on how well they match your job description.
           </p>
 
           {/* Trust Messaging - What AI does */}
@@ -110,7 +113,7 @@ export function OnboardingModal({ jobTitle, candidateCount, onEnable, onCancel }
             </Button>
             <Button variant="ai-primary" onClick={onEnable} className="flex-1">
               <Sparkles className="w-4 h-4" />
-              Enable HireSortAi
+              {isReenabling ? 'Re-enable HireSortAi' : 'Enable HireSortAi'}
             </Button>
           </div>
         </div>
