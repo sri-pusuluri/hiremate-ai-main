@@ -121,9 +121,9 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
               };
             })(),
             aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
-            isPinned: c.is_pinned || c.ai_score === 'high' || false,
-            company: c.company || 'Tech Solutions',
-            currentRole: c.current_role || c.currentRole || 'Software Engineer',
+            isPinned: Boolean(c.is_pinned),
+            company: (c as any).company || (c.predictive_insights as any)?.company || 'Independent',
+            currentRole: (c as any).role_title || (c.predictive_insights as any)?.currentRole || c.current_role || 'Software Engineer',
             resumeText: c.resume_text || c.resumeText || '',
             source: c.source || (c.email.length % 3 === 0 ? 'talent-pool' : 'applied')
           }));

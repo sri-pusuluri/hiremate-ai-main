@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/components/ui/ai-badges';
 import { ResumeViewerModal } from './ResumeViewerModal';
 import { AIMatchAnalysis } from './AIMatchAnalysis';
+import { analyzeCandidateWithAI } from '@/lib/ai-screening';
 import {
   X,
   ThumbsUp,
@@ -103,15 +104,42 @@ export function CandidateDetail({ candidate, job, onClose, onFeedback }: Candida
     onFeedback(type);
   };
 
-  const handleReanalyze = () => {
+  const handleReanalyze = async () => {
     setIsReanalyzing(true);
-    setTimeout(() => {
+    try {
+      const result = await analyzeCandidateWithAI(
+        candidate, 
+        job || { id: candidate.jobId || '', title: 'UX UI Design and Front End Engineer', description: 'React, TypeScript, UI/UX design engineering' }
+      );
+      if (result) {
+        candidate.currentRole = result.currentRole;
+        candidate.company = result.company;
+        candidate.experience = result.experience;
+        candidate.aiScore = result.score;
+        candidate.cosineSimilarity = result.similarity;
+        candidate.matchedSkills = result.matchedSkills;
+        candidate.missingSkills = result.missingSkills;
+        if (!candidate.predictiveInsights) candidate.predictiveInsights = {} as any;
+        Object.assign(candidate.predictiveInsights, {
+          interviewPassProb: result.interviewPassProb,
+          offerAcceptanceProb: result.offerAcceptanceProb,
+          onboardingSuccessProb: result.onboardingSuccessProb,
+          retentionRisk: result.retentionRisk,
+          retentionRiskFactor: result.retentionRiskFactor,
+          timeToJoinEstimate: result.timeToJoinEstimate,
+          assessment: result.assessment,
+        });
+
+        toast({
+          title: "AI Analysis Complete ✨",
+          description: `Evaluated ${result.currentRole} at ${Math.round(result.similarity * 100)}% match score.`,
+        });
+      }
+    } catch (err) {
+      console.error("Re-analyze error:", err);
+    } finally {
       setIsReanalyzing(false);
-      toast({
-        title: "Re-analysis Complete",
-        description: `Candidate profile for ${candidate.name} has been re-evaluated against the latest job description.`,
-      });
-    }, 2500);
+    }
   };
 
   return (

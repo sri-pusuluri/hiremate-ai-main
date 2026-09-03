@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { JobDashboard } from '@/components/flows/JobDashboard';
 import { OnboardingModal } from '@/components/flows/OnboardingModal';
+import { analyzeCandidateWithAI } from '@/lib/ai-screening';
 import { ProcessingState } from '@/components/flows/ProcessingState';
 import { RankedCandidatesList } from '@/components/flows/RankedCandidatesList';
 import { CandidateDetail } from '@/components/flows/CandidateDetail';
@@ -337,62 +338,16 @@ export function HireSortApp() {
           })
           .eq('id', jobToProcess.id);
 
-        // 2. Perform mock candidate analysis updates for this job
+        // 2. Perform live AI analysis on all candidates for this job
         const { data: jobCands } = await supabase
           .from('candidates')
-          .select('id, full_name, resume_text')
+          .select('id, full_name, resume_text, resume_url')
           .eq('job_id', jobToProcess.id);
 
         if (jobCands) {
           for (let i = 0; i < jobCands.length; i++) {
             const cand = jobCands[i];
-
-            // Try to analyze with configured LLM directly from browser
-            const analysis = await analyzeCandidateWithLLM(
-              cand.full_name,
-              cand.resume_text || '',
-              jobToProcess.title,
-              jobToProcess.description || ''
-            );
-
-            const score = analysis?.score || (i % 2 === 0 ? 'high' : 'medium');
-            const llmSimilarity = analysis?.similarity || (i % 2 === 0 ? 0.89 - (i * 0.02) : 0.68 - (i * 0.02));
-            const trueMathSimilarity = analysis?.trueCosineSimilarity || llmSimilarity; // Fallback to LLM if vectors failed/unsupported
-            const passProb = analysis?.interviewPassProb || (i % 2 === 0 ? 92 : 68);
-            const acceptProb = analysis?.offerAcceptanceProb || 80;
-            const onboardingSuccess = analysis?.onboardingSuccessProb || (i % 2 === 0 ? 95 : 78);
-            const risk = analysis?.retentionRisk || 'low';
-            const riskFactor = analysis?.retentionRiskFactor || (i % 2 === 0 ? 'Stable 3+ year average tenure' : 'Previous short tenure');
-            const joinEstimate = analysis?.timeToJoinEstimate || (i % 2 === 0 ? '15 days' : '30 days');
-            
-            const aiGenProb = analysis?.aiGeneratedProbability ?? (i % 2 === 0 ? 85 : 15);
-            const aiGenReason = analysis?.aiGeneratedReasoning || (aiGenProb > 50 ? 'Highly structured, generic buzzwords, lacks personal voice.' : 'Natural formatting, personal anecdotes, specific metrics.');
-
-            const textAssessment = analysis?.assessment || `Demo Mode: No AI API key configured in Settings. This is a simulated evaluation.`;
-            const foundSkills = analysis?.matchedSkills || [];
-            const lackSkills = analysis?.missingSkills || [];
-
-            await supabase
-              .from('candidates')
-              .update({
-                ai_score: score,
-                cosine_similarity: trueMathSimilarity,
-                matched_skills: foundSkills,
-                missing_skills: lackSkills,
-                predictive_insights: {
-                  llmGuessedSimilarity: llmSimilarity,
-                  interviewPassProb: passProb,
-                  offerAcceptanceProb: acceptProb,
-                  onboardingSuccessProb: onboardingSuccess,
-                  retentionRisk: risk,
-                  retentionRiskFactor: riskFactor,
-                  timeToJoinEstimate: joinEstimate,
-                  assessment: textAssessment,
-                  aiGeneratedProbability: aiGenProb,
-                  aiGeneratedReasoning: aiGenReason
-                }
-              })
-              .eq('id', cand.id);
+            await analyzeCandidateWithAI(cand, jobToProcess);
           }
         }
 
