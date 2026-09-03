@@ -259,9 +259,7 @@ export function PlatformAdminDashboard({ onNavigate, onSwitchToClientPreview }: 
                 <CartesianGrid strokeDasharray="3 3" opacity={0.15} vertical={false} />
                 <XAxis dataKey="name" fontSize={11} stroke="#94a3b8" />
                 <YAxis allowDecimals={false} fontSize={11} stroke="#94a3b8" />
-                <RechartsTooltip 
-                  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }} 
-                />
+                <RechartsTooltip content={<CustomChartTooltip />} />
                 <Bar dataKey="jobs" fill="#6366f1" radius={[4, 4, 0, 0]} name="Jobs Posted" />
                 <Bar dataKey="candidates" fill="#10b981" radius={[4, 4, 0, 0]} name="Candidates Screened" />
               </BarChart>
@@ -291,9 +289,7 @@ export function PlatformAdminDashboard({ onNavigate, onSwitchToClientPreview }: 
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <RechartsTooltip 
-                  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }} 
-                />
+                <RechartsTooltip content={<CustomChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
               </PieChart>
             </ResponsiveContainer>
@@ -376,4 +372,27 @@ export function PlatformAdminDashboard({ onNavigate, onSwitchToClientPreview }: 
       </div>
     </div>
   );
+}
+
+function CustomChartTooltip({ active, payload, label }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900/95 text-white text-xs p-2.5 rounded-lg border border-slate-700 shadow-xl space-y-1.5 min-w-[140px] backdrop-blur-sm z-50">
+        {label && <p className="font-semibold text-slate-200 border-b border-slate-800 pb-1">{label}</p>}
+        {payload.map((entry: any, index: number) => (
+          <div key={`item-${index}`} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              <span 
+                className="w-2.5 h-2.5 rounded-full shrink-0" 
+                style={{ backgroundColor: entry.color || entry.fill || entry.payload?.fill || '#6366f1' }} 
+              />
+              <span className="text-slate-200 font-medium">{entry.name}:</span>
+            </div>
+            <span className="font-bold text-white ml-2">{entry.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
 }
