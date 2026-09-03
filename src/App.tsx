@@ -29,6 +29,7 @@ const App = () => (
             <Route path="/careers" element={<PublicCareers />} />
             <Route path="/careers/:clientSlug" element={<PublicCareers />} />
             <Route path="/careers/:clientSlug/:jobSlug" element={<PublicJobApplication />} />
+            <Route path="/apply/:jobSlug" element={<PublicJobApplication />} />
             
             {/* Third-Party Responsive iFrame Embed Widgets */}
             <Route path="/embed/job/:jobId" element={<EmbedJobWidget />} />

@@ -37,11 +37,18 @@ export default function EmbedJobWidget() {
       try {
         setLoading(true);
         if (jobId) {
-          const { data } = await supabase
-            .from('jobs')
-            .select('*')
-            .eq('id', jobId)
-            .maybeSingle();
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId || '');
+          let query = supabase.from('jobs').select('*');
+          if (isUUID) {
+            query = query.eq('id', jobId);
+          } else {
+            query = query.eq('slug', jobId);
+          }
+          let { data } = await query.maybeSingle();
+          if (!data && isUUID) {
+            const { data: byId } = await supabase.from('jobs').select('*').eq('id', jobId).maybeSingle();
+            data = byId;
+          }
 
           if (data) {
             setJob({

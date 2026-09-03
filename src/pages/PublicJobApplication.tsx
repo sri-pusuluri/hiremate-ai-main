@@ -78,12 +78,21 @@ export default function PublicJobApplication() {
           });
         }
 
-        // 2. Fetch Job by slug or id
-        const { data: jobData } = await supabase
-          .from('jobs')
-          .select('*')
-          .or(`slug.eq.${jobSlug},id.eq.${jobSlug}`)
-          .maybeSingle();
+        // 2. Fetch Job by slug or id safely without Postgres UUID casting errors
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobSlug || '');
+        let query = supabase.from('jobs').select('*');
+        if (isUUID) {
+          query = query.eq('id', jobSlug);
+        } else {
+          query = query.eq('slug', jobSlug);
+        }
+        let { data: jobData } = await query.maybeSingle();
+
+        // Fallback: if not found by slug, and might be UUID, attempt id lookup
+        if (!jobData && isUUID) {
+          const { data: byId } = await supabase.from('jobs').select('*').eq('id', jobSlug).maybeSingle();
+          jobData = byId;
+        }
 
         if (jobData) {
           setJob({
