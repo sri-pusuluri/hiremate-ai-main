@@ -62,7 +62,8 @@ export interface Job {
   type: 'full-time' | 'part-time' | 'contract';
   postedDate: string;
   screeningEndDate?: string;
-  status: 'active' | 'paused' | 'closed';
+  expiresAt?: string;
+  status: 'active' | 'paused' | 'closed' | 'inactive';
   candidateCount: number;
 
   // Job Description

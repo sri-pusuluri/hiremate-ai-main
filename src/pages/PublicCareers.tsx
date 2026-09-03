@@ -67,7 +67,13 @@ export default function PublicCareers() {
           .order('created_at', { ascending: false });
 
         if (jobsData && jobsData.length > 0) {
-          const mapped: Job[] = jobsData.map((j: any) => ({
+          const mapped: Job[] = jobsData
+            .filter((j: any) => {
+              const isExpired = j.expires_at ? new Date(j.expires_at) < new Date() : false;
+              const isActive = (j.status === 'active' || j.status === 'published' || !j.status) && !isExpired;
+              return isActive;
+            })
+            .map((j: any) => ({
             id: j.id,
             title: j.title,
             department: j.department || 'General',

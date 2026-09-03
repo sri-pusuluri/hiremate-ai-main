@@ -54,6 +54,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [deletingJob, setDeletingJob] = useState(false);
   const [importingSample, setImportingSample] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const { toast } = useToast();
 
   const handleDeleteJob = async () => {
@@ -217,6 +218,13 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             .filter((j: any) => j.title && j.title.trim().length > 0)
             .map((j: any) => {
               const count = candData ? candData.filter((c: any) => c.job_id === j.id).length : 0;
+              const isExpired = j.expires_at ? new Date(j.expires_at) < new Date() : false;
+              const resolvedStatus = isExpired ? 'inactive' : (j.status || 'active');
+
+              if (isExpired && j.status !== 'inactive') {
+                supabase.from('jobs').update({ status: 'inactive' }).eq('id', j.id).then();
+              }
+
               return {
                 id: j.id,
                 title: j.title,
@@ -234,6 +242,8 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 candidateCount: count,
                 isPublic: j.is_public ?? j.isPublic,
                 slug: j.slug,
+                status: resolvedStatus,
+                expiresAt: j.expires_at || undefined,
                 postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
               };
             });
@@ -253,6 +263,53 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
   const handleViewJD = (job: Job) => {
     setSelectedJobForJD(job);
     setShowJDModal(true);
+  };
+
+  const handleToggleJobStatus = async (job: Job) => {
+    const isCurrentlyActive = job.status === 'active' || job.status === 'published' || !job.status;
+    const nextStatus = isCurrentlyActive ? 'inactive' : 'active';
+
+    // If reactivating an expired job, extend expiry by 30 days
+    const isExpired = job.expiresAt ? new Date(job.expiresAt) < new Date() : false;
+    const nextExpiresAt = (!isCurrentlyActive && isExpired)
+      ? new Date(Date.now() + 30 * 86400000).toISOString()
+      : job.expiresAt;
+
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({
+          status: nextStatus,
+          expires_at: nextExpiresAt || null,
+        })
+        .eq('id', job.id);
+
+      if (error) throw error;
+
+      setJobs(prev => prev.map(j => {
+        if (j.id === job.id) {
+          return {
+            ...j,
+            status: nextStatus,
+            expiresAt: nextExpiresAt,
+          };
+        }
+        return j;
+      }));
+
+      toast({
+        title: nextStatus === 'active' ? '🟢 Job Posting Activated' : '🔴 Job Marked Inactive',
+        description: nextStatus === 'active'
+          ? `"${job.title}" is now active and published for applications.`
+          : `"${job.title}" is now inactive. Candidate applications are closed.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Status Update Failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleImportSample = async () => {
@@ -425,6 +482,36 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         </div>
       </div>
 
+      {/* Status Filter Tabs */}
+      <div className="flex items-center gap-2 mb-4 bg-muted/40 p-1 rounded-lg w-fit border border-border">
+        <Button
+          variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setStatusFilter('all')}
+          className="text-xs h-7 px-3"
+        >
+          All Postings ({jobs.length})
+        </Button>
+        <Button
+          variant={statusFilter === 'active' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setStatusFilter('active')}
+          className="text-xs h-7 px-3 text-emerald-600 dark:text-emerald-400"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
+          Active ({jobs.filter(j => (j.status === 'active' || j.status === 'published' || !j.status) && !(j.expiresAt && new Date(j.expiresAt) < new Date())).length})
+        </Button>
+        <Button
+          variant={statusFilter === 'inactive' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setStatusFilter('inactive')}
+          className="text-xs h-7 px-3 text-rose-600 dark:text-rose-400"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5" />
+          Inactive / Expired ({jobs.filter(j => j.status === 'inactive' || j.status === 'closed' || (j.expiresAt && new Date(j.expiresAt) < new Date())).length})
+        </Button>
+      </div>
+
       {/* Jobs Grid / Empty State */}
       {jobs.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-lg border border-dashed border-border p-8">
@@ -452,20 +539,29 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         </div>
       ) : (
         <div className="grid gap-4">
-          {jobs.map((job) => (
-            <JobCard 
-              key={job.id} 
-              job={job} 
-              onSelect={() => onSelectJob(job)}
-              onEnableHireSort={() => onEnableHireSort(job)}
-              onViewJD={() => handleViewJD(job)}
-              onEmbed={() => {
-                setSelectedJobForEmbed(job);
-                setShowEmbedModal(true);
-              }}
-              onDelete={() => setJobToDelete(job)}
-            />
-          ))}
+          {jobs
+            .filter(j => {
+              const isExp = j.expiresAt ? new Date(j.expiresAt) < new Date() : false;
+              const isAct = (j.status === 'active' || j.status === 'published' || !j.status) && !isExp;
+              if (statusFilter === 'active') return isAct;
+              if (statusFilter === 'inactive') return !isAct;
+              return true;
+            })
+            .map((job) => (
+              <JobCard 
+                key={job.id} 
+                job={job} 
+                onSelect={() => onSelectJob(job)}
+                onEnableHireSort={() => onEnableHireSort(job)}
+                onViewJD={() => handleViewJD(job)}
+                onToggleStatus={() => handleToggleJobStatus(job)}
+                onEmbed={() => {
+                  setSelectedJobForEmbed(job);
+                  setShowEmbedModal(true);
+                }}
+                onDelete={() => setJobToDelete(job)}
+              />
+            ))}
         </div>
       )}
 
@@ -530,9 +626,13 @@ interface JobCardProps {
   onViewJD: () => void;
   onEmbed: () => void;
   onDelete: () => void;
+  onToggleStatus: () => void;
 }
 
-function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete }: JobCardProps) {
+function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete, onToggleStatus }: JobCardProps) {
+  const isExpired = job.expiresAt ? new Date(job.expiresAt) < new Date() : false;
+  const isActive = (job.status === 'active' || job.status === 'published' || !job.status) && !isExpired;
+
   const getAIStatusDisplay = () => {
     if (!job.hireSortEnabled) {
       return null;
@@ -569,18 +669,43 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete 
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 hover:shadow-card-hover transition-all duration-200 group">
+    <div className={cn(
+      "bg-card border rounded-xl p-5 hover:shadow-card-hover transition-all duration-200 group",
+      isActive ? "border-border" : "border-border/60 opacity-85 bg-muted/20"
+    )}>
       <div className="flex items-start justify-between gap-4">
         {/* Left: Job Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h3 className="text-lg font-semibold text-foreground truncate">
               {job.title}
             </h3>
+
+            {/* Status Badge & Interactive Toggle Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus();
+              }}
+              className={cn(
+                "px-2.5 py-0.5 text-[11px] font-semibold rounded-full border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs",
+                isActive 
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300" 
+                  : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300"
+              )}
+              title={isActive ? "Click to manually make job Inactive" : "Click to Reactivate job"}
+            >
+              <span className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-emerald-500" : "bg-rose-500")} />
+              {isActive ? "Active" : isExpired ? "Expired / Inactive" : "Inactive"}
+              <span className="text-[9px] opacity-70 underline ml-0.5 font-normal">
+                {isActive ? "(Set Inactive)" : "(Reactivate)"}
+              </span>
+            </button>
+
             {job.hireSortEnabled && <AIBadge size="sm" />}
             {job.isPublic && (
-              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 flex items-center gap-1 font-medium">
-                <Globe className="w-3 h-3" /> Public Listing
+              <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 flex items-center gap-1 font-medium">
+                <Globe className="w-3 h-3" /> Public Careers
               </Badge>
             )}
           </div>
@@ -598,10 +723,13 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete 
               <Calendar className="w-4 h-4" />
               Posted {job.postedDate}
             </span>
-            {job.screeningEndDate && (
-              <span className="flex items-center gap-1.5">
+            {job.expiresAt && (
+              <span className={cn(
+                "flex items-center gap-1.5",
+                isExpired ? "text-rose-600 dark:text-rose-400 font-semibold" : "text-muted-foreground"
+              )}>
                 <Clock className="w-4 h-4" />
-                Screening ends {job.screeningEndDate}
+                {isExpired ? `Expired on ${new Date(job.expiresAt).toLocaleDateString()}` : `Expires ${new Date(job.expiresAt).toLocaleDateString()}`}
               </span>
             )}
             <button 

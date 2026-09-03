@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Briefcase, Globe, Sparkles } from 'lucide-react';
+import { Plus, Briefcase, Globe, Sparkles, Clock } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -47,6 +47,13 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
     isPublic: true,
   });
 
+  const [activePeriod, setActivePeriod] = useState<'15' | '30' | '60' | '90' | 'custom' | 'unlimited'>('30');
+  const [customExpiryDate, setCustomExpiryDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
+
   const handleTitleChange = (title: string) => {
     setFormData(prev => ({ ...prev, title }));
   };
@@ -69,6 +76,14 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '') + `-${Math.random().toString(36).substring(2, 6)}`;
 
+      let expiresAt: string | null = null;
+      if (activePeriod === 'custom' && customExpiryDate) {
+        expiresAt = new Date(`${customExpiryDate}T23:59:59Z`).toISOString();
+      } else if (activePeriod !== 'unlimited') {
+        const days = parseInt(activePeriod, 10);
+        expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+      }
+
       const newJobRecord = {
         title: formData.title,
         department: formData.department,
@@ -82,6 +97,7 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
         hire_sort_enabled: true,
         ai_processing_status: 'idle',
         status: 'active',
+        expires_at: expiresAt,
         responsibilities: [
           'Lead feature development across the stack',
           'Collaborate with product and design to craft intuitive UX',
@@ -124,6 +140,7 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
         niceToHave: (data as any).nice_to_have || [],
         hireSortEnabled: true,
         status: (data as any).status || 'active',
+        expiresAt: (data as any).expires_at || undefined,
         postedDate: new Date().toISOString().split('T')[0],
         candidateCount: 0,
         isPublic: (data as any).is_public,
@@ -263,6 +280,50 @@ export function CreateJobModal({ open, onOpenChange, onJobCreated }: CreateJobMo
               jobTitle={formData.title}
               minHeight="170px"
             />
+          </div>
+
+          {/* Active Time Period / Expiry Setting */}
+          <div className="p-3.5 rounded-lg border border-border bg-muted/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <Label className="font-semibold text-xs">Active Time Period / Auto-Expiry</Label>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Job will automatically become Inactive after this period.
+                </p>
+              </div>
+              <Select 
+                value={activePeriod} 
+                onValueChange={(val: any) => setActivePeriod(val)}
+              >
+                <SelectTrigger className="w-[170px] h-8 text-xs bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 Days Active</SelectItem>
+                  <SelectItem value="30">30 Days Active</SelectItem>
+                  <SelectItem value="60">60 Days Active</SelectItem>
+                  <SelectItem value="90">90 Days Active</SelectItem>
+                  <SelectItem value="custom">Custom End Date</SelectItem>
+                  <SelectItem value="unlimited">No Expiry (Open Ended)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {activePeriod === 'custom' && (
+              <div className="flex items-center gap-2 pt-2 border-t border-border">
+                <Label className="text-xs text-muted-foreground shrink-0">Auto-Inactive Date:</Label>
+                <Input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={customExpiryDate}
+                  onChange={(e) => setCustomExpiryDate(e.target.value)}
+                  className="h-8 text-xs bg-background"
+                />
+              </div>
+            )}
           </div>
 
           {/* Public Toggle Card */}
