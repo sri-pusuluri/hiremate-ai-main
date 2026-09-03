@@ -32,7 +32,7 @@ const Index = () => {
   const getPageConfig = () => {
     switch (currentView) {
       case 'dashboard':
-        return { title: 'Dashboard', subtitle: 'Overview of your hiring pipeline', component: <Dashboard /> };
+        return { title: 'Dashboard', subtitle: 'Overview of your hiring pipeline', component: <Dashboard onNavigate={setCurrentView} /> };
       case 'jobs':
         return { title: 'Jobs & ATS', subtitle: 'Manage job postings, publishing, and screening questions', component: <HireSortApp /> };
       case 'candidates':
