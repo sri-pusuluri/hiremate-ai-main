@@ -23,8 +23,19 @@ import {
   Loader2,
   Code2,
   Plus,
-  Globe
+  Globe,
+  Trash2
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 interface JobDashboardProps {
@@ -40,8 +51,41 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
   const [selectedJobForEmbed, setSelectedJobForEmbed] = useState<Job | null>(null);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
+  const [deletingJob, setDeletingJob] = useState(false);
   const [importingSample, setImportingSample] = useState(false);
   const { toast } = useToast();
+
+  const handleDeleteJob = async () => {
+    if (!jobToDelete) return;
+    setDeletingJob(true);
+    try {
+      // 1. Delete associated candidates first
+      await supabase.from('candidates').delete().eq('job_id', jobToDelete.id);
+
+      // 2. Delete the job from Supabase
+      const { error } = await supabase.from('jobs').delete().eq('id', jobToDelete.id);
+      if (error) throw error;
+
+      // 3. Update state
+      setJobs(prev => prev.filter(j => j.id !== jobToDelete.id));
+
+      toast({
+        title: 'Job Deleted',
+        description: `"${jobToDelete.title || 'Job'}" has been permanently removed.`,
+      });
+      setJobToDelete(null);
+    } catch (err: any) {
+      console.error('Delete job error:', err);
+      toast({
+        title: 'Failed to Delete Job',
+        description: err.message || 'Could not delete the job.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingJob(false);
+    }
+  };
 
   const seedDefaultJobsIfEmpty = async () => {
     try {
@@ -393,6 +437,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 setSelectedJobForEmbed(job);
                 setShowEmbedModal(true);
               }}
+              onDelete={() => setJobToDelete(job)}
             />
           ))}
         </div>
@@ -423,6 +468,31 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
           setJobs(prev => [newJob, ...prev]);
         }}
       />
+
+      {/* Delete Job Confirmation Dialog */}
+      <AlertDialog open={!!jobToDelete} onOpenChange={(open) => !open && setJobToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Delete Job Posting?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>"{jobToDelete?.title || 'this role'}"</strong>? This will permanently remove the job posting, its public careers listing, and all associated candidate records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingJob}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteJob}
+              disabled={deletingJob}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {deletingJob ? 'Deleting...' : 'Delete Job'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -433,9 +503,10 @@ interface JobCardProps {
   onEnableHireSort: () => void;
   onViewJD: () => void;
   onEmbed: () => void;
+  onDelete: () => void;
 }
 
-function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed }: JobCardProps) {
+function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete }: JobCardProps) {
   const getAIStatusDisplay = () => {
     if (!job.hireSortEnabled) {
       return null;
@@ -545,6 +616,20 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed }: JobCard
             >
               <Code2 className="w-4 h-4 mr-1 text-primary" />
               Embed & Share
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              title="Delete Job"
+            >
+              <Trash2 className="w-4 h-4 mr-1 text-destructive/80" />
+              Delete
             </Button>
 
             {!job.hireSortEnabled && (
