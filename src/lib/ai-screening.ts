@@ -18,19 +18,27 @@ export interface AIAnalysisResult {
   assessment: string;
 }
 
-// Fallback known resume texts for sample candidates if PDF extraction is pending
+// Fallback known resume texts for sample candidates representing diverse score spectrums
 const KNOWN_RESUMES: Record<string, string> = {
-  alex: `Alex Mercer - Senior Full Stack Engineer. 5+ years experience building web applications with React, TypeScript, Next.js, TailwindCSS, Node.js, and modern UI engineering. Led frontend architecture for high-scale enterprise SaaS portals, collaborating with product designers and crafting design systems. Experienced with REST/GraphQL APIs, Jest/Cypress testing, and AWS deployments.`,
+  elena: `Elena Rostova - Lead UI/UX & Frontend Architect. 6+ years experience in React 18, TypeScript, TailwindCSS, Next.js, and design system architecture. Expert bridge between Figma design tokens, WCAG AAA accessibility, and frontend component libraries. Led design system adoption across 12 product teams, built custom Storybook documentation, and cut UI defects by 68%. B.S. in Human-Computer Interaction & CS from University of Washington.`,
+  alex: `Alex Mercer - Senior Full Stack & Frontend Engineer. 5+ years building web applications with React, TypeScript, TailwindCSS, Next.js, Node.js, and modern UI engineering. Led frontend architecture for high-scale enterprise SaaS portals, collaborating with product designers and crafting design systems. Experienced with REST/GraphQL APIs, Jest/Cypress testing, and AWS deployments.`,
+  rohan: `Rohan Mehta - Junior Frontend Web Developer. 2.5 years experience in web development using HTML5, CSS3, JavaScript (ES6+), and basic React.js. Created marketing landing pages, handled basic responsive UI styling with Bootstrap 5 and light Tailwind, and converted basic Figma wireframes to code. Still developing proficiency in advanced TypeScript, component architecture, and design tokens.`,
+  sarah: `Sarah Jenkins - Lead Product Designer & UX Strategist. 6+ years in digital product design, enterprise SaaS design systems, user journey mapping, and wireframing. Master of Figma, design tokens, component variants, and interactive prototyping. Non-programmer with conceptual understanding of HTML/CSS for designer-developer handoff, but no production React or TypeScript coding experience.`,
   david: `David Chen - Staff DevOps & Cloud Infrastructure Engineer. 7+ years experience in AWS, Kubernetes, Terraform, Docker, CI/CD pipelines, Prometheus, Grafana, and Linux system administration. Architected multi-region cloud platforms, automated container deployments, and optimized infrastructure reliability. No hands-on UI/UX design or React frontend experience.`,
+  marcus: `Marcus Vance - Enterprise B2B SaaS Account Executive & Sales Director. 8+ years driving enterprise software revenue, closing 6-figure ARR contracts, managing Fortune 500 strategic partnerships, and hitting 142% quota attainment. Core skills in MEDDPICC, Salesforce CRM, and C-suite negotiations. Completely non-technical, zero software engineering experience.`,
   priya: `Priya Sharma - Lead Product Manager. 6+ years experience in B2B SaaS and AI product roadmapping, user research, wireframing, agile sprint management, and data-driven customer discovery. Partnered with engineering and design teams to launch enterprise software features. Strong business strategy, metrics, and stakeholder alignment. Non-developer background.`
 };
 
 export async function extractResumeText(candidateName: string, resumeUrl?: string | null, rawResumeText?: string | null): Promise<string> {
   const lower = (candidateName || '').toLowerCase();
   
-  if (lower.includes('alex')) return KNOWN_RESUMES.alex;
-  if (lower.includes('david')) return KNOWN_RESUMES.david;
-  if (lower.includes('priya')) return KNOWN_RESUMES.priya;
+  if (lower.includes('elena') || lower.includes('rostova')) return KNOWN_RESUMES.elena;
+  if (lower.includes('alex') || lower.includes('mercer')) return KNOWN_RESUMES.alex;
+  if (lower.includes('rohan') || lower.includes('mehta')) return KNOWN_RESUMES.rohan;
+  if (lower.includes('sarah') || lower.includes('jenkins')) return KNOWN_RESUMES.sarah;
+  if (lower.includes('david') || lower.includes('chen')) return KNOWN_RESUMES.david;
+  if (lower.includes('marcus') || lower.includes('vance')) return KNOWN_RESUMES.marcus;
+  if (lower.includes('priya') || lower.includes('sharma')) return KNOWN_RESUMES.priya;
 
   if (rawResumeText && rawResumeText.length > 150) {
     return rawResumeText;

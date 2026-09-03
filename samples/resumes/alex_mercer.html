@@ -3,75 +3,59 @@
 <head>
 <meta charset="utf-8">
 <style>
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.5; color: #222; margin: 40px; }
-  h1 { margin: 0 0 4px 0; font-size: 26px; color: #111; }
-  .contact { font-size: 13px; color: #555; margin-bottom: 20px; border-bottom: 2px solid #2563eb; padding-bottom: 8px; }
-  h2 { font-size: 16px; color: #2563eb; text-transform: uppercase; margin: 16px 0 6px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
-  .job { margin-bottom: 12px; }
-  .job-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
-  .job-title { color: #1e293b; }
-  .job-date { color: #64748b; font-size: 12px; }
-  .job-company { color: #475569; font-style: italic; font-size: 13px; margin-bottom: 4px; }
-  ul { margin: 4px 0 10px 20px; padding: 0; font-size: 13px; }
+  @page { size: letter; margin: 20mm; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b; line-height: 1.5; margin: 0; padding: 24px; background: #ffffff; }
+  .name { font-size: 26px; font-weight: 700; color: #0284c7; margin: 0; }
+  .tagline { font-size: 14px; font-weight: 600; color: #475569; margin-top: 2px; }
+  .contact { font-size: 11.5px; color: #64748b; margin: 6px 0 16px 0; border-bottom: 2px solid #0284c7; padding-bottom: 8px; }
+  h2 { font-size: 13px; font-weight: 700; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px 0; border-bottom: 1px solid #e0f2fe; padding-bottom: 4px; }
+  p { font-size: 12.5px; color: #334155; margin: 4px 0; }
+  .skills-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; }
+  .job { margin-bottom: 14px; }
+  .job-title-row { font-size: 13px; font-weight: bold; color: #0f172a; }
+  .job-sub { font-size: 11.5px; color: #0284c7; margin-bottom: 4px; }
+  ul { margin: 4px 0 0 18px; padding: 0; font-size: 12px; color: #334155; }
   li { margin-bottom: 3px; }
-  .skills-list { font-size: 13px; }
-  .skills-list strong { color: #1e293b; }
 </style>
 </head>
 <body>
-  <h1>Alex Mercer</h1>
-  <div class="contact">
-    Email: alex.mercer@email.dev &bull; Phone: +1 (555) 019-9482 &bull; Location: San Francisco, CA (Remote) &bull; LinkedIn: linkedin.com/in/alexmercer
-  </div>
+  <h1 class="name">Alex Mercer</h1>
+  <div class="tagline">Senior Full Stack Engineer (React, TypeScript & Web Architecture)</div>
+  <div class="contact">Email: alex.mercer@techsolutions.dev | Phone: +1 (555) 019-9482 | Location: San Francisco, CA | GitHub: github.com/alexmercer</div>
 
-  <h2>Professional Summary</h2>
-  <p style="font-size: 13px; margin: 0 0 12px 0;">
-    Results-driven Senior Full Stack Engineer with 5+ years of experience architecting high-scale web platforms. Expert in React, TypeScript, Node.js, and PostgreSQL. Passionate about performant UX, generative AI integrations, and developer productivity.
+  <h2>Executive Summary</h2>
+  <p>
+    Accomplished Senior Full Stack Engineer with 5+ years of experience delivering robust web applications using React, TypeScript, TailwindCSS, and Node.js. Experienced in designing responsive user interfaces, integrating backend microservices, and optimizing frontend performance.
   </p>
 
-  <h2>Technical Skills</h2>
-  <div class="skills-list">
-    <p><strong>Languages:</strong> TypeScript, JavaScript, Python, SQL, HTML5, CSS3</p>
-    <p><strong>Frontend:</strong> React 18, Next.js, Redux Toolkit, Tailwind CSS, Vite, Jest</p>
-    <p><strong>Backend:</strong> Node.js, Express, Fastify, RESTful APIs, GraphQL</p>
-    <p><strong>Databases & Cloud:</strong> PostgreSQL, Redis, Supabase, AWS (S3, ECS), Docker</p>
+  <h2>Technical Toolset</h2>
+  <div class="skills-box">
+    <strong>Frontend:</strong> React 18, TypeScript, Tailwind CSS, Next.js, Redux Toolkit, HTML5/CSS3, Vite<br>
+    <strong>Backend:</strong> Node.js, Express, Fastify, REST APIs, GraphQL, PostgreSQL<br>
+    <strong>Testing & CI:</strong> Jest, React Testing Library, Cypress, GitHub Actions, Docker
   </div>
 
-  <h2>Professional Experience</h2>
+  <h2>Employment History</h2>
   <div class="job">
-    <div class="job-header">
-      <span class="job-title">Senior Full Stack Engineer</span>
-      <span class="job-date">June 2023 - Present</span>
-    </div>
-    <div class="job-company">TechSolutions Inc. &bull; Remote</div>
+    <div class="job-title-row">Senior Full Stack Engineer — TechSolutions Inc. (2022 – Present)</div>
+    <div class="job-sub">San Francisco, CA (Remote)</div>
     <ul>
-      <li>Architected enterprise analytics dashboard with React and TypeScript, boosting load performance by 42%.</li>
-      <li>Designed and deployed secure REST APIs handling 3M+ monthly transactions with 99.98% uptime.</li>
-      <li>Integrated Supabase real-time subscriptions and optimized PostgreSQL indexing, decreasing query latency by 60ms.</li>
-      <li>Mentored 4 junior engineers and instituted automated GitHub Actions testing pipelines.</li>
+      <li>Built high-throughput customer dashboard using React, TypeScript, and TailwindCSS, reducing latency by 42%.</li>
+      <li>Implemented responsive UI designs collaborated with product designers, improving mobile usage by 28%.</li>
+      <li>Spearheaded unit testing coverage from 45% to 88% using Jest and React Testing Library.</li>
     </ul>
   </div>
 
   <div class="job">
-    <div class="job-header">
-      <span class="job-title">Software Engineer</span>
-      <span class="job-date">January 2021 - May 2023</span>
-    </div>
-    <div class="job-company">CodeLab LLC &bull; Austin, TX</div>
+    <div class="job-title-row">Full Stack Developer — CloudNova Solutions (2019 – 2022)</div>
+    <div class="job-sub">Austin, TX</div>
     <ul>
-      <li>Built responsive, accessible UI components in React and Tailwind CSS matching design systems.</li>
-      <li>Migrated legacy Express services to typed TypeScript microservices.</li>
-      <li>Collaborated cross-functionally with Product and Design teams to ship monthly major releases.</li>
+      <li>Developed responsive web portals using React, JavaScript (ES6+), and CSS3 Flexbox/Grid.</li>
+      <li>Integrated RESTful APIs and PostgreSQL databases for over 20,000 daily active users.</li>
     </ul>
   </div>
 
   <h2>Education</h2>
-  <div class="job">
-    <div class="job-header">
-      <span class="job-title">B.S. in Computer Science</span>
-      <span class="job-date">2017 - 2021</span>
-    </div>
-    <div class="job-company">University of California, Berkeley</div>
-  </div>
+  <p><strong>B.S. in Computer Science</strong>, University of Texas at Austin (2019)</p>
 </body>
 </html>
