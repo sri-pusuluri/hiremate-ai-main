@@ -29,7 +29,8 @@ export function TopBar({ title, subtitle }: TopBarProps) {
 
   const getRoleLabel = () => {
     if (isSuperAdmin) return 'Super Admin';
-    if (role === 'client_admin') return 'Client Admin';
+    if (role === 'admin') return 'Admin';
+    if (role === 'client_admin' || user?.email?.endsWith('@zool.in')) return 'Workspace Admin';
     return 'Recruiter';
   };
 

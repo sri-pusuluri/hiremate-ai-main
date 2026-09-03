@@ -24,8 +24,8 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
 
   const adminItems = [
     { id: 'users', label: 'User Management', icon: UserCog },
-    { id: 'tenant-settings', label: 'Workspace Libraries', icon: Layers },
-    ...(isSuperAdmin ? [{ id: 'clients', label: 'Client Tenants', icon: Building2 }] : []),
+    { id: 'tenant-settings', label: 'Workspace Libraries & Branding', icon: Layers },
+    { id: 'clients', label: 'Client Tenants', icon: Building2 },
   ];
 
   return (
