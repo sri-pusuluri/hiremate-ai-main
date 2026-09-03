@@ -9,6 +9,7 @@ import UserManagement from './UserManagement';
 import Settings from './Settings';
 import ClientManagement from './ClientManagement';
 import TenantSettings from './TenantSettings';
+import Reports from './Reports';
 import { HireSortApp } from '@/components/HireSortApp';
 import { Loader2 } from 'lucide-react';
 
@@ -38,6 +39,8 @@ const Index = () => {
         return { title: undefined, subtitle: undefined, component: <Candidates /> };
       case 'shortlisted':
         return { title: undefined, subtitle: undefined, component: <Shortlisted /> };
+      case 'reports':
+        return { title: 'Reports & Analytics', subtitle: 'Candidate selection, AI match analysis, and pipeline reports', component: <Reports /> };
       case 'users':
         return { title: 'User Management', subtitle: 'Manage team members and client roles', component: <UserManagement /> };
       case 'tenant-settings':

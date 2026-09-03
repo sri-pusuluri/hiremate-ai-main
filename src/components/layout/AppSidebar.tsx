@@ -13,7 +13,8 @@ import {
   Layers,
   ChevronsUpDown,
   Check,
-  Plus
+  Plus,
+  BarChart3
 } from 'lucide-react';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { ClientTenant } from '@/types/hiresort';
@@ -38,6 +39,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'jobs', label: 'Jobs & ATS', icon: Briefcase },
   { id: 'shortlisted', label: 'Shortlisted', icon: Star },
+  { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
 ];
 
 const bottomItems = [
