@@ -116,6 +116,51 @@ export default function TenantSettings() {
     }
   }, [client]);
 
+  // Fetch libraries for active client
+  useEffect(() => {
+    async function loadLibraries() {
+      if (!clientId) return;
+      try {
+        // Departments
+        const { data: deptData } = await supabase
+          .from('departments')
+          .select('name')
+          .eq('client_id', clientId)
+          .order('name');
+        if (deptData && deptData.length > 0) {
+          setDepartments(deptData.map(d => d.name));
+        }
+
+        // Positions
+        const { data: posData } = await supabase
+          .from('positions')
+          .select('title')
+          .eq('client_id', clientId)
+          .order('title');
+        if (posData && posData.length > 0) {
+          setPositions(posData.map(p => p.title));
+        }
+
+        // Questions
+        const { data: qData } = await supabase
+          .from('question_bank')
+          .select('id, question_text, question_type, options')
+          .eq('client_id', clientId);
+        if (qData && qData.length > 0) {
+          setQuestionBank(qData.map(q => ({
+            id: q.id,
+            text: q.question_text,
+            type: q.question_type as any,
+            options: q.options ? (Array.isArray(q.options) ? q.options : JSON.parse(q.options as any)) : undefined
+          })));
+        }
+      } catch (err) {
+        console.error('Error loading libraries from Supabase:', err);
+      }
+    }
+    loadLibraries();
+  }, [clientId]);
+
   const handleSaveBranding = async () => {
     setSavingBranding(true);
     try {
@@ -154,48 +199,76 @@ export default function TenantSettings() {
     }
   };
 
-  const handleAddDepartment = () => {
-    if (!newDepartment.trim()) return;
-    if (departments.includes(newDepartment.trim())) {
+  const handleAddDepartment = async () => {
+    const val = newDepartment.trim();
+    if (!val) return;
+    if (departments.includes(val)) {
       toast({ title: 'Already exists', description: 'Department is already in library.' });
       return;
     }
-    setDepartments(prev => [...prev, newDepartment.trim()]);
+    setDepartments(prev => [...prev, val]);
     setNewDepartment('');
-    toast({ title: 'Department Added', description: `${newDepartment} added to library.` });
+    if (clientId) {
+      await supabase.from('departments').insert({ client_id: clientId, name: val });
+    }
+    toast({ title: 'Department Added', description: `${val} added to library.` });
   };
 
-  const handleDeleteDepartment = (dept: string) => {
+  const handleDeleteDepartment = async (dept: string) => {
     setDepartments(prev => prev.filter(d => d !== dept));
+    if (clientId) {
+      await supabase.from('departments').delete().eq('client_id', clientId).eq('name', dept);
+    }
     toast({ title: 'Department Removed' });
   };
 
-  const handleAddPosition = () => {
-    if (!newPosition.trim()) return;
-    if (positions.includes(newPosition.trim())) {
+  const handleAddPosition = async () => {
+    const val = newPosition.trim();
+    if (!val) return;
+    if (positions.includes(val)) {
       toast({ title: 'Already exists', description: 'Position is already in library.' });
       return;
     }
-    setPositions(prev => [...prev, newPosition.trim()]);
+    setPositions(prev => [...prev, val]);
     setNewPosition('');
-    toast({ title: 'Position Added', description: `${newPosition} added to library.` });
+    if (clientId) {
+      await supabase.from('positions').insert({ client_id: clientId, title: val });
+    }
+    toast({ title: 'Position Added', description: `${val} added to library.` });
   };
 
-  const handleDeletePosition = (pos: string) => {
+  const handleDeletePosition = async (pos: string) => {
     setPositions(prev => prev.filter(p => p !== pos));
+    if (clientId) {
+      await supabase.from('positions').delete().eq('client_id', clientId).eq('title', pos);
+    }
     toast({ title: 'Position Removed' });
   };
 
-  const handleAddQuestion = () => {
+  const handleAddQuestion = async () => {
     if (!newQuestionText.trim()) return;
     const options = newQuestionType === 'choice' 
       ? newQuestionOptions.split(',').map(s => s.trim()).filter(Boolean)
       : undefined;
 
+    const val = newQuestionText.trim();
+    const type = newQuestionType;
+
+    let insertedId = `q-${Date.now()}`;
+    if (clientId) {
+      const { data } = await supabase.from('question_bank').insert({
+        client_id: clientId,
+        question_text: val,
+        question_type: type,
+        options: options || null
+      }).select().single();
+      if (data) insertedId = data.id;
+    }
+
     const newItem = {
-      id: `q-${Date.now()}`,
-      text: newQuestionText.trim(),
-      type: newQuestionType,
+      id: insertedId,
+      text: val,
+      type: type,
       options,
     };
 
@@ -206,8 +279,11 @@ export default function TenantSettings() {
     toast({ title: 'Question Added', description: 'Pre-screening question added to bank.' });
   };
 
-  const handleDeleteQuestion = (id: string) => {
+  const handleDeleteQuestion = async (id: string) => {
     setQuestionBank(prev => prev.filter(q => q.id !== id));
+    if (clientId && !id.startsWith('q-')) {
+      await supabase.from('question_bank').delete().eq('id', id);
+    }
     toast({ title: 'Question Removed' });
   };
 
