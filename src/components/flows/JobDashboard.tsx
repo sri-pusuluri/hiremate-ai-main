@@ -26,7 +26,10 @@ import {
   Plus,
   Globe,
   Trash2,
-  Building2
+  Building2,
+  Pencil,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -54,6 +57,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
   const [selectedJobForEmbed, setSelectedJobForEmbed] = useState<Job | null>(null);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState<Job | null>(null);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [deletingJob, setDeletingJob] = useState(false);
   const [importingSample, setImportingSample] = useState(false);
@@ -254,6 +258,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 slug: j.slug,
                 status: resolvedStatus,
                 expiresAt: j.expires_at || undefined,
+                customQuestions: j.custom_questions || [],
                 postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
               };
             });
@@ -327,12 +332,25 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
     setImportingSample(true);
     setLoading(true);
     try {
-      // Only import the last 2 jobs (Full Stack Developer and Marketing Manager) via the webhook sync simulation
-      const importedJobs = samplePayload.jobs.slice(3);
-      const importedCandidates = samplePayload.candidates.filter(c => 
+      // Generate unique UUIDs per workspace if importing into a custom tenant
+      const isDefaultTenant = !clientId || clientId === DEFAULT_ZOOL_CLIENT.id;
+      const idMap = new Map<string, string>();
+
+      const rawJobs = samplePayload.jobs.slice(3);
+      const importedJobs = rawJobs.map(job => {
+        const targetId = isDefaultTenant ? job.id : crypto.randomUUID();
+        idMap.set(job.id, targetId);
+        return { ...job, id: targetId };
+      });
+
+      const rawCandidates = samplePayload.candidates.filter(c => 
         c.job_id === 'e98c56c2-0731-482a-bc91-236b2f42a11b' ||
         c.job_id === 'f87b45b1-0620-471a-ab80-125a1e31a00a'
       );
+      const importedCandidates = rawCandidates.map(c => ({
+        ...c,
+        job_id: idMap.get(c.job_id) || c.job_id
+      }));
 
       // 1. Ingest Jobs
       for (const job of importedJobs) {
@@ -429,7 +447,8 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             hireSortEnabled: j.hire_sort_enabled,
             aiProcessingStatus: j.ai_processing_status,
             lastRankedAt: j.last_ranked_at,
-            candidateCount: count
+            candidateCount: count,
+            customQuestions: j.custom_questions || []
           };
         });
         setJobs(mappedJobs);
@@ -505,6 +524,54 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             <Plus className="w-4 h-4" />
             Post New Job
           </Button>
+        </div>
+      </div>
+
+      {/* Public Careers Portal Quick Bar */}
+      <div className="mb-6 p-4 rounded-xl border border-border bg-card shadow-xs flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Globe className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-foreground">Careers Portal URL:</span>
+              <span className="text-xs font-mono bg-muted/80 text-primary px-2.5 py-0.5 rounded border border-border/80 select-all font-semibold">
+                {window.location.origin}/careers/{client?.slug || 'zool'}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Live candidate career portal for {client?.name || 'this workspace'}. Share this link with applicants or embed on your website.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/careers/${client?.slug || 'zool'}`);
+              toast({
+                title: 'Portal Link Copied',
+                description: `Copied ${window.location.origin}/careers/${client?.slug || 'zool'} to clipboard.`,
+              });
+            }}
+            className="h-8 text-xs gap-1.5"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            Copy Portal Link
+          </Button>
+
+          <a
+            href={`/careers/${client?.slug || 'zool'}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Open Careers Portal
+          </a>
         </div>
       </div>
 
@@ -585,6 +652,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                   setSelectedJobForEmbed(job);
                   setShowEmbedModal(true);
                 }}
+                onEdit={() => setJobToEdit(job)}
                 onDelete={() => setJobToDelete(job)}
               />
             ))}
@@ -608,12 +676,21 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         }}
       />
 
-      {/* Create Job Modal */}
+      {/* Create / Edit Job Modal */}
       <CreateJobModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+        open={showCreateModal || !!jobToEdit}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateModal(false);
+            setJobToEdit(null);
+          }
+        }}
+        jobToEdit={jobToEdit}
         onJobCreated={(newJob) => {
           setJobs(prev => [newJob, ...prev]);
+        }}
+        onJobUpdated={(updatedJob) => {
+          setJobs(prev => prev.map(j => j.id === updatedJob.id ? updatedJob : j));
         }}
       />
 
@@ -653,9 +730,10 @@ interface JobCardProps {
   onEmbed: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
+  onEdit: () => void;
 }
 
-function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete, onToggleStatus }: JobCardProps) {
+function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete, onToggleStatus, onEdit }: JobCardProps) {
   const isExpired = job.expiresAt ? new Date(job.expiresAt) < new Date() : false;
   const isActive = (job.status === 'active' || job.status === 'published' || !job.status) && !isExpired;
 
@@ -785,6 +863,20 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="text-muted-foreground hover:text-foreground hover:bg-primary/10"
+              title="Edit Job Details & Screening Questions"
+            >
+              <Pencil className="w-4 h-4 mr-1 text-primary" />
+              Edit
+            </Button>
+
             <Button 
               variant="ghost" 
               size="sm"

@@ -72,16 +72,28 @@ export default function PublicCareers() {
           });
         }
 
-        // 2. Fetch Public Jobs & Candidates
-        const { data: jobsData } = await supabase
+        // 2. Fetch Public Jobs & Candidates scoped to this tenant
+        let jobsQuery = supabase
           .from('jobs')
           .select('*')
           .eq('is_public', true)
           .order('created_at', { ascending: false });
 
-        const { data: candsData } = await supabase
+        if (clientData?.id) {
+          jobsQuery = jobsQuery.eq('client_id', clientData.id);
+        }
+
+        const { data: jobsData } = await jobsQuery;
+
+        let candQuery = supabase
           .from('candidates')
           .select('id, full_name, email, job_id, created_at, status, pipeline_stage, experience');
+
+        if (clientData?.id) {
+          candQuery = candQuery.eq('client_id', clientData.id);
+        }
+
+        const { data: candsData } = await candQuery;
 
         if (candsData) {
           setCandidatesData(candsData);
@@ -115,48 +127,7 @@ export default function PublicCareers() {
             });
           setJobs(mapped);
         } else {
-          // Fallback demo public jobs
-          setJobs([
-            {
-              id: 'demo-1',
-              title: 'Senior Frontend Engineer',
-              department: 'Engineering',
-              location: 'Bangalore, India (Hybrid)',
-              type: 'full-time',
-              salary: '₹30-45 LPA',
-              description: 'Own our high-scale web products with React 18, TypeScript, and modern UI engineering.',
-              postedDate: '2026-02-15',
-              candidateCount: 14,
-              isPublic: true,
-              slug: 'senior-frontend-engineer',
-            },
-            {
-              id: 'demo-2',
-              title: 'Product Manager - AI Platform',
-              department: 'Product',
-              location: 'Remote / Bangalore',
-              type: 'full-time',
-              salary: '₹28-40 LPA',
-              description: 'Drive generative AI features and predictive matching capabilities for our enterprise customers.',
-              postedDate: '2026-02-18',
-              candidateCount: 22,
-              isPublic: true,
-              slug: 'product-manager-ai',
-            },
-            {
-              id: 'demo-3',
-              title: 'Talent Acquisition Specialist',
-              department: 'Human Resources',
-              location: 'Bangalore, India',
-              type: 'full-time',
-              salary: '₹14-20 LPA',
-              description: 'Lead candidate outreach, interviews, and partner directly with hiring managers.',
-              postedDate: '2026-02-22',
-              candidateCount: 9,
-              isPublic: true,
-              slug: 'talent-acquisition-specialist',
-            }
-          ]);
+          setJobs([]);
         }
       } catch (err) {
         console.error('Error loading public careers:', err);
@@ -210,7 +181,7 @@ export default function PublicCareers() {
       if (observer) observer.disconnect();
       window.removeEventListener('resize', notifyParentHeight);
     };
-  }, [isEmbedMode, jobs, filteredJobs, loading, selectedJobForCandidates, slug]);
+  }, [isEmbedMode, jobs, filteredJobs, loading, slug]);
 
   return (
     <div className={isEmbedMode ? "bg-background text-foreground flex flex-col p-4 font-sans" : "min-h-screen bg-background text-foreground flex flex-col"}>
