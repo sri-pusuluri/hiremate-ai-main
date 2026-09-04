@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 type TabType = 'all' | 'applied' | 'talent-pool';
@@ -70,6 +71,7 @@ const candidateUuidMap: Record<string, string> = {
 };
 
 export default function Candidates() {
+  const { client, clientId } = useAuth();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const { toast } = useToast();
@@ -78,19 +80,26 @@ export default function Candidates() {
   useEffect(() => {
     async function loadData() {
       try {
-        const { data: dbJobs } = await supabase.from('jobs').select('*');
-        const { data: dbCandidates } = await supabase.from('candidates').select('*');
+        setLoadingData(true);
+        let jobQuery = supabase.from('jobs').select('*');
+        if (clientId) {
+          jobQuery = jobQuery.eq('client_id', clientId);
+        }
+        const { data: dbJobs } = await jobQuery;
+        const tenantJobIds = (dbJobs || []).map((j: any) => j.id);
 
-        const mappedMockJobs = mockJobs.map(j => ({
-          ...j,
-          id: jobUuidMap[j.id] || j.id
-        }));
+        let candQuery = supabase.from('candidates').select('*');
+        if (clientId) {
+          candQuery = candQuery.eq('client_id', clientId);
+        }
+        const { data: rawCandidates } = await candQuery;
 
-        const mappedMockCandidates = mockCandidates.map(c => ({
-          ...c,
-          id: candidateUuidMap[c.id] || c.id,
-          jobId: jobUuidMap[c.jobId] || c.jobId
-        }));
+        // Ensure we only show candidates belonging to this tenant or this tenant's jobs
+        const dbCandidates = (rawCandidates || []).filter((c: any) => {
+          if (c.client_id && clientId) return c.client_id === clientId;
+          if (c.job_id && tenantJobIds.length > 0) return tenantJobIds.includes(c.job_id);
+          return false;
+        });
 
         if (dbJobs && dbJobs.length > 0) {
           const mappedJobs = dbJobs.map((j: any) => ({
@@ -164,7 +173,7 @@ export default function Candidates() {
       }
     }
     loadData();
-  }, []);
+  }, [clientId]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterScore, setFilterScore] = useState<string>('all');

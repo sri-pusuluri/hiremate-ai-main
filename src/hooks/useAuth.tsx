@@ -45,7 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [client, setClient] = useState<ClientTenant | null>(DEFAULT_ZOOL_CLIENT);
+  const [client, setClientState] = useState<ClientTenant | null>(() => {
+    try {
+      const saved = localStorage.getItem('hiresort_active_tenant');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return DEFAULT_ZOOL_CLIENT;
+  });
+
+  const setClient = (newClient: ClientTenant | null) => {
+    setClientState(newClient);
+    try {
+      if (newClient) {
+        localStorage.setItem('hiresort_active_tenant', JSON.stringify(newClient));
+      } else {
+        localStorage.removeItem('hiresort_active_tenant');
+      }
+    } catch (e) {}
+  };
+
   const [profile, setProfile] = useState<AuthContextType['profile']>(null);
   const [loading, setLoading] = useState(true);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
@@ -236,6 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setClient(DEFAULT_ZOOL_CLIENT);
       setNeedsPasswordReset(false);
+      localStorage.removeItem('hiresort_active_tenant');
       
       // Force clear Supabase local storage tokens just in case the API call failed
       Object.keys(localStorage).forEach(key => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Job } from '@/types/hiresort';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AIBadge } from '@/components/ui/ai-badges';
@@ -24,7 +25,8 @@ import {
   Code2,
   Plus,
   Globe,
-  Trash2
+  Trash2,
+  Building2
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -44,6 +46,7 @@ interface JobDashboardProps {
 }
 
 export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProps) {
+  const { client, clientId } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJobForJD, setSelectedJobForJD] = useState<Job | null>(null);
@@ -117,7 +120,8 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             nice_to_have: job.niceToHave || [],
             hire_sort_enabled: true,
             ai_processing_status: 'complete',
-            last_ranked_at: new Date().toISOString()
+            last_ranked_at: new Date().toISOString(),
+            client_id: DEFAULT_ZOOL_CLIENT.id
           });
       }
 
@@ -150,6 +154,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             resume_text: cand.resume_text,
             skills: cand.resume_text.match(/Skills: (.*)/)?.[1]?.split(', ') || [],
             matched_skills: cand.resume_text.match(/Skills: (.*)/)?.[1]?.split(', ')?.slice(0, 3) || [],
+            client_id: DEFAULT_ZOOL_CLIENT.id,
             predictive_insights: {
               interviewPassProb: score === 'high' ? 92 : (score === 'medium' ? 78 : 45),
               offerAcceptanceProb: score === 'high' ? 88 : (score === 'medium' ? 70 : 50),
@@ -169,12 +174,17 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
   useEffect(() => {
     async function fetchJobs() {
       try {
-        let { data: jobData } = await supabase.from('jobs').select('*');
+        setLoading(true);
+        let query = supabase.from('jobs').select('*');
+        if (clientId) {
+          query = query.eq('client_id', clientId);
+        }
+        let { data: jobData } = await query;
         
-        // Auto-seed default jobs if database starts empty
-        if (!jobData || jobData.length === 0) {
+        // Auto-seed default jobs ONLY if on default Zool tenant and it has 0 jobs
+        if ((!jobData || jobData.length === 0) && clientId === DEFAULT_ZOOL_CLIENT.id) {
           await seedDefaultJobsIfEmpty();
-          const { data: reloaded } = await supabase.from('jobs').select('*');
+          const { data: reloaded } = await supabase.from('jobs').select('*').eq('client_id', clientId);
           jobData = reloaded;
         }
 
@@ -252,13 +262,14 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
           setJobs([]);
         }
       } catch (err) {
-        console.error("Error loading jobs in dashboard:", err);
+        console.error("Failed fetching jobs:", err);
       } finally {
         setLoading(false);
       }
     }
+
     fetchJobs();
-  }, []);
+  }, [clientId]);
 
   const handleViewJD = (job: Job) => {
     setSelectedJobForJD(job);
@@ -339,7 +350,8 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             responsibilities: job.responsibilities || [],
             nice_to_have: job.niceToHave || [],
             hire_sort_enabled: false,
-            ai_processing_status: 'pending'
+            ai_processing_status: 'pending',
+            client_id: clientId || DEFAULT_ZOOL_CLIENT.id
           });
 
         if (jobError) throw jobError;
@@ -365,7 +377,8 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
               full_name: cand.full_name,
               email: cand.email,
               experience: cand.experience || 0,
-              ai_score: 'medium'
+              ai_score: 'medium',
+              client_id: clientId || DEFAULT_ZOOL_CLIENT.id
             })
             .select()
             .single();
@@ -391,8 +404,12 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         description: `Imported ${importedJobs.length} Jobs and ${importedCandidates.length} Candidates to Supabase.`
       });
 
-      // Reload jobs
-      const { data: jobData } = await supabase.from('jobs').select('*');
+      // Reload jobs for current tenant
+      let reloadQuery = supabase.from('jobs').select('*');
+      if (clientId) {
+        reloadQuery = reloadQuery.eq('client_id', clientId);
+      }
+      const { data: jobData } = await reloadQuery;
       const { data: candData } = await supabase.from('candidates').select('job_id');
       
       if (jobData && jobData.length > 0) {
@@ -423,19 +440,20 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       console.error("Import sample failed:", err);
       toast({
         title: "Import Failed",
-        description: err.message || "Could not complete import.",
-        variant: "destructive"
+        description: err.message || "Failed to import sample jobs",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
       setImportingSample(false);
+      setLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-[500px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-muted-foreground animate-pulse text-sm">Loading active jobs...</p>
         </div>
       </div>
@@ -447,9 +465,17 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       {/* Page Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-foreground mb-1">Active Jobs & ATS</h2>
+          <div className="flex items-center gap-2.5 mb-1">
+            <h2 className="text-2xl font-semibold text-foreground">Active Jobs & ATS</h2>
+            {client && (
+              <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/30 text-primary bg-primary/5 font-medium">
+                <Building2 className="w-3 h-3 mr-1" />
+                {client.name}
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">
-            Manage your job postings, candidate pipelines, and public web embed listings
+            Manage your job postings, candidate pipelines, and public web embed listings for {client?.name || 'this workspace'}
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -516,9 +542,9 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       {jobs.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-lg border border-dashed border-border p-8">
           <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-1">No Active Jobs Yet</h3>
+          <h3 className="text-lg font-medium text-foreground mb-1">No Active Jobs for {client?.name || 'this Workspace'}</h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
-            You can post a new custom job opening with ATS screening questions, or import sample data instantly.
+            This workspace is brand new. Post a new custom job opening with ATS screening questions, or import sample data to get started.
           </p>
           <div className="flex items-center justify-center gap-3">
             <Button 
