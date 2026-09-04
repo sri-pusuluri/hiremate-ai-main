@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HireSort Careers — Responsive Iframe Embed Example</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: #94a3b8;
+    }
+    /* Embed Container */
+    .hiresort-embed-container {
+      width: 100%;
+      background: transparent;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .hiresort-embed-container iframe {
+      width: 100%;
+      min-height: 600px;
+      border: none;
+      display: block;
+      transition: height 0.25s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>Work with Zool</h1>
+      <p>Explore current career opportunities and apply directly below.</p>
+    </div>
+
+    <!-- Handoff Snippet: Copy and paste this into any web page or CMS -->
+    <div class="hiresort-embed-container">
+      <iframe 
+        id="hiresort-careers-iframe"
+        src="http://localhost:8080/embed/careers/zool?theme=dark" 
+        title="Careers at Zool"
+        loading="lazy"
+      ></iframe>
+    </div>
+  </div>
+
+  <script>
+    // Automatic Dynamic Height Synchronization
+    // Resizes the iframe dynamically when job cards filter or drawer opens
+    window.addEventListener('message', function (event) {
+      if (event.data && event.data.type === 'HIRESORT_RESIZE' && typeof event.data.height === 'number') {
+        var iframe = document.getElementById('hiresort-careers-iframe');
+        if (iframe && event.data.height > 100) {
+          iframe.style.height = event.data.height + 'px';
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>

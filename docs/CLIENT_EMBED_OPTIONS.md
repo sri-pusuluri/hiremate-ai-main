@@ -19,15 +19,17 @@ Currently, active jobs and candidate counts are displayed in two distinct locati
 
 ---
 
-## 2. Comparison Matrix
+## 2. Comparison Summary Table
 
-| Option | Maintenance Location | Framework Agnostic? | Implementation Effort | Client Integration Complexity | Styling Isolation | Real-time Updates |
+| Option | Pre-built File in Repo | Target Platforms | Maintenance Overhead | Style Isolation | Setup Time | Client Complexity |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Hosted Responsive Iframe** | 100% ATS Portal | ✅ Yes (Any website) | 🟢 Very Low (1–2 hrs) | 🟢 1 snippet | 🛡️ Perfect (Iframe) | ✅ Instant |
-| **2. Embed Script Tag (Widget)** | 100% ATS Portal | ✅ Yes (Any website) | 🟡 Moderate (3–4 hrs) | 🟢 1 `<script>` tag | 🛡️ Perfect (Shadow/Iframe) | ✅ Instant |
-| **3. Web Component (Custom Element)** | 100% ATS Portal | ✅ Yes (HTML5 native) | 🟡 Moderate | 🟢 Custom HTML tag | 🛡️ Shadow DOM | ✅ Instant |
-| **4. Published NPM Package** | NPM + Client app | ❌ React only | 🟠 Medium | 🟡 `npm install` + updates | ⚠️ Can clash with CSS | ⚠️ Requires `npm update` |
-| **5. Headless REST / Supabase API** | Client handles UI | ✅ Yes (Any frontend) | 🔴 High for Client | 🔴 Full custom build | 🎨 100% Client native | ✅ Instant |
+| **1. Hosted Responsive Iframe** 🏆 | `plugins/iframe/embed-snippet.html` | Any website, HTML, CMS | **Zero** (100% in ATS) | 🛡️ Perfect (Iframe) | 🟢 1 min | 🟢 1 HTML block |
+| **2. Universal `widget.js`** 🏆 | `plugins/widget.js` & `public/widget.js` | Any CMS, WordPress, Webflow | **Zero** (100% in ATS) | 🛡️ Perfect (Auto-resizer) | 🟢 1 min | 🟢 1 `<script>` tag |
+| **3. Web Component** | `plugins/web-component/hiresort-jobs.js` | Modern SPAs, HTML5 | Low | 🛡️ Shadow DOM | 🟡 5 mins | 🟢 Custom HTML element |
+| **4. React Component Wrapper** | `plugins/react/HireSortJobs.tsx` | React 18+, Next.js, Vite | Low | 🛡️ Safe sandbox wrapper | 🟢 2 mins | 🟢 1 React component |
+| **5. Headless REST / Supabase API**| `plugins/headless-api/fetchJobs.ts` | Any custom frontend | 🔴 High (Client builds UI)| 🎨 100% Client native | 🔴 1–2 days | 🔴 Custom UI build |
+| **6. WordPress Plugin & Shortcode**| `plugins/wordpress/hiresort-careers.php`| WordPress 5.0+, Elementor | **Zero** (100% in ATS) | 🛡️ Perfect | 🟢 3 mins | 🟢 `[hiresort_jobs]` |
+
 
 ---
 

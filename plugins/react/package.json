@@ -1,0 +1,21 @@
+{
+  "name": "@hiresort/react",
+  "version": "1.0.0",
+  "description": "Official React wrapper component for HireSort AI Careers Portal",
+  "main": "HireSortJobs.tsx",
+  "types": "HireSortJobs.tsx",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "keywords": [
+    "hiresort",
+    "careers",
+    "jobs",
+    "ats",
+    "react",
+    "widget"
+  ],
+  "author": "HireSort AI",
+  "license": "MIT"
+}

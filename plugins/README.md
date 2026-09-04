@@ -1,35 +1,51 @@
 # HireSort AI — Embed Plugins & Integration Kits
 
-This folder contains ready-to-use plugins and embed adapters that allow any client website to display HireSort career listings with live applicant counters and application forms.
+This directory contains pre-built, production-ready integration packages and widgets allowing any external website or CMS (React, Next.js, WordPress, Webflow, Squarespace, HTML) to display HireSort career listings with live applicant counts, screening questions, and application drawers.
 
 ---
 
-## 📁 Folder Structure
+## 📊 Comparison Summary Table
+
+| Option | Integration Method | Target Platforms | Maintenance Overhead | Style Isolation | Setup Time | Best Used For |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Option 1: Responsive Iframe** 🏆 | `<iframe src="/embed/careers/:slug">` | Any website, HTML, Webflow, WordPress | **Zero** (100% in ATS) | 🛡️ Perfect (Iframe sandbox) | 🟢 1 min | Fastest drop-in for any static or CMS site |
+| **Option 2: Universal `widget.js`** 🏆 | `<script src=".../widget.js">` | Any CMS, WordPress, Webflow, Squarespace | **Zero** (100% in ATS) | 🛡️ Perfect (Auto-resizing iframe) | 🟢 1 min | **Intercom/Calendly-style turnkey embed** |
+| **Option 3: Web Component** | `<hiresort-jobs client="zool">` | Native HTML5 / Modern SPAs | Low | 🛡️ Shadow DOM | 🟡 5 mins | Modern web standards without iframe tags |
+| **Option 4: React Component** | `<HireSortJobs clientSlug="zool" />` | React 18+, Next.js, Vite | Low | 🛡️ Safe sandbox wrapper | 🟢 2 mins | **Drop-in replacement for `zool-website-git`** |
+| **Option 5: Headless API** | `fetchHireSortJobs({ clientSlug })` | Any custom frontend | 🔴 High (Client builds UI) | 🎨 100% Client Native CSS | 🔴 1–2 days | Enterprise teams needing full design custom UI |
+| **Option 6: WordPress Plugin** | `[hiresort_jobs client="zool"]` | WordPress 5.0+ / Elementor / Divi | **Zero** (100% in ATS) | 🛡️ Perfect | 🟢 3 mins | Non-technical WordPress site administrators |
+
+---
+
+## 📁 Directory Structure & Available Files
 
 ```
 plugins/
-├── widget.js                    # 1-line Vanilla JS embed script (Calendly/Stripe style)
-├── README.md                    # Quick start documentation (this file)
-├── wordpress/                   # Installable WordPress Plugin (.zip)
-│   ├── hiresort-careers.php     # Main WP plugin file with settings & shortcode [hiresort_jobs]
-│   └── readme.txt               # WP plugin repository metadata
-├── react/                       # Drop-in React & Next.js component
-│   └── HireSortJobs.tsx         # Auto-resizing iframe wrapper with TypeScript support
-└── web-component/               # Standard W3C custom element
-    └── hiresort-jobs.js         # <hiresort-jobs client="zool" theme="dark"></hiresort-jobs>
+├── README.md                      # Comprehensive comparison & usage guide (this file)
+├── widget.js                      # Option 2: 1-line Universal script tag (also in public/widget.js)
+├── iframe/
+│   └── embed-snippet.html         # Option 1: Standalone responsive iframe template with auto-resizer
+├── react/
+│   ├── HireSortJobs.tsx           # Option 4: Drop-in React/Next.js component wrapper
+│   └── package.json               # Package metadata for @hiresort/react
+├── web-component/
+│   └── hiresort-jobs.js           # Option 3: W3C Custom Element (<hiresort-jobs>)
+├── headless-api/
+│   └── fetchJobs.ts               # Option 5: Supabase / REST client fetcher with live applicant counts
+└── wordpress/
+    ├── hiresort-careers.php       # Option 6: WordPress plugin with Admin Settings & [hiresort_jobs]
+    └── readme.txt                 # WordPress plugin directory readme
 ```
 
 ---
 
-## 1. Universal JavaScript Widget (`widget.js`)
+## 🚀 Usage Guide for Each Option
 
-**Best for:** Any website, HTML landing pages, Webflow, Squarespace, Wix, Framer.
-
-### Usage
-Place this where you want the job board to render:
+### 1. Universal JavaScript Widget (`widget.js`) — *Recommended for All Sites*
+**Path:** [`plugins/widget.js`](./widget.js) / [`public/widget.js`](../public/widget.js)
 
 ```html
-<!-- Container element -->
+<!-- 1. Place container where jobs should appear -->
 <div 
   id="hiresort-careers" 
   data-client="zool" 
@@ -37,35 +53,44 @@ Place this where you want the job board to render:
   data-ats-url="https://app.hiresort.ai"
 ></div>
 
-<!-- Turnkey Script -->
+<!-- 2. Include the turnkey script -->
 <script src="https://app.hiresort.ai/widget.js" async></script>
+```
+* **How it works:** Automatically mounts an iframe pointing to `/embed/careers/:clientSlug` and listens for `HIRESORT_RESIZE` postMessages so height scales dynamically with zero scrollbars.
+
+---
+
+### 2. Standalone Responsive Iframe Embed
+**Path:** [`plugins/iframe/embed-snippet.html`](./iframe/embed-snippet.html)
+
+```html
+<div style="width: 100%; max-width: 1100px; margin: 0 auto;">
+  <iframe 
+    id="hiresort-iframe"
+    src="https://app.hiresort.ai/embed/careers/zool?theme=dark" 
+    width="100%" 
+    height="650px" 
+    style="border: none; border-radius: 12px; overflow: hidden; display: block;" 
+    title="Careers at Zool"
+    loading="lazy"
+  ></iframe>
+</div>
+
+<script>
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'HIRESORT_RESIZE' && e.data.height > 100) {
+      document.getElementById('hiresort-iframe').style.height = e.data.height + 'px';
+    }
+  });
+</script>
 ```
 
 ---
 
-## 2. WordPress Plugin (`plugins/wordpress/`)
+### 3. React / Next.js Component Wrapper
+**Path:** [`plugins/react/HireSortJobs.tsx`](./react/HireSortJobs.tsx)
 
-**Best for:** WordPress blogs, corporate sites, Elementor, and WooCommerce.
-
-### Features
-* Admin settings screen under **Settings > HireSort Careers**.
-* Configure company slug (`zool`), default theme (`dark` / `light`), and ATS host URL.
-* Use shortcode `[hiresort_jobs]` in any post, page, or widget.
-* Override slug or theme per page: `[hiresort_jobs client="zool" theme="light"]`.
-
-### Installation
-1. Zip the `wordpress/` folder as `hiresort-careers.zip`.
-2. In WordPress Admin, navigate to **Plugins > Add New > Upload Plugin**.
-3. Activate the plugin and configure under **Settings > HireSort Careers**.
-
----
-
-## 3. React / Next.js Component (`plugins/react/HireSortJobs.tsx`)
-
-**Best for:** Client web apps built with React 18+, Vite, or Next.js (such as `zool-website-git`).
-
-### Usage
-Copy `HireSortJobs.tsx` into your client project:
+Ideal for replacing direct Supabase queries in client apps like `zool-website-git`:
 
 ```tsx
 import { HireSortJobs } from './HireSortJobs';
@@ -73,7 +98,7 @@ import { HireSortJobs } from './HireSortJobs';
 export default function CareersPage() {
   return (
     <div className="max-w-6xl mx-auto py-12 px-4">
-      <h1 className="text-3xl font-bold mb-6">Open Roles</h1>
+      <h1 className="text-3xl font-bold mb-6">Open Opportunities</h1>
       <HireSortJobs clientSlug="zool" theme="dark" />
     </div>
   );
@@ -82,16 +107,48 @@ export default function CareersPage() {
 
 ---
 
-## 4. Web Component (`plugins/web-component/hiresort-jobs.js`)
+### 4. Official WordPress Plugin
+**Path:** [`plugins/wordpress/hiresort-careers.php`](./wordpress/hiresort-careers.php)
 
-**Best for:** HTML5 native integration with Shadow DOM.
+1. Compress the `plugins/wordpress/` folder into `hiresort-careers.zip`.
+2. Go to **WordPress Admin > Plugins > Add New > Upload Plugin**.
+3. Activate the plugin.
+4. Go to **Settings > HireSort Careers** to configure your company slug and theme.
+5. In any page, post, or Elementor widget, type:
+   ```text
+   [hiresort_jobs]
+   ```
+   Or override parameters:
+   ```text
+   [hiresort_jobs client="zool" theme="light" height="750px"]
+   ```
 
-### Usage
+---
+
+### 5. Web Component (`<hiresort-jobs>`)
+**Path:** [`plugins/web-component/hiresort-jobs.js`](./web-component/hiresort-jobs.js)
+
 ```html
 <script type="module" src="https://app.hiresort.ai/plugins/web-component/hiresort-jobs.js"></script>
 
-<hiresort-jobs 
-  client="zool" 
-  theme="dark"
-></hiresort-jobs>
+<hiresort-jobs client="zool" theme="dark"></hiresort-jobs>
+```
+
+---
+
+### 6. Headless API Data Fetcher
+**Path:** [`plugins/headless-api/fetchJobs.ts`](./headless-api/fetchJobs.ts)
+
+For engineering teams that demand 100% custom UI control:
+
+```ts
+import { fetchHireSortJobs } from './fetchJobs';
+
+const jobs = await fetchHireSortJobs({
+  clientSlug: 'zool',
+  includeApplicantCounts: true
+});
+
+console.log(jobs);
+// Returns active, non-expired jobs with computed `candidateCount`
 ```
