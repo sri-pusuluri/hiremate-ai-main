@@ -20,7 +20,9 @@ import {
   UploadCloud,
   Terminal,
   ArrowRight,
-  Coins
+  Coins,
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { mockJobs, mockCandidates } from '@/data/mockData';
@@ -376,17 +378,36 @@ export default function Settings() {
     }
   };
 
+  const handleClearLocalKeys = () => {
+    localStorage.removeItem('openai_api_key');
+    localStorage.removeItem('gemini_api_key');
+    localStorage.removeItem('claude_api_key');
+    setOpenaiKey('');
+    setGeminiKey('');
+    setClaudeKey('');
+    toast({
+      title: 'Local Keys Cleared',
+      description: 'Custom browser keys removed. The system will use secure server-side Edge Functions.',
+    });
+  };
+
   const handleSaveAISettings = () => {
     localStorage.setItem('ai_provider', aiProvider);
-    localStorage.setItem('gemini_api_key', geminiKey);
-    localStorage.setItem('openai_api_key', openaiKey);
-    localStorage.setItem('claude_api_key', claudeKey);
+    if (geminiKey.trim()) localStorage.setItem('gemini_api_key', geminiKey.trim());
+    else localStorage.removeItem('gemini_api_key');
+
+    if (openaiKey.trim()) localStorage.setItem('openai_api_key', openaiKey.trim());
+    else localStorage.removeItem('openai_api_key');
+
+    if (claudeKey.trim()) localStorage.setItem('claude_api_key', claudeKey.trim());
+    else localStorage.removeItem('claude_api_key');
+
     localStorage.setItem('gemini_model', selectedGeminiModel);
     localStorage.setItem('openai_model', selectedOpenAIModel);
     localStorage.setItem('claude_model', selectedClaudeModel);
     toast({
       title: 'AI Settings Saved',
-      description: 'Your API preferences, models, and keys have been updated.',
+      description: 'Your AI provider preferences and models have been updated.',
     });
   };
 
@@ -696,10 +717,21 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <Separator />
+                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-emerald-400 text-sm">Server-Side Security (Recommended)</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Production candidate screenings run securely on the server via Supabase Edge Functions with encrypted backend secrets.
+                        You do not need to store API keys in your browser unless you are conducting isolated local client experiments.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground">AI Engine & API Keys</h3>
+                  <h3 className="text-sm font-semibold text-foreground">AI Engine & API Keys (Optional Local Override)</h3>
 
                   <div className="space-y-2">
                     <Label htmlFor="aiProvider">Select AI Provider</Label>
@@ -822,7 +854,17 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleClearLocalKeys}
+                  className="text-rose-500 hover:text-rose-600 border-rose-500/30 hover:bg-rose-500/10 text-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Clear Browser Keys
+                </Button>
+
                 <Button onClick={handleSaveAISettings}>
                   <Check className="w-4 h-4 mr-2" />
                   Save Settings
