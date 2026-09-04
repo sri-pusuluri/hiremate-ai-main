@@ -178,6 +178,40 @@ export default function PublicCareers() {
     return matchesSearch && matchesDept;
   });
 
+  // Automatically broadcast height to host website (WordPress, React, HTML) when in embed mode
+  useEffect(() => {
+    if (!isEmbedMode || typeof window === 'undefined' || window === window.parent) return;
+
+    const notifyParentHeight = () => {
+      const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+      window.parent.postMessage({
+        type: 'HIRESORT_RESIZE',
+        height: Math.max(scrollHeight, 450),
+        clientSlug: slug
+      }, '*');
+    };
+
+    // Immediate calculation + delay to catch layout reflow
+    notifyParentHeight();
+    const timer = setTimeout(notifyParentHeight, 250);
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        notifyParentHeight();
+      });
+      observer.observe(document.body);
+    }
+
+    window.addEventListener('resize', notifyParentHeight);
+
+    return () => {
+      clearTimeout(timer);
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', notifyParentHeight);
+    };
+  }, [isEmbedMode, jobs, filteredJobs, loading, selectedJobForCandidates, slug]);
+
   return (
     <div className={isEmbedMode ? "bg-background text-foreground flex flex-col p-4 font-sans" : "min-h-screen bg-background text-foreground flex flex-col"}>
       {/* Header: Compact Widget in Embed Mode vs Full Brand Hero Header */}
