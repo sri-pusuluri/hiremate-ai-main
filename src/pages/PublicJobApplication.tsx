@@ -25,7 +25,8 @@ import {
   Loader2,
   Calendar,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Globe
 } from 'lucide-react';
 import {
   Select,
@@ -136,9 +137,10 @@ export default function PublicJobApplication() {
             setJobQuestions((jobData as any).custom_questions);
           } else {
             setJobQuestions([
-              { id: 'q-notice', text: 'What is your current notice period?', type: 'choice', options: ['Immediate (0-15 days)', '30 Days', '60 Days', '90 Days'] },
+              { id: 'q-notice', text: 'What is your current notice period?', type: 'choice', options: ['Immediate (0 - 15 days)', '30 Days', '60 Days', '90 Days'] },
+              { id: 'q-joining', text: 'What is your earliest possible joining date?', type: 'date' },
               { id: 'q-hybrid', text: 'Are you comfortable working in a hybrid / on-site setting?', type: 'boolean', options: ['Yes', 'No'] },
-              { id: 'q-github', text: 'Please share a link to your GitHub or portfolio showcasing relevant projects.', type: 'text' },
+              { id: 'q-github', text: 'Please share a link to your GitHub or portfolio showcasing relevant projects.', type: 'url' },
               { id: 'q-ctc', text: 'What is your expected CTC (annual compensation)?', type: 'text' }
             ]);
           }
@@ -572,55 +574,129 @@ export default function PublicJobApplication() {
                       </span>
                     </div>
 
-                    {jobQuestions.map((q, idx) => (
-                      <div key={q.id || idx} className="space-y-1.5">
-                        <Label className="text-xs font-medium text-foreground">
-                          {idx + 1}. {q.text}
-                        </Label>
+                    {jobQuestions.map((q, idx) => {
+                      const qTextLower = q.text.toLowerCase();
+                      const isDateField = q.type === 'date' || 
+                        qTextLower.includes('joining date') || 
+                        qTextLower.includes('start date') || 
+                        qTextLower.includes('date of');
 
-                        {q.type === 'choice' && q.options && q.options.length > 0 ? (
-                          <Select 
-                            value={screeningAnswers[q.text] || ''} 
-                            onValueChange={(val) => setScreeningAnswers(prev => ({ ...prev, [q.text]: val }))}
-                          >
-                            <SelectTrigger className="h-9 text-xs bg-background">
-                              <SelectValue placeholder="Select an option..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {q.options.map((opt) => (
-                                <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : q.type === 'boolean' ? (
-                          <div className="flex items-center gap-2">
-                            {['Yes', 'No'].map((opt) => (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => setScreeningAnswers(prev => ({ ...prev, [q.text]: opt }))}
-                                className={cn(
-                                  "px-4 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer",
-                                  screeningAnswers[q.text] === opt 
-                                    ? "bg-primary text-primary-foreground border-primary shadow-xs" 
-                                    : "bg-muted/40 hover:bg-muted text-foreground border-border"
-                                )}
-                              >
-                                {opt}
-                              </button>
-                            ))}
+                      const isUrlField = q.type === 'url' || 
+                        qTextLower.includes('github') || 
+                        qTextLower.includes('portfolio') || 
+                        qTextLower.includes('website') ||
+                        qTextLower.includes('profile link');
+
+                      const isShortTextField = q.type === 'text' && (
+                        qTextLower.includes('ctc') ||
+                        qTextLower.includes('salary') ||
+                        qTextLower.includes('compensation') ||
+                        qTextLower.includes('notice period') ||
+                        qTextLower.includes('how many years') ||
+                        qTextLower.includes('phone')
+                      );
+
+                      const isLongTextArea = q.type === 'textarea' || (
+                        q.type === 'text' && !isShortTextField && !isDateField && !isUrlField && (
+                          qTextLower.includes('describe') ||
+                          qTextLower.includes('why') ||
+                          qTextLower.includes('project') ||
+                          qTextLower.includes('tell us')
+                        )
+                      );
+
+                      return (
+                        <div key={q.id || idx} className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs font-medium text-foreground">
+                              {idx + 1}. {q.text}
+                            </Label>
+                            {isDateField && (
+                              <Badge variant="outline" className="text-[10px] font-mono text-primary bg-primary/5 border-primary/20 px-1.5 py-0">
+                                Date
+                              </Badge>
+                            )}
+                            {isUrlField && (
+                              <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground px-1.5 py-0">
+                                Link
+                              </Badge>
+                            )}
                           </div>
-                        ) : (
-                          <Textarea
-                            rows={2}
-                            placeholder="Type your response here..."
-                            value={screeningAnswers[q.text] || ''}
-                            onChange={(e) => setScreeningAnswers(prev => ({ ...prev, [q.text]: e.target.value }))}
-                            className="text-xs bg-background"
-                          />
-                        )}
-                      </div>
-                    ))}
+
+                          {q.type === 'choice' && q.options && q.options.length > 0 ? (
+                            <Select 
+                              value={screeningAnswers[q.text] || ''} 
+                              onValueChange={(val) => setScreeningAnswers(prev => ({ ...prev, [q.text]: val }))}
+                            >
+                              <SelectTrigger className="h-9 text-xs bg-background">
+                                <SelectValue placeholder="Select an option..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {q.options.map((opt) => (
+                                  <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : q.type === 'boolean' ? (
+                            <div className="flex items-center gap-2">
+                              {['Yes', 'No'].map((opt) => (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onClick={() => setScreeningAnswers(prev => ({ ...prev, [q.text]: opt }))}
+                                  className={cn(
+                                    "px-4 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer",
+                                    screeningAnswers[q.text] === opt 
+                                      ? "bg-primary text-primary-foreground border-primary shadow-xs" 
+                                      : "bg-muted/40 hover:bg-muted text-foreground border-border"
+                                  )}
+                                >
+                                  {opt}
+                                </button>
+                              ))}
+                            </div>
+                          ) : isDateField ? (
+                            <div className="relative">
+                              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                              <Input
+                                type="date"
+                                min={new Date().toISOString().split('T')[0]}
+                                value={screeningAnswers[q.text] || ''}
+                                onChange={(e) => setScreeningAnswers(prev => ({ ...prev, [q.text]: e.target.value }))}
+                                className="pl-9 h-9 text-xs bg-background cursor-pointer"
+                              />
+                            </div>
+                          ) : isUrlField ? (
+                            <div className="relative">
+                              <Globe className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                              <Input
+                                type="url"
+                                placeholder={(q as any).placeholder || "https://..."}
+                                value={screeningAnswers[q.text] || ''}
+                                onChange={(e) => setScreeningAnswers(prev => ({ ...prev, [q.text]: e.target.value }))}
+                                className="pl-9 h-9 text-xs bg-background"
+                              />
+                            </div>
+                          ) : isLongTextArea ? (
+                            <Textarea
+                              rows={3}
+                              placeholder={(q as any).placeholder || "Type your response here..."}
+                              value={screeningAnswers[q.text] || ''}
+                              onChange={(e) => setScreeningAnswers(prev => ({ ...prev, [q.text]: e.target.value }))}
+                              className="text-xs bg-background leading-relaxed"
+                            />
+                          ) : (
+                            <Input
+                              type="text"
+                              placeholder={(q as any).placeholder || "Type your response here..."}
+                              value={screeningAnswers[q.text] || ''}
+                              onChange={(e) => setScreeningAnswers(prev => ({ ...prev, [q.text]: e.target.value }))}
+                              className="h-9 text-xs bg-background"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 

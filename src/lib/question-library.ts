@@ -3,7 +3,8 @@ export interface ScreeningQuestion {
   category?: 'logistics' | 'compensation' | 'technical' | 'experience' | 'culture';
   categoryLabel?: string;
   text: string;
-  type: 'text' | 'choice' | 'boolean';
+  type: 'text' | 'textarea' | 'date' | 'url' | 'choice' | 'boolean';
+  placeholder?: string;
   options?: string[];
   required?: boolean;
 }
@@ -31,7 +32,8 @@ export const SYSTEM_QUESTION_LIBRARY: ScreeningQuestion[] = [
     category: 'logistics',
     categoryLabel: 'Availability & Logistics',
     text: 'What is your earliest possible joining date?',
-    type: 'text'
+    type: 'date',
+    placeholder: 'Select your earliest start date'
   },
   {
     id: 'lib-hybrid-onsite',
@@ -54,14 +56,16 @@ export const SYSTEM_QUESTION_LIBRARY: ScreeningQuestion[] = [
     category: 'compensation',
     categoryLabel: 'Compensation',
     text: 'What is your expected annual compensation (CTC / Salary)?',
-    type: 'text'
+    type: 'text',
+    placeholder: 'e.g. ₹25 LPA or $120,000/yr'
   },
   {
     id: 'lib-current-ctc',
     category: 'compensation',
     categoryLabel: 'Compensation',
     text: 'What is your current annual base compensation?',
-    type: 'text'
+    type: 'text',
+    placeholder: 'e.g. ₹20 LPA or $100,000/yr'
   },
 
   // Technical & Portfolio
@@ -70,7 +74,8 @@ export const SYSTEM_QUESTION_LIBRARY: ScreeningQuestion[] = [
     category: 'technical',
     categoryLabel: 'Technical & Portfolio',
     text: 'Please share a link to your GitHub, portfolio, or live product project.',
-    type: 'text'
+    type: 'url',
+    placeholder: 'https://github.com/yourhandle or https://yourportfolio.com'
   },
   {
     id: 'lib-tech-stack-exp',
@@ -85,7 +90,8 @@ export const SYSTEM_QUESTION_LIBRARY: ScreeningQuestion[] = [
     category: 'technical',
     categoryLabel: 'Technical & Portfolio',
     text: 'Describe a challenging architectural or complex problem you personally delivered.',
-    type: 'text'
+    type: 'textarea',
+    placeholder: 'Detail the engineering challenge, technical trade-offs, and resulting impact...'
   },
 
   // Culture & Motivation
@@ -94,7 +100,8 @@ export const SYSTEM_QUESTION_LIBRARY: ScreeningQuestion[] = [
     category: 'culture',
     categoryLabel: 'Culture & Motivation',
     text: 'Why are you interested in this role and joining our mission?',
-    type: 'text'
+    type: 'textarea',
+    placeholder: 'Share what aligns you with our culture, product, and mission...'
   },
   {
     id: 'lib-timezone-collab',

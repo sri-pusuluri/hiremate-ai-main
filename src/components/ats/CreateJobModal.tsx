@@ -91,7 +91,7 @@ export function CreateJobModal({
   // Quick custom question form state
   const [showAddCustomQuestion, setShowAddCustomQuestion] = useState(false);
   const [customQText, setCustomQText] = useState('');
-  const [customQType, setCustomQType] = useState<'text' | 'choice' | 'boolean'>('text');
+  const [customQType, setCustomQType] = useState<'text' | 'textarea' | 'date' | 'url' | 'choice' | 'boolean'>('text');
   const [customQOptions, setCustomQOptions] = useState('');
   const [saveToBank, setSaveToBank] = useState(true);
 
@@ -148,19 +148,26 @@ export function CreateJobModal({
 
       // Map existing custom questions
       if (jobToEdit.customQuestions && Array.isArray(jobToEdit.customQuestions)) {
-        const mappedQuestions: ScreeningQuestion[] = jobToEdit.customQuestions.map((q: any) => ({
-          id: q.id || `q-${Math.random()}`,
-          text: q.question || q.text,
-          type: q.type || 'text',
-          options: q.options,
-          required: q.required
-        }));
+        const mappedQuestions: ScreeningQuestion[] = jobToEdit.customQuestions.map((q: any) => {
+          const qText = q.question || q.text || '';
+          let resolvedType = q.type || 'text';
+          if (resolvedType === 'text' && (qText.toLowerCase().includes('joining date') || qText.toLowerCase().includes('start date'))) {
+            resolvedType = 'date';
+          }
+          return {
+            id: q.id || `q-${Math.random()}`,
+            text: qText,
+            type: resolvedType as any,
+            options: q.options,
+            required: q.required
+          };
+        });
         setSelectedQuestions(mappedQuestions);
       } else {
         setSelectedQuestions([]);
       }
     } else {
-      // Create mode defaults: pre-select 2-3 standard questions from the system library
+      // Create mode defaults: pre-select 4 standard questions from the system library
       setFormData({
         title: '',
         department: 'Engineering',
@@ -173,9 +180,10 @@ export function CreateJobModal({
       setActivePeriod('30');
       // Default initial screening questions from library
       setSelectedQuestions([
-        SYSTEM_QUESTION_LIBRARY[0], // Notice period
-        SYSTEM_QUESTION_LIBRARY[2], // Hybrid / onsite
-        SYSTEM_QUESTION_LIBRARY[4], // Expected CTC
+        SYSTEM_QUESTION_LIBRARY[0], // Notice period (Choice)
+        SYSTEM_QUESTION_LIBRARY[1], // Earliest joining date (Date)
+        SYSTEM_QUESTION_LIBRARY[2], // Hybrid / onsite (Boolean)
+        SYSTEM_QUESTION_LIBRARY[4], // Expected CTC (Text)
       ]);
     }
   }, [open, jobToEdit]);
@@ -623,7 +631,10 @@ export function CreateJobModal({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="text">Text Response</SelectItem>
+                        <SelectItem value="text">Short Text</SelectItem>
+                        <SelectItem value="textarea">Long Answer (Paragraph)</SelectItem>
+                        <SelectItem value="date">Date Field</SelectItem>
+                        <SelectItem value="url">Website / Portfolio URL</SelectItem>
                         <SelectItem value="choice">Multiple Choice</SelectItem>
                         <SelectItem value="boolean">Yes / No</SelectItem>
                       </SelectContent>
@@ -679,7 +690,17 @@ export function CreateJobModal({
                             {idx + 1}. {q.text}
                           </span>
                           <Badge variant="outline" className="text-[9px] uppercase px-1.5 py-0 shrink-0 font-mono">
-                            {q.type === 'choice' ? 'Choice' : q.type === 'boolean' ? 'Yes/No' : 'Text'}
+                            {q.type === 'choice' 
+                              ? 'Choice' 
+                              : q.type === 'boolean' 
+                              ? 'Yes/No' 
+                              : q.type === 'date' 
+                              ? 'Date' 
+                              : q.type === 'url' 
+                              ? 'URL' 
+                              : q.type === 'textarea' 
+                              ? 'Long Text' 
+                              : 'Text'}
                           </Badge>
                         </div>
                         {q.options && q.options.length > 0 && (

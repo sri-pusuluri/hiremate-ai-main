@@ -96,7 +96,8 @@ export interface Job {
   customQuestions?: Array<{
     id: string;
     question: string;
-    type: 'text' | 'choice' | 'boolean';
+    type: 'text' | 'textarea' | 'date' | 'url' | 'choice' | 'boolean';
+    placeholder?: string;
     required?: boolean;
     options?: string[];
   }>;

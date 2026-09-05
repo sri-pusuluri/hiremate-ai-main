@@ -185,7 +185,17 @@ export function QuestionLibraryModal({
                       </span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <Badge variant="outline" className="text-[10px] uppercase font-mono px-1.5 py-0">
-                          {q.type === 'choice' ? 'Choice' : q.type === 'boolean' ? 'Yes / No' : 'Text'}
+                          {q.type === 'choice' 
+                            ? 'Choice' 
+                            : q.type === 'boolean' 
+                            ? 'Yes / No' 
+                            : q.type === 'date' 
+                            ? 'Date' 
+                            : q.type === 'url' 
+                            ? 'URL' 
+                            : q.type === 'textarea' 
+                            ? 'Long Text' 
+                            : 'Text'}
                         </Badge>
                         {q.categoryLabel && (
                           <Badge variant="secondary" className="text-[10px] hidden sm:inline-flex px-1.5 py-0">
