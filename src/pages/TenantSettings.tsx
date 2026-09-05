@@ -58,6 +58,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { logAuditEvent, fetchAuditLogs, AuditLogEntry } from '@/lib/audit-logger';
+import TenantLogoUploader from '@/components/common/TenantLogoUploader';
 
 const DEFAULT_DEPARTMENTS = [
   'Engineering',
@@ -1235,36 +1236,33 @@ export default function TenantSettings() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="theme-color" className="text-xs">Brand Primary Accent Color</Label>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="color" 
-                      id="theme-color"
-                      value={themeColor}
-                      onChange={(e) => setThemeColor(e.target.value)}
-                      className="w-8 h-8 rounded-lg border border-border cursor-pointer p-0.5 bg-background"
-                    />
-                    <Input 
-                      value={themeColor}
-                      onChange={(e) => setThemeColor(e.target.value)}
-                      placeholder="#2563eb"
-                      className="font-mono text-xs h-8"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="logo-url" className="text-xs">Company Logo Image URL</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="theme-color" className="text-xs">Brand Primary Accent Color</Label>
+                <div className="flex items-center gap-3 max-w-sm">
+                  <input 
+                    type="color" 
+                    id="theme-color"
+                    value={themeColor}
+                    onChange={(e) => setThemeColor(e.target.value)}
+                    className="w-8 h-8 rounded-lg border border-border cursor-pointer p-0.5 bg-background"
+                  />
                   <Input 
-                    id="logo-url"
-                    value={logoUrl}
-                    onChange={(e) => setLogoUrl(e.target.value)}
-                    placeholder="https://example.com/logo.png"
-                    className="h-8 text-xs"
+                    value={themeColor}
+                    onChange={(e) => setThemeColor(e.target.value)}
+                    placeholder="#2563eb"
+                    className="font-mono text-xs h-8"
                   />
                 </div>
+              </div>
+
+              <div className="pt-2 border-t border-border/50">
+                <TenantLogoUploader
+                  value={logoUrl}
+                  onChange={setLogoUrl}
+                  companyName={name || 'Company'}
+                  themeColor={themeColor}
+                  label="Company Logo / Branding"
+                />
               </div>
 
               <Button onClick={handleSaveBranding} disabled={savingBranding} className="gap-1.5 text-xs">

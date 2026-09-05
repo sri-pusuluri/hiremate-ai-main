@@ -102,4 +102,14 @@ describe('TenantSettings Component & Tab Navigation', () => {
     expect(screen.getByText(/Compliance Audit Trail & Event Logs/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Export Audit Log/i).length).toBeGreaterThan(0);
   });
+
+  it('renders Branding tab with logo uploader and preset logos', async () => {
+    renderComponent('/settings/tenant?tab=branding');
+
+    expect(screen.getByText(/Company Logo \/ Branding/i)).toBeInTheDocument();
+    expect(screen.getByText(/Upload Logo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Or choose from professional presets:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tech Hexagon/i)).toBeInTheDocument();
+    expect(screen.getByText(/AI Spark/i)).toBeInTheDocument();
+  });
 });

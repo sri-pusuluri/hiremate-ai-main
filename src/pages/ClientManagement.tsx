@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import TenantLogoUploader from '@/components/common/TenantLogoUploader';
 
 const SEED_CLIENTS: ClientTenant[] = [
   DEFAULT_ZOOL_CLIENT,
@@ -78,6 +79,7 @@ export default function ClientManagement() {
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
+    logoUrl: '',
     themeColor: '#2563eb',
     subscriptionTier: 'pro' as 'free' | 'pro' | 'enterprise',
   });
@@ -149,9 +151,10 @@ export default function ClientManagement() {
           .update({
             name: formData.name,
             slug: formData.slug,
+            logo_url: formData.logoUrl || null,
             theme_color: formData.themeColor,
             subscription_tier: formData.subscriptionTier,
-          })
+          } as any)
           .eq('id', editingClient.id);
 
         if (error) throw error;
@@ -163,6 +166,7 @@ export default function ClientManagement() {
                   ...c,
                   name: formData.name,
                   slug: formData.slug,
+                  logoUrl: formData.logoUrl,
                   themeColor: formData.themeColor,
                   subscriptionTier: formData.subscriptionTier,
                 }
@@ -175,6 +179,7 @@ export default function ClientManagement() {
             ...activeClient,
             name: formData.name,
             slug: formData.slug,
+            logoUrl: formData.logoUrl,
             themeColor: formData.themeColor,
             subscriptionTier: formData.subscriptionTier,
           });
@@ -189,6 +194,7 @@ export default function ClientManagement() {
         const newClientRecord = {
           name: formData.name,
           slug: formData.slug,
+          logo_url: formData.logoUrl || null,
           theme_color: formData.themeColor,
           subscription_tier: formData.subscriptionTier,
         };
@@ -204,6 +210,7 @@ export default function ClientManagement() {
               id: (data as any).id,
               name: (data as any).name,
               slug: (data as any).slug,
+              logoUrl: (data as any).logo_url,
               themeColor: (data as any).theme_color,
               subscriptionTier: (data as any).subscription_tier,
               createdAt: (data as any).created_at,
@@ -211,6 +218,7 @@ export default function ClientManagement() {
           : {
               id: 'client-' + Date.now(),
               ...newClientRecord,
+              logoUrl: formData.logoUrl,
               createdAt: new Date().toISOString(),
             };
 
@@ -227,6 +235,7 @@ export default function ClientManagement() {
       setFormData({
         name: '',
         slug: '',
+        logoUrl: '',
         themeColor: '#2563eb',
         subscriptionTier: 'pro',
       });
@@ -245,6 +254,7 @@ export default function ClientManagement() {
     setFormData({
       name: client.name,
       slug: client.slug,
+      logoUrl: client.logoUrl || '',
       themeColor: client.themeColor || '#2563eb',
       subscriptionTier: client.subscriptionTier || 'pro',
     });
@@ -386,10 +396,18 @@ export default function ClientManagement() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm"
-                          style={{ backgroundColor: client.themeColor || '#2563eb' }}
+                          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm overflow-hidden border border-border/50 shrink-0 bg-muted"
+                          style={{ backgroundColor: client.logoUrl ? 'transparent' : (client.themeColor || '#2563eb') }}
                         >
-                          {client.name.substring(0, 2).toUpperCase()}
+                          {client.logoUrl ? (
+                            <img 
+                              src={client.logoUrl} 
+                              alt={client.name} 
+                              className="w-full h-full object-cover" 
+                            />
+                          ) : (
+                            client.name.substring(0, 2).toUpperCase()
+                          )}
                         </div>
                         <div>
                           <div className="font-semibold text-foreground flex items-center gap-2">
@@ -493,7 +511,7 @@ export default function ClientManagement() {
 
       {/* Create / Edit Tenant Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingClient ? 'Edit Client Tenant' : 'Register New Client Tenant'}</DialogTitle>
             <DialogDescription>
@@ -502,6 +520,14 @@ export default function ClientManagement() {
           </DialogHeader>
 
           <div className="space-y-4 py-3">
+            <TenantLogoUploader
+              value={formData.logoUrl}
+              onChange={(newLogoUrl) => setFormData(prev => ({ ...prev, logoUrl: newLogoUrl }))}
+              companyName={formData.name || 'Company'}
+              themeColor={formData.themeColor}
+              label="Tenant Logo / Branding"
+            />
+
             <div className="space-y-2">
               <Label htmlFor="tenant-name">Company / Client Name *</Label>
               <Input
