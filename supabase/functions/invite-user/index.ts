@@ -19,13 +19,13 @@ serve(async (req) => {
       throw new Error('Server misconfiguration: missing Supabase credentials.')
     }
 
-    const { email, role } = await req.json()
+    const { email, role, clientId } = await req.json()
     if (!email || !role) {
       throw new Error('Email and role are required.')
     }
     
     // Ensure role is valid
-    if (role !== 'admin' && role !== 'recruiter') {
+    if (role !== 'admin' && role !== 'recruiter' && role !== 'client_admin' && role !== 'super_admin') {
       throw new Error('Invalid role specified.')
     }
 
@@ -46,16 +46,22 @@ serve(async (req) => {
       throw new Error('Not authenticated')
     }
 
-    // Verify caller is an admin
+    // Verify caller is an admin or client_admin
     const { data: callerRoleData, error: callerRoleError } = await supabaseClient
       .from('user_roles')
-      .select('role')
+      .select('role, client_id')
       .eq('user_id', user.id)
       .single()
 
-    if (callerRoleError || callerRoleData?.role !== 'admin') {
-      throw new Error('Only admins can invite new users.')
+    const isPlatformAdmin = callerRoleData?.role === 'admin' || callerRoleData?.role === 'super_admin'
+    const isCallerClientAdmin = callerRoleData?.role === 'client_admin'
+
+    if (callerRoleError || (!isPlatformAdmin && !isCallerClientAdmin)) {
+      throw new Error('Only administrators can invite new users.')
     }
+
+    // Enforce client_id scoping: if not platform admin, caller can only invite into their own client_id
+    const targetClientId = isPlatformAdmin ? (clientId || callerRoleData?.client_id) : callerRoleData?.client_id
 
     // Initialize admin client to perform the invite
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -78,15 +84,20 @@ serve(async (req) => {
     }
 
     // The user will be automatically created in the auth.users table, and our DB trigger will insert them into profiles and user_roles.
-    // However, the DB trigger defaults them to 'recruiter'. We need to update their role to the requested role.
+    // However, the DB trigger defaults them to 'recruiter'. We need to update their role to the requested role and client_id.
     const newUserId = inviteData.user.id
 
     // Give the DB trigger a tiny amount of time to run just in case
     await new Promise(r => setTimeout(r, 500))
 
+    const updatePayload: Record<string, any> = { role }
+    if (targetClientId) {
+      updatePayload.client_id = targetClientId
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from('user_roles')
-      .update({ role })
+      .update(updatePayload)
       .eq('user_id', newUserId)
 
     if (updateError) {

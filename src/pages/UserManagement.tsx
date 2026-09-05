@@ -60,7 +60,7 @@ interface UserWithRole {
 }
 
 export default function UserManagement() {
-  const { isAdmin, isSuperAdmin, user, client: activeClient } = useAuth();
+  const { isAdmin, isSuperAdmin, isClientAdmin, user, client: activeClient } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [clients, setClients] = useState<ClientTenant[]>([]);
@@ -204,8 +204,9 @@ export default function UserManagement() {
 
     setIsInviting(true);
     try {
+      const targetClientId = isSuperAdmin ? inviteClientId : (activeClient?.id || '00000000-0000-0000-0000-000000000001');
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email: inviteEmail, role: inviteRole }
+        body: { email: inviteEmail, role: inviteRole, clientId: targetClientId }
       });
 
       if (error) {
@@ -330,18 +331,24 @@ export default function UserManagement() {
     }
   };
 
-  const filteredUsers = users.filter((u) =>
-    u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter((u) => {
+    // If not platform super admin, restrict user list strictly to the active tenant workspace
+    if (!isSuperAdmin && activeClient?.id && u.clientId !== activeClient.id) {
+      return false;
+    }
+    return (
+      u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
-  if (!isAdmin) {
+  if (!isAdmin && !isClientAdmin) {
     return (
       <div className="p-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You don't have permission to access user management. Only admins can view this page.
+            You don't have permission to access user management. Only workspace administrators can view this page.
           </AlertDescription>
         </Alert>
       </div>
@@ -353,9 +360,19 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">User Management</h1>
+          <div className="flex items-center gap-2.5 mb-1">
+            <h1 className="text-2xl font-semibold text-foreground">User Management</h1>
+            {activeClient && (
+              <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/30 text-primary bg-primary/5 font-medium">
+                <Building2 className="w-3 h-3 mr-1" />
+                {isSuperAdmin ? 'Platform SuperAdmin (All Tenants)' : activeClient.name}
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">
-            Manage team members and their roles
+            {isSuperAdmin 
+              ? 'Manage platform-wide team members across all enterprise client tenants'
+              : `Manage team members, roles, and recruiting permissions for ${activeClient?.name || 'this workspace'}`}
           </p>
         </div>
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
@@ -400,22 +417,34 @@ export default function UserManagement() {
                 </p>
               </div>
 
-              {clients.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Assign to Client Workspace</Label>
-                  <Select value={inviteClientId} onValueChange={(v) => setInviteClientId(v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Workspace" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name} ({c.slug})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {isSuperAdmin ? (
+                clients.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Assign to Client Workspace</Label>
+                    <Select value={inviteClientId} onValueChange={(v) => setInviteClientId(v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Workspace" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name} ({c.slug})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )
+              ) : (
+                activeClient && (
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Assigned Workspace:</span>
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
+                      {activeClient.name}
+                    </span>
+                  </div>
+                )
               )}
             </div>
             <DialogFooter>
