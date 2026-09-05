@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Check, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 import { isMockMode, enableMockMode, disableMockMode } from '@/integrations/supabase/client';
 
@@ -52,6 +52,16 @@ export default function Auth() {
     }
   }, [user, loading, navigate]);
 
+  const handleAutofill = (email: string, pass: string) => {
+    setLoginEmail(email);
+    setLoginPassword(pass);
+    setError(null);
+    toast({
+      title: `${email.includes('admin') ? 'Admin' : 'Recruiter'} credentials selected`,
+      description: 'Email and password populated. Click Sign In to continue.',
+    });
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -68,7 +78,18 @@ export default function Auth() {
     }
 
     setIsSubmitting(true);
-    const { error } = await signIn(loginEmail, loginPassword);
+    let { error } = await signIn(loginEmail, loginPassword);
+
+    // If Supabase returns invalid login credentials for demo accounts, auto-register them or provide mock fallback
+    if (error && error.message.includes('Invalid login credentials') && (loginEmail === 'admin@hiremate.ai' || loginEmail === 'recruiter@hiremate.ai')) {
+      const isAdm = loginEmail.includes('admin');
+      const signupRes = await signUp(loginEmail, loginPassword, isAdm ? 'Administrator' : 'Jane Recruiter');
+      if (!signupRes.error) {
+        const retry = await signIn(loginEmail, loginPassword);
+        error = retry.error;
+      }
+    }
+
     setIsSubmitting(false);
 
     if (error) {
@@ -203,6 +224,69 @@ export default function Auth() {
               </TabsList>
 
               <TabsContent value="login">
+                {/* One-Click Demo Credentials */}
+                <div className="p-3 rounded-xl bg-muted/40 border border-border/80 space-y-2 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                      <KeyRound className="w-3.5 h-3.5 text-primary" />
+                      <span>Demo Credentials</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Admin Credential Card */}
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')}
+                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
+                        loginEmail === 'admin@hiremate.ai'
+                          ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
+                          : 'border-border/70 bg-background hover:border-primary/50 hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-xs font-bold text-foreground">Admin</span>
+                        </div>
+                        {loginEmail === 'admin@hiremate.ai' && (
+                          <span className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
+                            <Check className="w-3 h-3" /> Selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-mono text-muted-foreground truncate">admin@hiremate.ai</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/80 mt-0.5">pass: <span className="text-foreground/90 font-semibold">admin123</span></p>
+                    </button>
+
+                    {/* Recruiter Credential Card */}
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')}
+                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
+                        loginEmail === 'recruiter@hiremate.ai'
+                          ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
+                          : 'border-border/70 bg-background hover:border-primary/50 hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <Briefcase className="w-3.5 h-3.5 text-sky-600" />
+                          <span className="text-xs font-bold text-foreground">Recruiter</span>
+                        </div>
+                        {loginEmail === 'recruiter@hiremate.ai' && (
+                          <span className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
+                            <Check className="w-3 h-3" /> Selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-mono text-muted-foreground truncate">recruiter@hiremate.ai</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/80 mt-0.5">pass: <span className="text-foreground/90 font-semibold">recruiter123</span></p>
+                    </button>
+                  </div>
+                </div>
+
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
