@@ -66,6 +66,8 @@ export default function UserManagement() {
   const [clients, setClients] = useState<ClientTenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'super_admin' | 'admin' | 'client_admin' | 'recruiter'>('recruiter');
@@ -336,6 +338,14 @@ export default function UserManagement() {
     if (!isSuperAdmin && activeClient?.id && u.clientId !== activeClient.id) {
       return false;
     }
+    // If super admin has filtered by a specific tenant
+    if (isSuperAdmin && selectedTenantFilter !== 'all' && u.clientId !== selectedTenantFilter) {
+      return false;
+    }
+    // If role filter is applied
+    if (roleFilter !== 'all' && u.role !== roleFilter) {
+      return false;
+    }
     return (
       u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -509,17 +519,56 @@ export default function UserManagement() {
         </Card>
       </div>
 
-      {/* Search */}
-      <Card className="mb-6">
+      {/* Search & Workspace Filters */}
+      <Card className="mb-6 border-border">
         <CardContent className="pt-4 pb-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users by name or email..."
+                className="pl-10 h-9 text-xs"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Tenant Filter for Platform Super Admins */}
+            {isSuperAdmin && clients.length > 0 && (
+              <div className="w-full sm:w-56 shrink-0">
+                <Select value={selectedTenantFilter} onValueChange={setSelectedTenantFilter}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <Building2 className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                    <SelectValue placeholder="All Workspaces" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Workspaces (Platform)</SelectItem>
+                    {clients.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Role Filter */}
+            <div className="w-full sm:w-44 shrink-0">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="h-9 text-xs">
+                  <Shield className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                  <SelectItem value="admin">Platform Admin</SelectItem>
+                  <SelectItem value="client_admin">Client Admin</SelectItem>
+                  <SelectItem value="recruiter">Recruiter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
