@@ -23,6 +23,16 @@ const App = () => (
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Index initialView="dashboard" />} />
+            <Route path="/jobs" element={<Index initialView="jobs" />} />
+            <Route path="/candidates" element={<Index initialView="candidates" />} />
+            <Route path="/shortlisted" element={<Index initialView="shortlisted" />} />
+            <Route path="/reports" element={<Index initialView="reports" />} />
+            <Route path="/users" element={<Index initialView="users" />} />
+            <Route path="/clients" element={<Index initialView="clients" />} />
+            <Route path="/settings" element={<Index initialView="settings" />} />
+            <Route path="/settings/tenant" element={<Index initialView="tenant-settings" />} />
+            <Route path="/tenant-settings" element={<Index initialView="tenant-settings" />} />
             <Route path="/auth" element={<Auth />} />
             
             {/* Public ATS Careers Portals & Applications */}

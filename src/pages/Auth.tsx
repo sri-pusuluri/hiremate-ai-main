@@ -48,7 +48,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/');
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirect = searchParams.get('redirect') || '/';
+      navigate(redirect);
     }
   }, [user, loading, navigate]);
 
