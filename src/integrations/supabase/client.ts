@@ -76,6 +76,60 @@ function saveMockCandidates(candidates: any[]) {
   localStorage.setItem(MOCK_CANDIDATES_KEY, JSON.stringify(candidates));
 }
 
+const MOCK_CLIENTS_KEY = 'hiremate_mock_clients';
+const SEED_MOCK_CLIENTS = [
+  {
+    id: '00000000-0000-0000-0000-000000000001',
+    name: 'Zool',
+    slug: 'zool',
+    theme_color: '#2563eb',
+    themeColor: '#2563eb',
+    subscription_tier: 'pro',
+    subscriptionTier: 'pro',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: '00000000-0000-0000-0000-000000000002',
+    name: 'Nexus Tech Global',
+    slug: 'nexus-tech',
+    theme_color: '#10b981',
+    themeColor: '#10b981',
+    subscription_tier: 'enterprise',
+    subscriptionTier: 'enterprise',
+    created_at: new Date(Date.now() - 86400000 * 14).toISOString(),
+  },
+  {
+    id: '00000000-0000-0000-0000-000000000003',
+    name: 'Horizon Innovations',
+    slug: 'horizon',
+    theme_color: '#8b5cf6',
+    themeColor: '#8b5cf6',
+    subscription_tier: 'pro',
+    subscriptionTier: 'pro',
+    created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+  }
+];
+
+export function getMockClients() {
+  if (typeof localStorage === 'undefined') return SEED_MOCK_CLIENTS;
+  const data = localStorage.getItem(MOCK_CLIENTS_KEY);
+  if (!data) {
+    localStorage.setItem(MOCK_CLIENTS_KEY, JSON.stringify(SEED_MOCK_CLIENTS));
+    return SEED_MOCK_CLIENTS;
+  }
+  try {
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  } catch (e) {}
+  localStorage.setItem(MOCK_CLIENTS_KEY, JSON.stringify(SEED_MOCK_CLIENTS));
+  return SEED_MOCK_CLIENTS;
+}
+
+export function saveMockClients(clients: any[]) {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(MOCK_CLIENTS_KEY, JSON.stringify(clients));
+}
+
 // Helper to switch to mock mode
 export function enableMockMode() {
   if (hasRealSupabase) return; // Never downgrade if real database credentials are present
@@ -163,8 +217,9 @@ function clearMockSession() {
   localStorage.removeItem(MOCK_SESSION_KEY);
 }
 
-function createMockUser(email: string, fullName: string) {
-  const id = 'mock-user-id-' + Math.random().toString(36).substring(2, 11);
+function createMockUser(email: string, fullName: string, forcedRole?: string) {
+  const isRootAdmin = email === 'admin@hiremate.ai';
+  const id = isRootAdmin ? 'mock-admin-platform-id' : ('mock-user-id-' + Math.random().toString(36).substring(2, 11));
   const user = {
     id,
     aud: 'authenticated',
@@ -180,12 +235,12 @@ function createMockUser(email: string, fullName: string) {
     updated_at: new Date().toISOString()
   };
 
-  const users = getMockUsers();
+  const users = getMockUsers().filter((u: any) => u.email !== email);
   users.push(user);
   saveMockUsers(users);
 
   // Add profile
-  const profiles = getMockProfiles();
+  const profiles = getMockProfiles().filter((p: any) => p.email !== email);
   profiles.push({
     id,
     email,
@@ -197,13 +252,13 @@ function createMockUser(email: string, fullName: string) {
   saveMockProfiles(profiles);
 
   // Add user role
-  const roles = getMockRoles();
-  // If first user, make them admin
-  const role = roles.length === 0 ? 'admin' : 'recruiter';
+  let roles = getMockRoles().filter((r: any) => r.user_id !== id);
+  const role = forcedRole || (isRootAdmin ? 'super_admin' : (roles.length === 0 ? 'admin' : 'recruiter'));
   roles.push({
-    id: 'mock-role-id-' + Math.random().toString(36).substring(2, 11),
+    id: isRootAdmin ? 'mock-role-platform-admin' : ('mock-role-id-' + Math.random().toString(36).substring(2, 11)),
     user_id: id,
     role,
+    client_id: isRootAdmin ? null : undefined,
     created_at: new Date().toISOString()
   });
   saveMockRoles(roles);
@@ -222,10 +277,32 @@ function triggerAuthChange(event: string, session: any) {
   });
 }
 
-// Seed initial mock users if lists are empty
-if (getMockUsers().length === 0) {
-  createMockUser('admin@hiremate.ai', 'Administrator');
-  createMockUser('recruiter@hiremate.ai', 'Jane Recruiter');
+// Ensure admin and recruiter accounts always exist in mock mode
+const existingUsers = getMockUsers();
+if (!existingUsers.some((u: any) => u.email === 'admin@hiremate.ai')) {
+  createMockUser('admin@hiremate.ai', 'Administrator', 'super_admin');
+} else {
+  // Ensure admin role is always super_admin
+  const adminUser = existingUsers.find((u: any) => u.email === 'admin@hiremate.ai');
+  const roles = getMockRoles();
+  const existingRole = roles.find((r: any) => r.user_id === adminUser.id);
+  if (!existingRole) {
+    roles.push({
+      id: 'mock-role-platform-admin',
+      user_id: adminUser.id,
+      role: 'super_admin',
+      client_id: null,
+      created_at: new Date().toISOString()
+    });
+    saveMockRoles(roles);
+  } else if (existingRole.role !== 'super_admin' || existingRole.client_id !== null) {
+    existingRole.role = 'super_admin';
+    existingRole.client_id = null;
+    saveMockRoles(roles);
+  }
+}
+if (!existingUsers.some((u: any) => u.email === 'recruiter@hiremate.ai')) {
+  createMockUser('recruiter@hiremate.ai', 'Jane Recruiter', 'recruiter');
 }
 
 // Mock query builder to mimic postgrest
@@ -321,6 +398,47 @@ class MockQueryBuilder {
           candidates = [];
         }
         saveMockCandidates(candidates);
+      } else if (this.table === 'user_roles') {
+        let roles = getMockRoles();
+        if (this.filters.length > 0) {
+          const adminUser = getMockUsers().find((u: any) => u.email === 'admin@hiremate.ai');
+          roles = roles.filter(r => {
+            if (adminUser && r.user_id === adminUser.id) return true; // Protect root platform admin role
+            let matches = true;
+            for (const filter of this.filters) {
+              if (!filter(r)) matches = false;
+            }
+            return !matches;
+          });
+        }
+        saveMockRoles(roles);
+      } else if (this.table === 'profiles') {
+        let profiles = getMockProfiles();
+        if (this.filters.length > 0) {
+          profiles = profiles.filter(p => {
+            if (p.email === 'admin@hiremate.ai') return true; // Protect root platform admin profile
+            let matches = true;
+            for (const filter of this.filters) {
+              if (!filter(p)) matches = false;
+            }
+            return !matches;
+          });
+        }
+        saveMockProfiles(profiles);
+      } else if (this.table === 'clients') {
+        let clients = getMockClients();
+        if (this.filters.length > 0) {
+          clients = clients.filter(c => {
+            // Protect base Zool workspace
+            if (c.id === '00000000-0000-0000-0000-000000000001') return true;
+            let matches = true;
+            for (const filter of this.filters) {
+              if (!filter(c)) matches = false;
+            }
+            return !matches;
+          });
+        }
+        saveMockClients(clients);
       }
       return { data, error: null };
     }
@@ -334,6 +452,8 @@ class MockQueryBuilder {
       data = getMockJobs();
     } else if (this.table === 'candidates') {
       data = getMockCandidates();
+    } else if (this.table === 'clients') {
+      data = getMockClients();
     }
 
     if (this.updateData) {
@@ -506,6 +626,47 @@ class MockQueryBuilder {
           });
         }
         saveMockCandidates(candidates);
+      } else if (this.table === 'clients') {
+        let clients = getMockClients();
+        let updated = false;
+        clients = clients.map(c => {
+          let matches = this.filters.length > 0;
+          for (const filter of this.filters) {
+            if (!filter(c)) matches = false;
+          }
+          if (matches) {
+            updated = true;
+            return { ...c, ...this.updateData };
+          }
+          return c;
+        });
+
+        if (!updated && this.filters.length === 0) {
+          const payload = Array.isArray(this.updateData) ? this.updateData[0] : (this.updateData || {});
+          const newClient = {
+            id: payload.id || 'client-' + Math.random().toString(36).substring(2, 9),
+            name: payload.name || 'New Client',
+            slug: payload.slug || 'client-' + Date.now(),
+            logo_url: payload.logo_url || null,
+            logoUrl: payload.logo_url || null,
+            theme_color: payload.theme_color || '#2563eb',
+            themeColor: payload.theme_color || '#2563eb',
+            subscription_tier: payload.subscription_tier || 'pro',
+            subscriptionTier: payload.subscription_tier || 'pro',
+            created_at: new Date().toISOString()
+          };
+          clients.unshift(newClient);
+          data = [newClient];
+        } else {
+          data = clients.filter(c => {
+            let matches = this.filters.length > 0;
+            for (const filter of this.filters) {
+              if (!filter(c)) matches = false;
+            }
+            return matches;
+          });
+        }
+        saveMockClients(clients);
       }
     } else {
       // Standard filter (select)
@@ -595,6 +756,44 @@ const mockSupabase = {
       clearMockSession();
       triggerAuthChange('SIGNED_OUT', null);
       return { error: null };
+    }
+  },
+  functions: {
+    async invoke(functionName: string, options?: any) {
+      if (functionName === 'delete-user') {
+        const userId = options?.body?.userId;
+        if (!userId) return { data: null, error: new Error('User ID required') };
+
+        const adminUser = getMockUsers().find((u: any) => u.email === 'admin@hiremate.ai');
+        if (adminUser && userId === adminUser.id) {
+          return { data: null, error: new Error('Action prohibited: Root HireSort platform admin account cannot be deleted.') };
+        }
+
+        let profiles = getMockProfiles().filter(p => p.id !== userId);
+        saveMockProfiles(profiles);
+
+        let roles = getMockRoles().filter(r => r.user_id !== userId);
+        saveMockRoles(roles);
+
+        let users = getMockUsers().filter(u => u.id !== userId);
+        saveMockUsers(users);
+
+        return { data: { success: true }, error: null };
+      }
+      if (functionName === 'invite-user') {
+        const { email, role, clientId } = options?.body || {};
+        if (!email) return { data: null, error: new Error('Email required') };
+        
+        const existing = getMockUsers().find(u => u.email === email);
+        if (existing) return { data: null, error: new Error('User already exists') };
+        
+        const user = createMockUser(email, email.split('@')[0], role);
+        let roles = getMockRoles().map(r => r.user_id === user.id ? { ...r, role: role || 'recruiter', client_id: clientId || null } : r);
+        saveMockRoles(roles);
+        
+        return { data: { success: true }, error: null };
+      }
+      return { data: { success: true }, error: null };
     }
   },
   from(table: string) {

@@ -110,15 +110,19 @@ export default function UserManagement() {
         const userClientId = (userRole as any)?.client_id;
         const matchedClient = loadedClients.find(c => c.id === userClientId);
 
+        const isRootAdmin = profile.email === 'admin@hiremate.ai' || userRole?.role === 'super_admin';
+        const role = ((userRole?.role as any) || (isRootAdmin ? 'super_admin' : 'recruiter'));
+        const isPlatformLevel = isRootAdmin || (role === 'admin' && !userClientId);
+
         return {
           id: profile.id,
           email: profile.email,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           created_at: profile.created_at,
-          role: ((userRole?.role as any) || 'recruiter'),
-          clientId: userClientId || (activeClient?.id || '00000000-0000-0000-0000-000000000001'),
-          clientName: matchedClient?.name || activeClient?.name || 'Zool',
+          role,
+          clientId: isPlatformLevel ? null : (userClientId || '00000000-0000-0000-0000-000000000001'),
+          clientName: isPlatformLevel ? 'HireSort Platform' : (matchedClient?.name || 'Zool'),
         };
       });
 
@@ -206,7 +210,9 @@ export default function UserManagement() {
 
     setIsInviting(true);
     try {
-      const targetClientId = isSuperAdmin ? inviteClientId : (activeClient?.id || '00000000-0000-0000-0000-000000000001');
+      const targetClientId = inviteRole === 'admin'
+        ? null
+        : (isSuperAdmin ? inviteClientId : (activeClient?.id || '00000000-0000-0000-0000-000000000001'));
       const { data, error } = await supabase.functions.invoke('invite-user', {
         body: { email: inviteEmail, role: inviteRole, clientId: targetClientId }
       });
@@ -298,29 +304,48 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = async (userId: string, email: string) => {
+    if (email === 'admin@hiremate.ai') {
+      toast({
+        title: 'Action Prohibited',
+        description: 'The root HireSort platform administrator account cannot be removed.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (userId === user?.id) {
+      toast({
+        title: 'Action Prohibited',
+        description: 'You cannot delete your own account.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!window.confirm(`Are you sure you want to completely remove ${email}? This action cannot be undone.`)) {
       return;
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('delete-user', {
-        body: { userId }
-      });
-      
-      if (error) {
-        let errorMessage = error.message;
-        try {
-          if (error.context && typeof error.context.json === 'function') {
-            const errBody = await error.context.json();
-            if (errBody.error) errorMessage = errBody.error;
-          }
-        } catch (e) {}
-        throw new Error(errorMessage);
+      let functionSuccess = false;
+      try {
+        const { error } = await supabase.functions.invoke('delete-user', {
+          body: { userId }
+        });
+        if (!error) functionSuccess = true;
+      } catch (e) {
+        functionSuccess = false;
+      }
+
+      // If edge function not active or returns error (e.g. mock mode or un-deployed edge function), delete profile & roles directly
+      if (!functionSuccess) {
+        await supabase.from('user_roles').delete().eq('user_id', userId);
+        await supabase.from('profiles').delete().eq('id', userId);
       }
       
       toast({
         title: 'User Removed',
-        description: `${email} has been permanently removed.`,
+        description: `${email} has been removed.`,
       });
       fetchUsers();
     } catch (error: any) {
@@ -334,18 +359,26 @@ export default function UserManagement() {
   };
 
   const filteredUsers = users.filter((u) => {
-    // If not platform super admin, restrict user list strictly to the active tenant workspace
-    if (!isSuperAdmin && activeClient?.id && u.clientId !== activeClient.id) {
-      return false;
+    // If platform super admin
+    if (isSuperAdmin) {
+      if (selectedTenantFilter === 'platform') {
+        if (u.clientId !== null) return false;
+      } else if (selectedTenantFilter !== 'all') {
+        if (u.clientId !== selectedTenantFilter) return false;
+      }
+    } else {
+      // If client admin / recruiter, strictly isolate to their own company workspace!
+      // They can never see HireSort platform admins or other client users.
+      if (!activeClient?.id || u.clientId !== activeClient.id) {
+        return false;
+      }
     }
-    // If super admin has filtered by a specific tenant
-    if (isSuperAdmin && selectedTenantFilter !== 'all' && u.clientId !== selectedTenantFilter) {
-      return false;
-    }
+
     // If role filter is applied
     if (roleFilter !== 'all' && u.role !== roleFilter) {
       return false;
     }
+
     return (
       u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -535,14 +568,15 @@ export default function UserManagement() {
 
             {/* Tenant Filter for Platform Super Admins */}
             {isSuperAdmin && clients.length > 0 && (
-              <div className="w-full sm:w-56 shrink-0">
+              <div className="w-full sm:w-64 shrink-0">
                 <Select value={selectedTenantFilter} onValueChange={setSelectedTenantFilter}>
                   <SelectTrigger className="h-9 text-xs">
                     <Building2 className="w-3.5 h-3.5 mr-1.5 text-primary" />
                     <SelectValue placeholder="All Workspaces" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Workspaces (Platform)</SelectItem>
+                    <SelectItem value="all">All Workspaces (Platform & Tenants)</SelectItem>
+                    <SelectItem value="platform">HireSort Platform Team</SelectItem>
                     {clients.map(c => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
@@ -633,7 +667,15 @@ export default function UserManagement() {
                       {u.role === 'client_admin' ? 'Client Admin' : u.role}
                     </Badge>
                     
-                    {u.id !== user?.id && (
+                    {u.email === 'admin@hiremate.ai' ? (
+                      <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                        Platform Owner
+                      </Badge>
+                    ) : u.id === user?.id ? (
+                      <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
+                        Active Account
+                      </Badge>
+                    ) : (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -647,8 +689,8 @@ export default function UserManagement() {
                             Change to {u.role === 'admin' ? 'Recruiter' : 'Admin'}
                           </DropdownMenuItem>
 
-                          {/* Assign Workspace Submenu */}
-                          {clients.length > 0 && (
+                          {/* Assign Workspace Submenu - only for platform super admins */}
+                          {isSuperAdmin && clients.length > 0 && (
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger>
                                 <Building2 className="w-4 h-4 mr-2" />
