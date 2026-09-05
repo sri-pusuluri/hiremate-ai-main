@@ -89,6 +89,16 @@ const SEED_MOCK_CLIENTS = [
     created_at: new Date().toISOString(),
   },
   {
+    id: '00000000-0000-0000-0000-000000000004',
+    name: 'Commit',
+    slug: 'commit',
+    theme_color: '#f97316',
+    themeColor: '#f97316',
+    subscription_tier: 'enterprise',
+    subscriptionTier: 'enterprise',
+    created_at: new Date(Date.now() - 86400000 * 7).toISOString(),
+  },
+  {
     id: '00000000-0000-0000-0000-000000000002',
     name: 'Nexus Tech Global',
     slug: 'nexus-tech',
@@ -118,8 +128,18 @@ export function getMockClients() {
     return SEED_MOCK_CLIENTS;
   }
   try {
-    const parsed = JSON.parse(data);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    let parsed = JSON.parse(data);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure Zool and Commit are never missing
+      if (!parsed.some((c: any) => c.slug === 'zool')) {
+        parsed.unshift(SEED_MOCK_CLIENTS[0]);
+      }
+      if (!parsed.some((c: any) => c.slug === 'commit')) {
+        parsed.splice(1, 0, SEED_MOCK_CLIENTS[1]);
+      }
+      localStorage.setItem(MOCK_CLIENTS_KEY, JSON.stringify(parsed));
+      return parsed;
+    }
   } catch (e) {}
   localStorage.setItem(MOCK_CLIENTS_KEY, JSON.stringify(SEED_MOCK_CLIENTS));
   return SEED_MOCK_CLIENTS;
@@ -217,7 +237,7 @@ function clearMockSession() {
   localStorage.removeItem(MOCK_SESSION_KEY);
 }
 
-function createMockUser(email: string, fullName: string, forcedRole?: string) {
+function createMockUser(email: string, fullName: string, forcedRole?: string, forcedClientId?: string | null) {
   const isRootAdmin = email === 'admin@hiremate.ai';
   const id = isRootAdmin ? 'mock-admin-platform-id' : ('mock-user-id-' + Math.random().toString(36).substring(2, 11));
   const user = {
@@ -254,11 +274,15 @@ function createMockUser(email: string, fullName: string, forcedRole?: string) {
   // Add user role
   let roles = getMockRoles().filter((r: any) => r.user_id !== id);
   const role = forcedRole || (isRootAdmin ? 'super_admin' : (roles.length === 0 ? 'admin' : 'recruiter'));
+  const clientId = forcedClientId !== undefined
+    ? forcedClientId
+    : (isRootAdmin ? null : (email.includes('commit') ? '00000000-0000-0000-0000-000000000004' : '00000000-0000-0000-0000-000000000001'));
+
   roles.push({
     id: isRootAdmin ? 'mock-role-platform-admin' : ('mock-role-id-' + Math.random().toString(36).substring(2, 11)),
     user_id: id,
     role,
-    client_id: isRootAdmin ? null : undefined,
+    client_id: clientId,
     created_at: new Date().toISOString()
   });
   saveMockRoles(roles);
@@ -277,10 +301,10 @@ function triggerAuthChange(event: string, session: any) {
   });
 }
 
-// Ensure admin and recruiter accounts always exist in mock mode
+// Ensure platform admin, tenant admins, and recruiter accounts always exist in mock mode
 const existingUsers = getMockUsers();
 if (!existingUsers.some((u: any) => u.email === 'admin@hiremate.ai')) {
-  createMockUser('admin@hiremate.ai', 'Administrator', 'super_admin');
+  createMockUser('admin@hiremate.ai', 'HireSort SuperAdmin', 'super_admin', null);
 } else {
   // Ensure admin role is always super_admin
   const adminUser = existingUsers.find((u: any) => u.email === 'admin@hiremate.ai');
@@ -301,8 +325,20 @@ if (!existingUsers.some((u: any) => u.email === 'admin@hiremate.ai')) {
     saveMockRoles(roles);
   }
 }
+
+// Commit tenant admin
+if (!existingUsers.some((u: any) => u.email === 'admin@commit.com')) {
+  createMockUser('admin@commit.com', 'Commit Workspace Admin', 'client_admin', '00000000-0000-0000-0000-000000000004');
+}
+
+// Zool tenant admin
+if (!existingUsers.some((u: any) => u.email === 'admin@zool.in')) {
+  createMockUser('admin@zool.in', 'Zool Workspace Admin', 'client_admin', '00000000-0000-0000-0000-000000000001');
+}
+
+// Recruiter
 if (!existingUsers.some((u: any) => u.email === 'recruiter@hiremate.ai')) {
-  createMockUser('recruiter@hiremate.ai', 'Jane Recruiter', 'recruiter');
+  createMockUser('recruiter@hiremate.ai', 'Jane Recruiter', 'recruiter', '00000000-0000-0000-0000-000000000001');
 }
 
 // Mock query builder to mimic postgrest
@@ -724,9 +760,13 @@ const mockSupabase = {
       if (!user) {
         // If email matches one of the seeded users but isn't registered, create it
         if (email === 'admin@hiremate.ai') {
-          user = createMockUser('admin@hiremate.ai', 'Administrator');
+          user = createMockUser('admin@hiremate.ai', 'HireSort SuperAdmin', 'super_admin', null);
+        } else if (email === 'admin@commit.com') {
+          user = createMockUser('admin@commit.com', 'Commit Workspace Admin', 'client_admin', '00000000-0000-0000-0000-000000000004');
+        } else if (email === 'admin@zool.in') {
+          user = createMockUser('admin@zool.in', 'Zool Workspace Admin', 'client_admin', '00000000-0000-0000-0000-000000000001');
         } else if (email === 'recruiter@hiremate.ai') {
-          user = createMockUser('recruiter@hiremate.ai', 'Jane Recruiter');
+          user = createMockUser('recruiter@hiremate.ai', 'Jane Recruiter', 'recruiter', '00000000-0000-0000-0000-000000000001');
         } else {
           // Allow automatic signup for any emails to make local dev super easy
           user = createMockUser(email, email.split('@')[0]);

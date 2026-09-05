@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
+import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { ClientTenant } from '@/types/hiresort';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ import TenantLogoUploader from '@/components/common/TenantLogoUploader';
 
 const SEED_CLIENTS: ClientTenant[] = [
   DEFAULT_ZOOL_CLIENT,
+  DEFAULT_COMMIT_CLIENT,
   {
     id: '00000000-0000-0000-0000-000000000002',
     name: 'Nexus Tech Global',

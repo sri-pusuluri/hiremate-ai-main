@@ -83,9 +83,14 @@ export default function Auth() {
     let { error } = await signIn(loginEmail, loginPassword);
 
     // If Supabase returns invalid login credentials for demo accounts, auto-register them or provide mock fallback
-    if (error && error.message.includes('Invalid login credentials') && (loginEmail === 'admin@hiremate.ai' || loginEmail === 'recruiter@hiremate.ai')) {
-      const isAdm = loginEmail.includes('admin');
-      const signupRes = await signUp(loginEmail, loginPassword, isAdm ? 'Administrator' : 'Jane Recruiter');
+    if (error && error.message.includes('Invalid login credentials')) {
+      let defaultName = 'User';
+      if (loginEmail === 'admin@hiremate.ai') defaultName = 'HireSort SuperAdmin';
+      else if (loginEmail === 'admin@commit.com') defaultName = 'Commit Workspace Admin';
+      else if (loginEmail === 'admin@zool.in') defaultName = 'Zool Workspace Admin';
+      else if (loginEmail === 'recruiter@hiremate.ai') defaultName = 'Jane Recruiter';
+
+      const signupRes = await signUp(loginEmail, loginPassword, defaultName);
       if (!signupRes.error) {
         const retry = await signIn(loginEmail, loginPassword);
         error = retry.error;
@@ -231,60 +236,110 @@ export default function Auth() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                       <KeyRound className="w-3.5 h-3.5 text-primary" />
-                      <span>Demo Credentials</span>
+                      <span>Demo Credentials (1-Click Personas)</span>
                     </div>
                     <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    {/* Admin Credential Card */}
+                    {/* HireSort SuperAdmin Card */}
                     <button
                       type="button"
                       onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')}
                       className={`p-2.5 rounded-lg border text-left transition-all relative ${
                         loginEmail === 'admin@hiremate.ai'
-                          ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
-                          : 'border-border/70 bg-background hover:border-primary/50 hover:bg-muted/50'
+                          ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-1 ring-purple-500'
+                          : 'border-border/70 bg-background hover:border-purple-500/50 hover:bg-muted/50'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                          <span className="text-xs font-bold text-foreground">Admin</span>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1 text-purple-400">
+                          <ShieldCheck className="w-3.5 h-3.5 text-purple-500" />
+                          <span className="text-xs font-bold text-foreground">SuperAdmin</span>
                         </div>
                         {loginEmail === 'admin@hiremate.ai' && (
-                          <span className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
-                            <Check className="w-3 h-3" /> Selected
+                          <span className="text-[9px] text-purple-400 font-semibold flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5" /> Selected
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-mono text-muted-foreground truncate">admin@hiremate.ai</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/80 mt-0.5">pass: <span className="text-foreground/90 font-semibold">admin123</span></p>
+                      <p className="text-[10px] text-muted-foreground">HireSort Platform HQ</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">admin@hiremate.ai</p>
                     </button>
 
-                    {/* Recruiter Credential Card */}
+                    {/* Commit Client Admin Card */}
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('admin@commit.com', 'commit123')}
+                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
+                        loginEmail === 'admin@commit.com'
+                          ? 'border-orange-500 bg-orange-500/10 shadow-xs ring-1 ring-orange-500'
+                          : 'border-border/70 bg-background hover:border-orange-500/50 hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1 text-orange-500">
+                          <span className="w-3.5 h-3.5 rounded bg-orange-500 text-white font-bold text-[8px] flex items-center justify-center">C</span>
+                          <span className="text-xs font-bold text-foreground">Commit Admin</span>
+                        </div>
+                        {loginEmail === 'admin@commit.com' && (
+                          <span className="text-[9px] text-orange-500 font-semibold flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5" /> Selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Tenant Admin (Commit)</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">admin@commit.com</p>
+                    </button>
+
+                    {/* Zool Client Admin Card */}
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('admin@zool.in', 'zool123')}
+                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
+                        loginEmail === 'admin@zool.in'
+                          ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-1 ring-blue-500'
+                          : 'border-border/70 bg-background hover:border-blue-500/50 hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1 text-blue-500">
+                          <span className="w-3.5 h-3.5 rounded bg-blue-600 text-white font-bold text-[8px] flex items-center justify-center">Z</span>
+                          <span className="text-xs font-bold text-foreground">Zool Admin</span>
+                        </div>
+                        {loginEmail === 'admin@zool.in' && (
+                          <span className="text-[9px] text-blue-500 font-semibold flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5" /> Selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Tenant Admin (Zool)</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">admin@zool.in</p>
+                    </button>
+
+                    {/* Recruiter Card */}
                     <button
                       type="button"
                       onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')}
                       className={`p-2.5 rounded-lg border text-left transition-all relative ${
                         loginEmail === 'recruiter@hiremate.ai'
-                          ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
-                          : 'border-border/70 bg-background hover:border-primary/50 hover:bg-muted/50'
+                          ? 'border-sky-500 bg-sky-500/10 shadow-xs ring-1 ring-sky-500'
+                          : 'border-border/70 bg-background hover:border-sky-500/50 hover:bg-muted/50'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1 text-sky-600">
                           <Briefcase className="w-3.5 h-3.5 text-sky-600" />
                           <span className="text-xs font-bold text-foreground">Recruiter</span>
                         </div>
                         {loginEmail === 'recruiter@hiremate.ai' && (
-                          <span className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
-                            <Check className="w-3 h-3" /> Selected
+                          <span className="text-[9px] text-sky-600 font-semibold flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5" /> Selected
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-mono text-muted-foreground truncate">recruiter@hiremate.ai</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/80 mt-0.5">pass: <span className="text-foreground/90 font-semibold">recruiter123</span></p>
+                      <p className="text-[10px] text-muted-foreground">Hiring Recruiter</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">recruiter@hiremate.ai</p>
                     </button>
                   </div>
                 </div>

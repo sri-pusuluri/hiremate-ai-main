@@ -6,12 +6,28 @@ import { ClientTenant } from '@/types/hiresort';
 
 export type AppRole = 'super_admin' | 'admin' | 'client_admin' | 'recruiter';
 
+export const HIRESORT_PLATFORM_CLIENT: ClientTenant = {
+  id: 'hiresort-platform-hq',
+  name: 'HireSort Platform HQ',
+  slug: 'platform',
+  themeColor: '#7c3aed',
+  subscriptionTier: 'enterprise',
+};
+
 export const DEFAULT_ZOOL_CLIENT: ClientTenant = {
   id: '00000000-0000-0000-0000-000000000001',
   name: 'Zool',
   slug: 'zool',
   themeColor: '#2563eb',
   subscriptionTier: 'pro',
+};
+
+export const DEFAULT_COMMIT_CLIENT: ClientTenant = {
+  id: '00000000-0000-0000-0000-000000000004',
+  name: 'Commit',
+  slug: 'commit',
+  themeColor: '#f97316',
+  subscriptionTier: 'enterprise',
 };
 
 interface AuthContextType {
@@ -50,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem('hiresort_active_tenant');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return DEFAULT_ZOOL_CLIENT;
+    return HIRESORT_PLATFORM_CLIENT;
   });
 
   const setClient = (newClient: ClientTenant | null) => {
@@ -185,7 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (roleData) {
-        setRole((roleData as any).role as AppRole);
+        const currentRole = (roleData as any).role as AppRole;
+        setRole(currentRole);
         const assignedClientId = (roleData as any).client_id;
         if (assignedClientId) {
           try {
@@ -205,9 +222,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 subscriptionTier: (clientData as any).subscription_tier || 'pro',
                 stripeCustomerId: (clientData as any).stripe_customer_id,
               });
+            } else if (assignedClientId === DEFAULT_COMMIT_CLIENT.id) {
+              setClient(DEFAULT_COMMIT_CLIENT);
+            } else {
+              setClient(DEFAULT_ZOOL_CLIENT);
             }
           } catch (cErr) {
             console.warn('Could not load client details, using default:', cErr);
+          }
+        } else {
+          // Super Admin / Platform level account without a locked tenant
+          const saved = localStorage.getItem('hiresort_active_tenant');
+          if (saved) {
+            try {
+              setClientState(JSON.parse(saved));
+            } catch (e) {
+              setClientState(HIRESORT_PLATFORM_CLIENT);
+            }
+          } else {
+            setClientState(HIRESORT_PLATFORM_CLIENT);
           }
         }
       }
@@ -252,7 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setRole(null);
       setProfile(null);
-      setClient(DEFAULT_ZOOL_CLIENT);
+      setClient(HIRESORT_PLATFORM_CLIENT);
       setNeedsPasswordReset(false);
       localStorage.removeItem('hiresort_active_tenant');
       
@@ -273,9 +306,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const isSuperAdmin = role === 'super_admin' || role === 'admin' || user?.email?.includes('admin') || user?.email === 'srini@zool.in' || user?.email?.includes('sri');
-  const isClientAdmin = isSuperAdmin || role === 'client_admin' || user?.email?.endsWith('@zool.in');
-  const isAdmin = isSuperAdmin || isClientAdmin || role === 'admin' || role === 'super_admin' || role === 'client_admin';
+  const isSuperAdmin = role === 'super_admin' || user?.email === 'admin@hiremate.ai' || user?.email === 'srini@zool.in';
+  const isClientAdmin = isSuperAdmin || role === 'client_admin' || role === 'admin';
+  const isAdmin = isSuperAdmin || isClientAdmin;
 
   return (
     <AuthContext.Provider

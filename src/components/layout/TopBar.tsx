@@ -1,4 +1,4 @@
-import { Bell, Search, Building2 } from 'lucide-react';
+import { Bell, Search, Building2, Globe, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,10 +29,12 @@ export function TopBar({ title, subtitle }: TopBarProps) {
 
   const getRoleLabel = () => {
     if (isSuperAdmin) return 'Super Admin';
-    if (role === 'admin') return 'Admin';
-    if (role === 'client_admin' || user?.email?.endsWith('@zool.in')) return 'Workspace Admin';
+    if (role === 'admin') return 'Platform Admin';
+    if (role === 'client_admin') return 'Workspace Admin';
     return 'Recruiter';
   };
+
+  const isPlatformMode = !client || client.id === 'hiresort-platform-hq';
 
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
@@ -44,11 +46,21 @@ export function TopBar({ title, subtitle }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Active Tenant Indicator */}
+        {/* Active Tenant / Platform Context Indicator */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/40 text-xs text-foreground">
-          <Building2 className="w-3.5 h-3.5 text-primary" />
-          <span className="font-semibold">{client?.name || 'Zool'}</span>
-          <span className="text-muted-foreground">({client?.slug || 'zool'})</span>
+          {isPlatformMode ? (
+            <>
+              <Globe className="w-3.5 h-3.5 text-purple-500" />
+              <span className="font-semibold text-purple-400">HireSort Platform HQ</span>
+              <span className="text-muted-foreground">(Global)</span>
+            </>
+          ) : (
+            <>
+              <Building2 className="w-3.5 h-3.5 text-primary" />
+              <span className="font-semibold">{client?.name}</span>
+              <span className="text-muted-foreground">({client?.slug})</span>
+            </>
+          )}
         </div>
 
         {/* Search */}
