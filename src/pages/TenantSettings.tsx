@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { Department, Position, QuestionBankItem } from '@/types/hiresort';
@@ -103,6 +104,24 @@ const DEFAULT_QUESTIONS: Array<{ text: string; type: 'text' | 'choice' | 'boolea
 export default function TenantSettings() {
   const { client, setClient, clientId, user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'api');
+
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', newTab);
+      return next;
+    }, { replace: true });
+  };
 
   // Branding Settings State
   const [name, setName] = useState(client?.name || 'Zool');
@@ -172,6 +191,21 @@ export default function TenantSettings() {
       setSlug(client.slug);
       setThemeColor(client.themeColor || '#2563eb');
       setLogoUrl(client.logoUrl || '');
+
+      const storedKey = localStorage.getItem(`hsa_api_key_${client.id}`);
+      if (storedKey) setApiKey(storedKey);
+
+      const storedStrategy = localStorage.getItem(`hiresort_ai_strategy_${client.id}`) as any;
+      if (storedStrategy) setAiStrategy(storedStrategy);
+
+      const storedByokKey = localStorage.getItem(`hiresort_byok_key_${client.id}`);
+      if (storedByokKey) setByokApiKey(storedByokKey);
+
+      const storedEndpoint = localStorage.getItem(`hiresort_byok_endpoint_${client.id}`);
+      if (storedEndpoint) setByokEndpoint(storedEndpoint);
+
+      const storedLogin = localStorage.getItem(`hiresort_login_method_${client.id}`) as any;
+      if (storedLogin) setLoginMethod(storedLogin);
     }
   }, [client]);
 
@@ -303,12 +337,13 @@ export default function TenantSettings() {
 
   // Generate / Regenerate API Key
   const handleRegenerateApiKey = () => {
+    const effectiveClientId = client?.id || clientId || DEFAULT_ZOOL_CLIENT.id;
     const newKey = `hsa_live_${slug}_${Math.random().toString(36).substring(2, 14)}${Math.random().toString(36).substring(2, 14)}`;
     setApiKey(newKey);
-    localStorage.setItem(`hsa_api_key_${client?.id || 'default'}`, newKey);
+    localStorage.setItem(`hsa_api_key_${effectiveClientId}`, newKey);
 
     logAuditEvent({
-      clientId: client?.id || DEFAULT_ZOOL_CLIENT.id,
+      clientId: effectiveClientId,
       clientName: name,
       userId: user?.id,
       userEmail: user?.email || 'admin@hiresort.ai',
@@ -329,12 +364,13 @@ export default function TenantSettings() {
   // Trigger ERP Sync
   const handleSyncErp = async () => {
     setIsSyncingErp(true);
+    const effectiveClientId = client?.id || clientId || DEFAULT_ZOOL_CLIENT.id;
     try {
       // Simulate sync request with client's external ERP/ATS
       await new Promise(r => setTimeout(r, 1200));
 
       await logAuditEvent({
-        clientId: client?.id || DEFAULT_ZOOL_CLIENT.id,
+        clientId: effectiveClientId,
         clientName: name,
         userId: user?.id,
         userEmail: user?.email || 'admin@hiresort.ai',
@@ -363,14 +399,15 @@ export default function TenantSettings() {
 
   // Save AI Strategy
   const handleSaveAIStrategy = () => {
-    localStorage.setItem(`hiresort_ai_strategy_${client?.id}`, aiStrategy);
+    const effectiveClientId = client?.id || clientId || DEFAULT_ZOOL_CLIENT.id;
+    localStorage.setItem(`hiresort_ai_strategy_${effectiveClientId}`, aiStrategy);
     if (aiStrategy === 'byok') {
-      localStorage.setItem(`hiresort_byok_key_${client?.id}`, byokApiKey);
-      localStorage.setItem(`hiresort_byok_endpoint_${client?.id}`, byokEndpoint);
+      localStorage.setItem(`hiresort_byok_key_${effectiveClientId}`, byokApiKey);
+      localStorage.setItem(`hiresort_byok_endpoint_${effectiveClientId}`, byokEndpoint);
     }
 
     logAuditEvent({
-      clientId: client?.id || DEFAULT_ZOOL_CLIENT.id,
+      clientId: effectiveClientId,
       clientName: name,
       userId: user?.id,
       userEmail: user?.email || 'admin@hiresort.ai',
@@ -392,10 +429,11 @@ export default function TenantSettings() {
 
   // Save Login Method
   const handleSaveLoginMethod = () => {
-    localStorage.setItem(`hiresort_login_method_${client?.id}`, loginMethod);
+    const effectiveClientId = client?.id || clientId || DEFAULT_ZOOL_CLIENT.id;
+    localStorage.setItem(`hiresort_login_method_${effectiveClientId}`, loginMethod);
 
     logAuditEvent({
-      clientId: client?.id || DEFAULT_ZOOL_CLIENT.id,
+      clientId: effectiveClientId,
       clientName: name,
       userId: user?.id,
       userEmail: user?.email || 'admin@hiresort.ai',
@@ -533,41 +571,41 @@ export default function TenantSettings() {
         </div>
       </div>
 
-      <Tabs defaultValue="api" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="bg-muted p-1 rounded-lg flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="api" className="gap-1.5 text-xs">
+          <TabsTrigger value="api" onClick={() => handleTabChange('api')} className="gap-1.5 text-xs">
             <Key className="w-3.5 h-3.5 text-amber-500" />
             REST API & Webhooks
           </TabsTrigger>
-          <TabsTrigger value="ai" className="gap-1.5 text-xs">
+          <TabsTrigger value="ai" onClick={() => handleTabChange('ai')} className="gap-1.5 text-xs">
             <Cpu className="w-3.5 h-3.5 text-violet-500" />
             AI Strategy (BYOK)
           </TabsTrigger>
-          <TabsTrigger value="login" className="gap-1.5 text-xs">
+          <TabsTrigger value="login" onClick={() => handleTabChange('login')} className="gap-1.5 text-xs">
             <Lock className="w-3.5 h-3.5 text-blue-500" />
             Login & SSO Policy
           </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5 text-xs">
+          <TabsTrigger value="audit" onClick={() => handleTabChange('audit')} className="gap-1.5 text-xs">
             <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
             Audit Trail ({auditLogs.length})
           </TabsTrigger>
-          <TabsTrigger value="db" className="gap-1.5 text-xs">
+          <TabsTrigger value="db" onClick={() => handleTabChange('db')} className="gap-1.5 text-xs">
             <Database className="w-3.5 h-3.5 text-emerald-500" />
             Database Isolation
           </TabsTrigger>
-          <TabsTrigger value="branding" className="gap-1.5 text-xs">
+          <TabsTrigger value="branding" onClick={() => handleTabChange('branding')} className="gap-1.5 text-xs">
             <Palette className="w-3.5 h-3.5" />
             Branding
           </TabsTrigger>
-          <TabsTrigger value="questions" className="gap-1.5 text-xs">
+          <TabsTrigger value="questions" onClick={() => handleTabChange('questions')} className="gap-1.5 text-xs">
             <HelpCircle className="w-3.5 h-3.5" />
             Question Bank ({questionBank.length})
           </TabsTrigger>
-          <TabsTrigger value="departments" className="gap-1.5 text-xs">
+          <TabsTrigger value="departments" onClick={() => handleTabChange('departments')} className="gap-1.5 text-xs">
             <Building2 className="w-3.5 h-3.5" />
             Departments ({departments.length})
           </TabsTrigger>
-          <TabsTrigger value="positions" className="gap-1.5 text-xs">
+          <TabsTrigger value="positions" onClick={() => handleTabChange('positions')} className="gap-1.5 text-xs">
             <Briefcase className="w-3.5 h-3.5" />
             Positions ({positions.length})
           </TabsTrigger>
@@ -738,7 +776,11 @@ export default function TenantSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Option A: Managed */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  data-testid="option-a-card"
                   onClick={() => setAiStrategy('managed')}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setAiStrategy('managed'); }}
                   className={`p-4 rounded-xl border-2 transition-all cursor-pointer space-y-2 ${
                     aiStrategy === 'managed' 
                       ? 'border-primary bg-primary/5 shadow-xs' 
@@ -760,7 +802,11 @@ export default function TenantSettings() {
 
                 {/* Option B: BYOK */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  data-testid="option-b-card"
                   onClick={() => setAiStrategy('byok')}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setAiStrategy('byok'); }}
                   className={`p-4 rounded-xl border-2 transition-all cursor-pointer space-y-2 ${
                     aiStrategy === 'byok' 
                       ? 'border-primary bg-primary/5 shadow-xs' 
@@ -819,6 +865,7 @@ export default function TenantSettings() {
                   <div className="space-y-1.5">
                     <Label className="text-xs">Corporate API Secret Key</Label>
                     <Input 
+                      data-testid="byok-api-key-input"
                       type="password"
                       value={byokApiKey}
                       onChange={(e) => setByokApiKey(e.target.value)}

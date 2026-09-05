@@ -111,3 +111,12 @@ export const SYSTEM_QUESTION_LIBRARY: ScreeningQuestion[] = [
     type: 'boolean'
   }
 ];
+
+export const SCREENING_QUESTION_LIBRARY = SYSTEM_QUESTION_LIBRARY;
+
+export function getQuestionsByCategory(categoryId: string): ScreeningQuestion[] {
+  if (!categoryId || categoryId === 'all') {
+    return SYSTEM_QUESTION_LIBRARY;
+  }
+  return SYSTEM_QUESTION_LIBRARY.filter(q => q.category === categoryId);
+}
