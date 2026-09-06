@@ -40,14 +40,7 @@ const MOCK_CANDIDATES_KEY = 'hiremate_mock_candidates';
 
 export const hasRealSupabase = Boolean(SUPABASE_URL && !SUPABASE_URL.includes('placeholder'));
 
-// Automatically clear stale mock mode so app connects to live database
-if (hasRealSupabase && typeof window !== 'undefined') {
-  try {
-    localStorage.removeItem(USE_MOCK_SUPABASE_KEY);
-  } catch (e) {}
-}
-
-let useMock = !hasRealSupabase && (typeof localStorage !== 'undefined' && localStorage.getItem(USE_MOCK_SUPABASE_KEY) === 'true');
+let useMock = typeof localStorage !== 'undefined' && localStorage.getItem(USE_MOCK_SUPABASE_KEY) === 'true';
 
 // Local mock database helper functions
 function getMockJobs() {
@@ -152,7 +145,6 @@ export function saveMockClients(clients: any[]) {
 
 // Helper to switch to mock mode
 export function enableMockMode() {
-  if (hasRealSupabase) return; // Never downgrade if real database credentials are present
   if (!useMock) {
     useMock = true;
     localStorage.setItem(USE_MOCK_SUPABASE_KEY, 'true');

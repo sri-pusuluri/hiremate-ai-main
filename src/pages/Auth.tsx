@@ -80,23 +80,7 @@ export default function Auth() {
     }
 
     setIsSubmitting(true);
-    let { error } = await signIn(loginEmail, loginPassword);
-
-    // If Supabase returns invalid login credentials for demo accounts, auto-register them or provide mock fallback
-    if (error && error.message.includes('Invalid login credentials')) {
-      let defaultName = 'User';
-      if (loginEmail === 'admin@hiremate.ai') defaultName = 'HireSort SuperAdmin';
-      else if (loginEmail === 'admin@commit.com') defaultName = 'Commit Workspace Admin';
-      else if (loginEmail === 'admin@zool.in') defaultName = 'Zool Workspace Admin';
-      else if (loginEmail === 'recruiter@hiremate.ai') defaultName = 'Jane Recruiter';
-
-      const signupRes = await signUp(loginEmail, loginPassword, defaultName);
-      if (!signupRes.error) {
-        const retry = await signIn(loginEmail, loginPassword);
-        error = retry.error;
-      }
-    }
-
+    const { error } = await signIn(loginEmail, loginPassword);
     setIsSubmitting(false);
 
     if (error) {
