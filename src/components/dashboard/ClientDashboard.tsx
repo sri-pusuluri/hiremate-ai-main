@@ -71,7 +71,7 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
       }
     }
     loadClientData();
-  }, [clientId]);
+  }, [clientId, client?.id]);
 
   // Client KPI Computations
   const totalCandidates = candidates.length;

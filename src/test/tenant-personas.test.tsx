@@ -48,4 +48,41 @@ describe('Multi-Tenant Persona Architecture', () => {
     expect(recruiterSuper).toBe(false);
     expect(isClientAdminCheck(recruiterSuper, 'recruiter')).toBe(false);
   });
+
+  it('provides distinct, isolated jobs and candidates for Zool and Commit', async () => {
+    const { supabase, enableMockMode } = await import('../integrations/supabase/client');
+    enableMockMode();
+
+    // Query jobs for Zool
+    const { data: zoolJobs } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('client_id', DEFAULT_ZOOL_CLIENT.id);
+    expect(zoolJobs?.length).toBeGreaterThan(0);
+    expect(zoolJobs?.every((j: any) => j.client_id === DEFAULT_ZOOL_CLIENT.id)).toBe(true);
+
+    // Query jobs for Commit
+    const { data: commitJobs } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('client_id', DEFAULT_COMMIT_CLIENT.id);
+    expect(commitJobs?.length).toBeGreaterThan(0);
+    expect(commitJobs?.every((j: any) => j.client_id === DEFAULT_COMMIT_CLIENT.id)).toBe(true);
+
+    // Confirm Zool and Commit have completely different jobs
+    const zoolJobIds = new Set(zoolJobs?.map((j: any) => j.id));
+    const commitJobIds = new Set(commitJobs?.map((j: any) => j.id));
+    for (const id of commitJobIds) {
+      expect(zoolJobIds.has(id)).toBe(false);
+    }
+
+    // Query candidates for Commit
+    const { data: commitCands } = await supabase
+      .from('candidates')
+      .select('*')
+      .eq('client_id', DEFAULT_COMMIT_CLIENT.id);
+    expect(commitCands?.length).toBeGreaterThan(0);
+    expect(commitCands?.every((c: any) => c.client_id === DEFAULT_COMMIT_CLIENT.id)).toBe(true);
+  });
 });
+

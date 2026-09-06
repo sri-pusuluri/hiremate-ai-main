@@ -42,14 +42,322 @@ export const hasRealSupabase = Boolean(SUPABASE_URL && !SUPABASE_URL.includes('p
 
 let useMock = typeof localStorage !== 'undefined' && localStorage.getItem(USE_MOCK_SUPABASE_KEY) === 'true';
 
+const DEFAULT_ZOOL_ID = '00000000-0000-0000-0000-000000000001';
+const DEFAULT_COMMIT_ID = '00000000-0000-0000-0000-000000000004';
+
+const INITIAL_MOCK_JOBS = [
+  // Zool Tenant Jobs
+  {
+    id: '11111111-1111-1111-1111-111111111111',
+    title: 'Senior Frontend Engineer',
+    department: 'Engineering',
+    location: 'Bangalore, India',
+    type: 'full-time',
+    postedDate: '2024-01-08',
+    status: 'active',
+    candidateCount: 5,
+    hireSortEnabled: true,
+    hire_sort_enabled: true,
+    salary: '₹35-50 LPA',
+    client_id: DEFAULT_ZOOL_ID,
+    description: 'Lead the frontend architecture of our flagship product with React & TypeScript.',
+    requirements: ['React 18 & TypeScript (5+ years)', 'State Management', 'Testing'],
+    responsibilities: ['Architect scalable frontend systems', 'Mentor junior developers'],
+    created_at: '2024-01-08T00:00:00.000Z'
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222222',
+    title: 'Product Manager',
+    department: 'Product',
+    location: 'Singapore',
+    type: 'full-time',
+    postedDate: '2024-01-12',
+    status: 'active',
+    candidateCount: 4,
+    hireSortEnabled: true,
+    hire_sort_enabled: true,
+    salary: '$110,000 - $140,000',
+    client_id: DEFAULT_ZOOL_ID,
+    description: 'Own core product roadmap and feature delivery across global markets.',
+    requirements: ['4+ years SaaS Product Management', 'Data analytics', 'Agile'],
+    responsibilities: ['Define roadmap', 'Write PRDs', 'Track key metrics'],
+    created_at: '2024-01-12T00:00:00.000Z'
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333333',
+    title: 'UX Designer',
+    department: 'Design',
+    location: 'Remote',
+    type: 'full-time',
+    postedDate: '2024-01-15',
+    status: 'active',
+    candidateCount: 3,
+    hireSortEnabled: true,
+    hire_sort_enabled: true,
+    salary: '$80,000 - $105,000',
+    client_id: DEFAULT_ZOOL_ID,
+    description: 'Craft intuitive interfaces and design systems for enterprise web applications.',
+    requirements: ['3+ years Figma & UX prototyping', 'Design systems', 'WCAG accessibility'],
+    responsibilities: ['Create UI prototypes', 'Conduct usability testing'],
+    created_at: '2024-01-15T00:00:00.000Z'
+  },
+  // Commit Tenant Jobs
+  {
+    id: '44444444-4444-4444-4444-444444444444',
+    title: 'Full Stack Developer',
+    department: 'Engineering',
+    location: 'San Francisco, CA',
+    type: 'full-time',
+    postedDate: '2024-01-18',
+    status: 'active',
+    candidateCount: 4,
+    hireSortEnabled: true,
+    hire_sort_enabled: true,
+    salary: '$130,000 - $160,000',
+    client_id: DEFAULT_COMMIT_ID,
+    description: 'Build robust enterprise services using TypeScript, Node.js, and React.',
+    requirements: ['TypeScript & Node.js', 'PostgreSQL', 'Cloud Infrastructure'],
+    responsibilities: ['Build full stack features', 'Optimize SQL queries'],
+    created_at: '2024-01-18T00:00:00.000Z'
+  },
+  {
+    id: '55555555-5555-5555-5555-555555555555',
+    title: 'Enterprise Marketing Director',
+    department: 'Marketing',
+    location: 'New York, NY',
+    type: 'full-time',
+    postedDate: '2024-01-20',
+    status: 'active',
+    candidateCount: 3,
+    hireSortEnabled: true,
+    hire_sort_enabled: true,
+    salary: '$120,000 - $150,000',
+    client_id: DEFAULT_COMMIT_ID,
+    description: 'Lead enterprise demand generation, product marketing, and brand strategy.',
+    requirements: ['B2B SaaS Growth (5+ years)', 'Demand Generation', 'Brand leadership'],
+    responsibilities: ['Drive enterprise pipeline', 'Manage marketing budgets'],
+    created_at: '2024-01-20T00:00:00.000Z'
+  },
+  {
+    id: '66666666-6666-6666-6666-666666666666',
+    title: 'Cloud Security Engineer',
+    department: 'Security',
+    location: 'Austin, TX',
+    type: 'full-time',
+    postedDate: '2024-01-22',
+    status: 'active',
+    candidateCount: 2,
+    hireSortEnabled: true,
+    hire_sort_enabled: true,
+    salary: '$140,000 - $175,000',
+    client_id: DEFAULT_COMMIT_ID,
+    description: 'Secure multi-tenant cloud environments and ensure SOC2 and GDPR compliance.',
+    requirements: ['AWS / GCP security (4+ years)', 'Kubernetes hardening', 'Compliance standards'],
+    responsibilities: ['Conduct vulnerability scans', 'Enforce IAM policies'],
+    created_at: '2024-01-22T00:00:00.000Z'
+  }
+];
+
+const INITIAL_MOCK_CANDIDATES = [
+  // Zool Candidates
+  {
+    id: 'cand-z1',
+    job_id: '11111111-1111-1111-1111-111111111111',
+    full_name: 'Priya Sharma',
+    email: 'priya.sharma@example.com',
+    experience: 6,
+    location: 'Bangalore, India',
+    ai_score: 'high',
+    aiScore: 'high',
+    cosine_similarity: 0.94,
+    cosineSimilarity: 0.94,
+    status: 'shortlisted',
+    is_pinned: true,
+    client_id: DEFAULT_ZOOL_ID,
+    created_at: '2024-01-10T10:00:00.000Z'
+  },
+  {
+    id: 'cand-z2',
+    job_id: '11111111-1111-1111-1111-111111111111',
+    full_name: 'David Chen',
+    email: 'david.chen@example.com',
+    experience: 5,
+    location: 'Singapore',
+    ai_score: 'high',
+    aiScore: 'high',
+    cosine_similarity: 0.88,
+    cosineSimilarity: 0.88,
+    status: 'interviewing',
+    client_id: DEFAULT_ZOOL_ID,
+    created_at: '2024-01-12T14:30:00.000Z'
+  },
+  {
+    id: 'cand-z3',
+    job_id: '22222222-2222-2222-2222-222222222222',
+    full_name: 'Elena Rostova',
+    email: 'elena.rostova@example.com',
+    experience: 7,
+    location: 'Remote',
+    ai_score: 'high',
+    aiScore: 'high',
+    cosine_similarity: 0.86,
+    cosineSimilarity: 0.86,
+    status: 'shortlisted',
+    client_id: DEFAULT_ZOOL_ID,
+    created_at: '2024-01-14T09:15:00.000Z'
+  },
+  {
+    id: 'cand-z4',
+    job_id: '33333333-3333-3333-3333-333333333333',
+    full_name: 'Amit Patel',
+    email: 'amit.patel@example.com',
+    experience: 4,
+    location: 'Mumbai, India',
+    ai_score: 'medium',
+    aiScore: 'medium',
+    cosine_similarity: 0.72,
+    cosineSimilarity: 0.72,
+    status: 'pending',
+    client_id: DEFAULT_ZOOL_ID,
+    created_at: '2024-01-16T11:45:00.000Z'
+  },
+  {
+    id: 'cand-z5',
+    job_id: '22222222-2222-2222-2222-222222222222',
+    full_name: 'Sofia Rossi',
+    email: 'sofia.rossi@example.com',
+    experience: 3,
+    location: 'Milan, Italy',
+    ai_score: 'medium',
+    aiScore: 'medium',
+    cosine_similarity: 0.69,
+    cosineSimilarity: 0.69,
+    status: 'pending',
+    client_id: DEFAULT_ZOOL_ID,
+    created_at: '2024-01-18T16:20:00.000Z'
+  },
+
+  // Commit Candidates
+  {
+    id: 'cand-c1',
+    job_id: '44444444-4444-4444-4444-444444444444',
+    full_name: 'Marcus Vance',
+    email: 'marcus.vance@example.com',
+    experience: 6,
+    location: 'San Francisco, CA',
+    ai_score: 'high',
+    aiScore: 'high',
+    cosine_similarity: 0.95,
+    cosineSimilarity: 0.95,
+    status: 'shortlisted',
+    is_pinned: true,
+    client_id: DEFAULT_COMMIT_ID,
+    created_at: '2024-01-19T08:30:00.000Z'
+  },
+  {
+    id: 'cand-c2',
+    job_id: '55555555-5555-5555-5555-555555555555',
+    full_name: 'Sarah Jenkins',
+    email: 'sarah.jenkins@example.com',
+    experience: 8,
+    location: 'New York, NY',
+    ai_score: 'high',
+    aiScore: 'high',
+    cosine_similarity: 0.90,
+    cosineSimilarity: 0.90,
+    status: 'interviewing',
+    client_id: DEFAULT_COMMIT_ID,
+    created_at: '2024-01-21T10:15:00.000Z'
+  },
+  {
+    id: 'cand-c3',
+    job_id: '66666666-6666-6666-6666-666666666666',
+    full_name: 'Liam O\'Connor',
+    email: 'liam.oconnor@example.com',
+    experience: 5,
+    location: 'Austin, TX',
+    ai_score: 'high',
+    aiScore: 'high',
+    cosine_similarity: 0.88,
+    cosineSimilarity: 0.88,
+    status: 'shortlisted',
+    client_id: DEFAULT_COMMIT_ID,
+    created_at: '2024-01-23T12:00:00.000Z'
+  },
+  {
+    id: 'cand-c4',
+    job_id: '44444444-4444-4444-4444-444444444444',
+    full_name: 'Maya Lin',
+    email: 'maya.lin@example.com',
+    experience: 4,
+    location: 'Seattle, WA',
+    ai_score: 'medium',
+    aiScore: 'medium',
+    cosine_similarity: 0.77,
+    cosineSimilarity: 0.77,
+    status: 'pending',
+    client_id: DEFAULT_COMMIT_ID,
+    created_at: '2024-01-24T14:45:00.000Z'
+  },
+  {
+    id: 'cand-c5',
+    job_id: '66666666-6666-6666-6666-666666666666',
+    full_name: 'Ethan Hunt',
+    email: 'ethan.hunt@example.com',
+    experience: 5,
+    location: 'Dallas, TX',
+    ai_score: 'medium',
+    aiScore: 'medium',
+    cosine_similarity: 0.71,
+    cosineSimilarity: 0.71,
+    status: 'pending',
+    client_id: DEFAULT_COMMIT_ID,
+    created_at: '2024-01-25T11:10:00.000Z'
+  },
+  {
+    id: 'cand-c6',
+    job_id: '55555555-5555-5555-5555-555555555555',
+    full_name: 'Chloe Bennett',
+    email: 'chloe.bennett@example.com',
+    experience: 6,
+    location: 'Chicago, IL',
+    ai_score: 'high',
+    aiScore: 'high',
+    cosine_similarity: 0.92,
+    cosineSimilarity: 0.92,
+    status: 'interviewing',
+    client_id: DEFAULT_COMMIT_ID,
+    created_at: '2024-01-26T15:30:00.000Z'
+  }
+];
+
 // Local mock database helper functions
 function getMockJobs() {
+  if (typeof localStorage === 'undefined') return INITIAL_MOCK_JOBS;
   const data = localStorage.getItem(MOCK_JOBS_KEY);
   if (!data) {
-    localStorage.setItem(MOCK_JOBS_KEY, JSON.stringify(seedJobs));
-    return seedJobs;
+    localStorage.setItem(MOCK_JOBS_KEY, JSON.stringify(INITIAL_MOCK_JOBS));
+    return INITIAL_MOCK_JOBS;
   }
-  return JSON.parse(data);
+  try {
+    let parsed = JSON.parse(data);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure any jobs without client_id are assigned to Zool
+      parsed = parsed.map((j: any) => ({
+        ...j,
+        client_id: j.client_id || DEFAULT_ZOOL_ID
+      }));
+      // Ensure Commit tenant has its jobs
+      const hasCommit = parsed.some((j: any) => j.client_id === DEFAULT_COMMIT_ID);
+      if (!hasCommit) {
+        parsed.push(...INITIAL_MOCK_JOBS.filter(j => j.client_id === DEFAULT_COMMIT_ID));
+      }
+      localStorage.setItem(MOCK_JOBS_KEY, JSON.stringify(parsed));
+      return parsed;
+    }
+  } catch (e) {}
+  localStorage.setItem(MOCK_JOBS_KEY, JSON.stringify(INITIAL_MOCK_JOBS));
+  return INITIAL_MOCK_JOBS;
 }
 
 function saveMockJobs(jobs: any[]) {
@@ -57,12 +365,31 @@ function saveMockJobs(jobs: any[]) {
 }
 
 function getMockCandidates() {
+  if (typeof localStorage === 'undefined') return INITIAL_MOCK_CANDIDATES;
   const data = localStorage.getItem(MOCK_CANDIDATES_KEY);
   if (!data) {
-    localStorage.setItem(MOCK_CANDIDATES_KEY, JSON.stringify(seedCandidates));
-    return seedCandidates;
+    localStorage.setItem(MOCK_CANDIDATES_KEY, JSON.stringify(INITIAL_MOCK_CANDIDATES));
+    return INITIAL_MOCK_CANDIDATES;
   }
-  return JSON.parse(data);
+  try {
+    let parsed = JSON.parse(data);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure any candidates without client_id are assigned to Zool
+      parsed = parsed.map((c: any) => ({
+        ...c,
+        client_id: c.client_id || DEFAULT_ZOOL_ID
+      }));
+      // Ensure Commit tenant has its candidates
+      const hasCommit = parsed.some((c: any) => c.client_id === DEFAULT_COMMIT_ID);
+      if (!hasCommit) {
+        parsed.push(...INITIAL_MOCK_CANDIDATES.filter(c => c.client_id === DEFAULT_COMMIT_ID));
+      }
+      localStorage.setItem(MOCK_CANDIDATES_KEY, JSON.stringify(parsed));
+      return parsed;
+    }
+  } catch (e) {}
+  localStorage.setItem(MOCK_CANDIDATES_KEY, JSON.stringify(INITIAL_MOCK_CANDIDATES));
+  return INITIAL_MOCK_CANDIDATES;
 }
 
 function saveMockCandidates(candidates: any[]) {
@@ -339,6 +666,9 @@ class MockQueryBuilder {
   filters: Array<(item: any) => boolean> = [];
   updateData: any = null;
   isDelete: boolean = false;
+  isUpsert: boolean = false;
+  orderFn: ((a: any, b: any) => number) | null = null;
+  limitCount: number | null = null;
 
   constructor(table: string) {
     this.table = table;
@@ -350,6 +680,30 @@ class MockQueryBuilder {
 
   delete() {
     this.isDelete = true;
+    return this;
+  }
+
+  order(column: string, options?: { ascending?: boolean }) {
+    const asc = options?.ascending !== false;
+    this.orderFn = (a: any, b: any) => {
+      const valA = a[column];
+      const valB = b[column];
+      if (valA === valB) return 0;
+      if (valA == null) return asc ? -1 : 1;
+      if (valB == null) return asc ? 1 : -1;
+      return asc ? (valA < valB ? -1 : 1) : (valA > valB ? -1 : 1);
+    };
+    return this;
+  }
+
+  limit(count: number) {
+    this.limitCount = count;
+    return this;
+  }
+
+  upsert(data: any) {
+    this.updateData = Array.isArray(data) ? data : [data];
+    this.isUpsert = true;
     return this;
   }
 
@@ -396,6 +750,40 @@ class MockQueryBuilder {
   }
 
   async execute() {
+    if (this.isUpsert) {
+      let tableData: any[] = [];
+      let saveFn: (items: any[]) => void = () => {};
+      if (this.table === 'jobs') { tableData = getMockJobs(); saveFn = saveMockJobs; }
+      else if (this.table === 'candidates') { tableData = getMockCandidates(); saveFn = saveMockCandidates; }
+      else if (this.table === 'clients') { tableData = getMockClients(); saveFn = saveMockClients; }
+      else if (this.table === 'profiles') { tableData = getMockProfiles(); saveFn = saveMockProfiles; }
+      else if (this.table === 'user_roles') { tableData = getMockRoles(); saveFn = saveMockRoles; }
+
+      const itemsToUpsert = Array.isArray(this.updateData) ? this.updateData : [this.updateData];
+      const resultItems: any[] = [];
+
+      for (const item of itemsToUpsert) {
+        const idx = tableData.findIndex((row: any) => 
+          (item.id && row.id === item.id) || 
+          (this.table === 'user_roles' && row.user_id === item.user_id)
+        );
+        if (idx >= 0) {
+          tableData[idx] = { ...tableData[idx], ...item };
+          resultItems.push(tableData[idx]);
+        } else {
+          const newItem = { 
+            id: item.id || `${this.table.slice(0, 4)}-${Math.random().toString(36).substring(2, 9)}`, 
+            ...item, 
+            created_at: item.created_at || new Date().toISOString() 
+          };
+          tableData.push(newItem);
+          resultItems.push(newItem);
+        }
+      }
+      saveFn(tableData);
+      return { data: resultItems, error: null };
+    }
+
     if (this.isDelete) {
       let data: any[] = [];
       if (this.table === 'jobs') {
@@ -707,6 +1095,14 @@ class MockQueryBuilder {
           return matches;
         });
       }
+    }
+
+    if (this.orderFn && Array.isArray(data)) {
+      data = [...data].sort(this.orderFn);
+    }
+
+    if (typeof this.limitCount === 'number' && Array.isArray(data)) {
+      data = data.slice(0, this.limitCount);
     }
 
     return { data, error: null };
