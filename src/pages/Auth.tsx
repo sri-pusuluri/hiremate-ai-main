@@ -89,6 +89,10 @@ export default function Auth() {
       } else {
         setError(error.message);
       }
+    } else {
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirect = searchParams.get('redirect') || '/';
+      navigate(redirect);
     }
   };
 

@@ -186,11 +186,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           avatar_url: profileData.avatar_url,
         });
       } else {
-        // If the profile is null, it means the user was hard-deleted from the database
-        // but their browser still holds an unexpired JWT token. We must forcefully log them out.
-        console.warn('User profile not found. Forcing logout...');
-        await signOut();
-        return;
+        // Fallback to active user metadata instead of forcefully signing out
+        const fallbackName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+        setProfile({
+          id: userId,
+          email: user?.email || '',
+          full_name: fallbackName,
+          avatar_url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(fallbackName)}`,
+        });
       }
 
       // Fetch role and client_id
@@ -252,24 +255,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const isDemoPersona = ['admin@hiremate.ai', 'admin@commit.com', 'admin@zool.in', 'recruiter@hiremate.ai'].includes(email.toLowerCase().trim());
+    const cleanEmail = email.toLowerCase().trim();
+    const isDemoPersona = ['admin@hiremate.ai', 'admin@commit.com', 'admin@zool.in', 'recruiter@hiremate.ai'].includes(cleanEmail);
 
-    let { error } = await supabase.auth.signInWithPassword({
+    let authRes = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error && isDemoPersona) {
-      console.info('Live Supabase auth returned error for demo persona, activating local mock session:', error.message);
+    if (authRes.error && isDemoPersona) {
+      console.info('Live Supabase auth rejected demo persona, falling back to local mock session:', authRes.error.message);
       enableMockMode();
-      const retry = await supabase.auth.signInWithPassword({
+      authRes = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      return { error: retry.error as Error | null };
     }
 
-    return { error: error as Error | null };
+    if (!authRes.error && authRes.data?.session) {
+      const activeSession = authRes.data.session;
+      setSession(activeSession);
+      setUser(activeSession.user);
+      if (activeSession.user) {
+        await fetchUserData(activeSession.user.id);
+      }
+    }
+
+    return { error: authRes.error as Error | null };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {

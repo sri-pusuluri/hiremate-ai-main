@@ -1330,6 +1330,23 @@ export const supabase = new Proxy(realSupabase, {
 // Proxied auth client
 const authProxy = new Proxy(realSupabase.auth, {
   get(target: any, prop: string): any {
+    if (prop === 'onAuthStateChange') {
+      return (callback: any) => {
+        const realSub = realSupabase.auth.onAuthStateChange(callback);
+        const mockSub = mockSupabase.auth.onAuthStateChange(callback);
+        return {
+          data: {
+            subscription: {
+              unsubscribe() {
+                try { realSub?.data?.subscription?.unsubscribe(); } catch (e) {}
+                try { mockSub?.data?.subscription?.unsubscribe(); } catch (e) {}
+              }
+            }
+          }
+        };
+      };
+    }
+
     if (useMock) {
       return (mockSupabase.auth as any)[prop];
     }
