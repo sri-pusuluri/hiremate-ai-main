@@ -50,8 +50,8 @@ export function TopBar({ title, subtitle }: TopBarProps) {
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/40 text-xs text-foreground">
           {isPlatformMode ? (
             <>
-              <Globe className="w-3.5 h-3.5 text-purple-500" />
-              <span className="font-semibold text-purple-400">HireSort Platform HQ</span>
+              <Globe className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span className="font-semibold text-purple-700 dark:text-purple-300">HireSort Platform HQ</span>
               <span className="text-muted-foreground">(Global)</span>
             </>
           ) : (
