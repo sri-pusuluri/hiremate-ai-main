@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { SEED_CLIENTS } from './ClientManagement';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,6 +74,8 @@ export default function UserManagement() {
   const [inviteRole, setInviteRole] = useState<'super_admin' | 'admin' | 'client_admin' | 'recruiter'>('recruiter');
   const [inviteClientId, setInviteClientId] = useState<string>(activeClient?.id || DEFAULT_ZOOL_CLIENT.id);
   const [isInviting, setIsInviting] = useState(false);
+  const [reassignModalUser, setReassignModalUser] = useState<UserWithRole | null>(null);
+  const [reassignTargetClientId, setReassignTargetClientId] = useState<string>('');
 
   useEffect(() => {
     fetchUsers();
@@ -89,13 +92,12 @@ export default function UserManagement() {
         themeColor: c.theme_color,
       }));
 
-      // Ensure Zool and Commit are always available
-      if (!loadedClients.some(c => c.slug === 'zool' || c.id === DEFAULT_ZOOL_CLIENT.id)) {
-        loadedClients.unshift(DEFAULT_ZOOL_CLIENT);
-      }
-      if (!loadedClients.some(c => c.slug === 'commit' || c.id === DEFAULT_COMMIT_CLIENT.id)) {
-        loadedClients.splice(1, 0, DEFAULT_COMMIT_CLIENT);
-      }
+      // Ensure all standard seeded clients (Zool, Commit, Nexus Tech, Horizon) are always available
+      SEED_CLIENTS.forEach(sc => {
+        if (!loadedClients.some(c => c.slug === sc.slug || c.id === sc.id)) {
+          loadedClients.push(sc);
+        }
+      });
       setClients(loadedClients);
 
       // Fetch profiles
@@ -182,24 +184,32 @@ export default function UserManagement() {
     }
   };
 
-  const handleAssignClient = async (userId: string, targetClientId: string) => {
+  const handleAssignClient = async (userId: string, targetClientId: string | null) => {
     try {
-      const targetClient = clients.find(c => c.id === targetClientId);
+      const isPlatform = !targetClientId || targetClientId === 'platform';
+      const finalClientId = isPlatform ? null : targetClientId;
+      const targetClient = isPlatform ? null : clients.find(c => c.id === finalClientId);
+
       const { error } = await supabase
         .from('user_roles')
-        .update({ client_id: targetClientId } as any)
+        .update({ client_id: finalClientId } as any)
         .eq('user_id', userId);
 
       if (error) throw error;
 
       setUsers(users.map(u => 
-        u.id === userId ? { ...u, clientId: targetClientId, clientName: targetClient?.name || 'Workspace' } : u
+        u.id === userId ? { 
+          ...u, 
+          clientId: finalClientId, 
+          clientName: isPlatform ? 'HireSort Platform' : (targetClient?.name || 'Workspace') 
+        } : u
       ));
 
       toast({
         title: 'Workspace Assigned',
-        description: `Assigned user to ${targetClient?.name || 'client'} workspace`,
+        description: `Assigned user to ${isPlatform ? 'HireSort Platform' : (targetClient?.name || 'client')} workspace`,
       });
+      setReassignModalUser(null);
     } catch (err: any) {
       toast({
         title: 'Assignment Failed',
@@ -711,18 +721,38 @@ export default function UserManagement() {
                     {/* Workspace Tag */}
                     <Badge 
                       variant="outline" 
+                      onClick={() => {
+                        if (isSuperAdmin && u.email !== 'admin@hiremate.ai') {
+                          setReassignModalUser(u);
+                          setReassignTargetClientId(u.clientId || 'platform');
+                        }
+                      }}
                       className={`text-xs font-normal border-border flex items-center gap-1 ${
+                        isSuperAdmin && u.email !== 'admin@hiremate.ai' ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''
+                      } ${
                         u.clientName === 'Commit'
                           ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
                           : u.clientName === 'Zool'
                           ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400'
+                          : u.clientName === 'HireSort Platform'
+                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400'
                           : ''
                       }`}
+                      title={isSuperAdmin && u.email !== 'admin@hiremate.ai' ? 'Click to assign or change client workspace' : undefined}
                     >
                       <Building2 className={`w-3 h-3 ${
-                        u.clientName === 'Commit' ? 'text-emerald-500' : u.clientName === 'Zool' ? 'text-blue-500' : 'text-primary'
+                        u.clientName === 'Commit' 
+                          ? 'text-emerald-500' 
+                          : u.clientName === 'Zool' 
+                          ? 'text-blue-500' 
+                          : u.clientName === 'HireSort Platform'
+                          ? 'text-purple-500'
+                          : 'text-primary'
                       }`} />
                       {u.clientName || 'Unassigned'}
+                      {isSuperAdmin && u.email !== 'admin@hiremate.ai' && (
+                        <span className="ml-1 text-[10px] text-muted-foreground hover:text-foreground">✎</span>
+                      )}
                     </Badge>
 
                     {/* Role Tag */}
@@ -756,24 +786,42 @@ export default function UserManagement() {
                             Change to {u.role === 'admin' ? 'Recruiter' : 'Admin'}
                           </DropdownMenuItem>
 
-                          {/* Assign Workspace Submenu - only for platform super admins */}
-                          {isSuperAdmin && clients.length > 0 && (
-                            <DropdownMenuSub>
-                              <DropdownMenuSubTrigger>
-                                <Building2 className="w-4 h-4 mr-2" />
-                                Assign Workspace
-                              </DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent>
-                                {clients.map((c) => (
-                                  <DropdownMenuItem 
-                                    key={c.id} 
-                                    onClick={() => handleAssignClient(u.id, c.id)}
-                                  >
-                                    {c.name} {u.clientId === c.id ? '✓' : ''}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuSubContent>
-                            </DropdownMenuSub>
+                          {/* Assign Workspace Submenu & Modal trigger - only for platform super admins */}
+                          {isSuperAdmin && (
+                            <>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setReassignModalUser(u);
+                                  setReassignTargetClientId(u.clientId || 'platform');
+                                }}
+                              >
+                                <Building2 className="w-4 h-4 mr-2 text-primary" />
+                                Assign / Move Workspace...
+                              </DropdownMenuItem>
+
+                              {clients.length > 0 && (
+                                <DropdownMenuSub>
+                                  <DropdownMenuSubTrigger>
+                                    <Building2 className="w-4 h-4 mr-2" />
+                                    Quick Move Workspace
+                                  </DropdownMenuSubTrigger>
+                                  <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => handleAssignClient(u.id, 'platform')}>
+                                      HireSort Platform (HQ) {u.clientId === null ? '✓' : ''}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    {clients.map((c) => (
+                                      <DropdownMenuItem 
+                                        key={c.id} 
+                                        onClick={() => handleAssignClient(u.id, c.id)}
+                                      >
+                                        {c.name} {u.clientId === c.id ? '✓' : ''}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                              )}
+                            </>
                           )}
 
                           <DropdownMenuSeparator />
@@ -810,6 +858,82 @@ export default function UserManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Reassign Client Workspace Modal */}
+      <Dialog open={!!reassignModalUser} onOpenChange={(open) => !open && setReassignModalUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              Assign Client Workspace
+            </DialogTitle>
+            <DialogDescription>
+              Assign or move this user to a specific client tenant workspace or the HireSort platform team.
+            </DialogDescription>
+          </DialogHeader>
+
+          {reassignModalUser && (
+            <div className="space-y-4 py-3">
+              <div className="p-3.5 rounded-lg bg-muted/50 border border-border space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">User:</span>
+                  <span className="font-semibold text-foreground">{reassignModalUser.full_name || 'Team Member'}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Email:</span>
+                  <span className="font-mono text-xs text-foreground">{reassignModalUser.email}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Current Workspace:</span>
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {reassignModalUser.clientName || 'Unassigned'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="target-workspace">Select Target Workspace</Label>
+                <Select 
+                  value={reassignTargetClientId} 
+                  onValueChange={setReassignTargetClientId}
+                >
+                  <SelectTrigger id="target-workspace">
+                    <SelectValue placeholder="Select Workspace" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="platform">
+                      HireSort Platform (HQ - Platform Level)
+                    </SelectItem>
+                    {clients.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} ({c.slug})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  The user will be immediately assigned to this workspace and gain access to its jobs, candidates, and settings.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReassignModalUser(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (reassignModalUser) {
+                  handleAssignClient(reassignModalUser.id, reassignTargetClientId);
+                }
+              }}
+            >
+              Assign Workspace
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

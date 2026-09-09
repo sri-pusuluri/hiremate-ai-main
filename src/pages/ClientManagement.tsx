@@ -40,7 +40,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import TenantLogoUploader from '@/components/common/TenantLogoUploader';
 
-const SEED_CLIENTS: ClientTenant[] = [
+export const SEED_CLIENTS: ClientTenant[] = [
   DEFAULT_ZOOL_CLIENT,
   DEFAULT_COMMIT_CLIENT,
   {
