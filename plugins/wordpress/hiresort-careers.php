@@ -36,7 +36,7 @@ function hiresort_render_admin_settings() {
 
     $client_slug = get_option('hiresort_client_slug', 'zool');
     $theme       = get_option('hiresort_theme', 'dark');
-    $ats_url     = get_option('hiresort_ats_url', 'https://app.hiresort.ai');
+    $ats_url     = get_option('hiresort_ats_url', 'https://hiresortai.zool.in');
     ?>
     <div class="wrap">
         <h1>HireSort AI Careers Configuration</h1>
@@ -66,7 +66,7 @@ function hiresort_render_admin_settings() {
                     <th scope="row"><label for="ats_url">HireSort ATS Host URL</label></th>
                     <td>
                         <input type="url" id="ats_url" name="ats_url" value="<?php echo esc_attr($ats_url); ?>" class="regular-text" />
-                        <p class="description">Default: <code>https://app.hiresort.ai</code> (or your custom domain/localhost in dev).</p>
+                        <p class="description">Default: <code>https://hiresortai.zool.in</code>.</p>
                     </td>
                 </tr>
             </table>

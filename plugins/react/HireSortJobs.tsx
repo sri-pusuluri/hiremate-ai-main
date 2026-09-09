@@ -13,7 +13,7 @@ export interface HireSortJobsProps {
 
   /**
    * Base URL of the HireSort ATS instance.
-   * Defaults to 'http://localhost:8080' in development or 'https://app.hiresort.ai' in production.
+   * Defaults to 'https://hiresortai.zool.in'.
    */
   atsBaseUrl?: string;
 
@@ -31,9 +31,7 @@ export interface HireSortJobsProps {
 export const HireSortJobs: React.FC<HireSortJobsProps> = ({
   clientSlug = 'zool',
   theme = 'dark',
-  atsBaseUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:8080'
-    : 'https://app.hiresort.ai',
+  atsBaseUrl = 'https://hiresortai.zool.in',
   className = '',
   initialHeight = 650,
 }) => {

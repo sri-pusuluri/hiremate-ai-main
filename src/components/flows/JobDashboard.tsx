@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Job } from '@/types/hiresort';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
+import { getAppBaseUrl } from '@/lib/app-url';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AIBadge } from '@/components/ui/ai-badges';
@@ -537,7 +538,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-foreground">Careers Portal URL:</span>
               <span className="text-xs font-mono bg-muted/80 text-primary px-2.5 py-0.5 rounded border border-border/80 select-all font-semibold">
-                {window.location.origin}/careers/{client?.slug || 'zool'}
+                {getAppBaseUrl()}/careers/{client?.slug || 'zool'}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -551,10 +552,10 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             variant="outline"
             size="sm"
             onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/careers/${client?.slug || 'zool'}`);
+              navigator.clipboard.writeText(`${getAppBaseUrl()}/careers/${client?.slug || 'zool'}`);
               toast({
                 title: 'Portal Link Copied',
-                description: `Copied ${window.location.origin}/careers/${client?.slug || 'zool'} to clipboard.`,
+                description: `Copied ${getAppBaseUrl()}/careers/${client?.slug || 'zool'} to clipboard.`,
               });
             }}
             className="h-8 text-xs gap-1.5"

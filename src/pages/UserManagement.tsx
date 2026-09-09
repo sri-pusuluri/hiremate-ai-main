@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { SEED_CLIENTS } from './ClientManagement';
+import { getAppBaseUrl } from '@/lib/app-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -337,7 +338,7 @@ export default function UserManagement() {
   const handleSendPasswordReset = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/?reset=true`,
+        redirectTo: `${getAppBaseUrl()}/?reset=true`,
       });
       
       if (error) throw error;

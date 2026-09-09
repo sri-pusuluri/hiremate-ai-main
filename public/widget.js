@@ -5,10 +5,10 @@
  * Usage:
  *   Option 1: Container Div + Script
  *     <div id="hiresort-careers" data-client="zool" data-theme="dark"></div>
- *     <script src="http://localhost:8080/widget.js" async></script>
+ *     <script src="https://hiresortai.zool.in/widget.js" async></script>
  * 
  *   Option 2: Standalone Script (mounts right at script location)
- *     <script src="http://localhost:8080/widget.js" data-client="zool" data-theme="dark"></script>
+ *     <script src="https://hiresortai.zool.in/widget.js" data-client="zool" data-theme="dark"></script>
  */
 
 (function () {
@@ -28,13 +28,20 @@
       if (src.indexOf('widget.js') !== -1) {
         try {
           var url = new URL(src, window.location.href);
-          return url.origin;
+          if (url.origin && url.origin.indexOf('localhost') === -1 && url.origin.indexOf('127.0.0.1') === -1) {
+            return url.origin;
+          }
+          return 'https://hiresortai.zool.in';
         } catch (e) {
           // Fallback
         }
       }
     }
-    return window.location.origin;
+    var origin = window.location.origin;
+    if (!origin || origin.indexOf('localhost') !== -1 || origin.indexOf('127.0.0.1') !== -1) {
+      return 'https://hiresortai.zool.in';
+    }
+    return origin;
   }
 
   var atsBaseUrl = getScriptBaseUrl();

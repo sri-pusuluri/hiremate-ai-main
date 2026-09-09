@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Candidate, Job } from '@/types/hiresort';
 import { mockCandidates } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
+import { getAppBaseUrl } from '@/lib/app-url';
 import { Button } from '@/components/ui/button';
 import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/components/ui/ai-badges';
 import { ResumeViewerModal } from './ResumeViewerModal';
@@ -448,7 +449,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
               size="sm"
               className="gap-2 text-xs"
               onClick={() => {
-                const url = `${window.location.origin}/careers/zool/${selectedJob.slug}`;
+                const url = `${getAppBaseUrl()}/careers/zool/${selectedJob.slug}`;
                 navigator.clipboard.writeText(url);
                 toast({ title: 'Link Copied', description: 'Public job application URL copied to clipboard.' });
               }}

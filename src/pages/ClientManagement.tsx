@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
+import { getAppBaseUrl } from '@/lib/app-url';
 import { ClientTenant } from '@/types/hiresort';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -397,7 +398,7 @@ export default function ClientManagement() {
             <tbody className="divide-y divide-border">
               {filteredClients.map((client) => {
                 const isCurrent = activeClient?.id === client.id;
-                const portalUrl = `${window.location.origin}/careers/${client.slug}`;
+                const portalUrl = `${getAppBaseUrl()}/careers/${client.slug}`;
 
                 return (
                   <tr key={client.id} className="hover:bg-muted/30 transition-colors">
@@ -561,7 +562,7 @@ export default function ClientManagement() {
                 />
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Public URL: {window.location.origin}/careers/{formData.slug || 'slug'}
+                Public URL: {getAppBaseUrl()}/careers/{formData.slug || 'slug'}
               </p>
             </div>
 
@@ -634,14 +635,14 @@ export default function ClientManagement() {
                 <div className="flex items-center gap-2 mt-1.5">
                   <Input 
                     readOnly 
-                    value={`${window.location.origin}/careers/${embedModalClient.slug}`} 
+                    value={`${getAppBaseUrl()}/careers/${embedModalClient.slug}`} 
                     className="font-mono text-xs bg-muted/40"
                   />
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/careers/${embedModalClient.slug}`);
+                      navigator.clipboard.writeText(`${getAppBaseUrl()}/careers/${embedModalClient.slug}`);
                       setCopiedLink(true);
                       setTimeout(() => setCopiedLink(false), 2000);
                       toast({ title: 'Copied Link to Clipboard' });
@@ -657,7 +658,7 @@ export default function ClientManagement() {
                 <div className="relative mt-1.5">
                   <pre className="p-3 bg-muted/70 border border-border rounded-lg text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">
 {`<iframe 
-  src="${window.location.origin}/embed/careers/${embedModalClient.slug}" 
+  src="${getAppBaseUrl()}/embed/careers/${embedModalClient.slug}" 
   width="100%" 
   height="700" 
   style="border:none; border-radius:12px; overflow:hidden;" 
@@ -669,7 +670,7 @@ export default function ClientManagement() {
                     size="sm"
                     className="absolute top-2 right-2"
                     onClick={() => {
-                      const snippet = `<iframe src="${window.location.origin}/embed/careers/${embedModalClient.slug}" width="100%" height="700" style="border:none; border-radius:12px; overflow:hidden;" title="${embedModalClient.name} Career Board"></iframe>`;
+                      const snippet = `<iframe src="${getAppBaseUrl()}/embed/careers/${embedModalClient.slug}" width="100%" height="700" style="border:none; border-radius:12px; overflow:hidden;" title="${embedModalClient.name} Career Board"></iframe>`;
                       navigator.clipboard.writeText(snippet);
                       setCopiedEmbed(true);
                       setTimeout(() => setCopiedEmbed(false), 2000);

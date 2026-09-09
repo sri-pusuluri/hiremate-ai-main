@@ -47,9 +47,7 @@ class HireSortJobsElement extends HTMLElement {
   render() {
     const client = this.getAttribute('client') || 'default';
     const theme = this.getAttribute('theme') || 'dark';
-    const atsUrl = this.getAttribute('ats-url') || (
-      window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://app.hiresort.ai'
-    );
+    const atsUrl = this.getAttribute('ats-url') || 'https://hiresortai.zool.in';
 
     const embedUrl = `${atsUrl.replace(/\/$/, '')}/embed/careers/${encodeURIComponent(client)}?theme=${encodeURIComponent(theme)}`;
 

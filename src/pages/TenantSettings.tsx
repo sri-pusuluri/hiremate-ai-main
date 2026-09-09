@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
+import { getAppBaseUrl } from '@/lib/app-url';
 import { Department, Position, QuestionBankItem } from '@/types/hiresort';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -537,8 +538,8 @@ export default function TenantSettings() {
     }
   };
 
-  const careersUrl = `${window.location.origin}/careers/${slug}`;
-  const webhookUrl = `${window.location.origin}/api/v1/webhooks/ats/${slug}`;
+  const careersUrl = `${getAppBaseUrl()}/careers/${slug}`;
+  const webhookUrl = `${getAppBaseUrl()}/api/v1/webhooks/ats/${slug}`;
 
   return (
     <div className="p-6 space-y-6 max-w-6xl animate-fade-in">
@@ -985,7 +986,7 @@ export default function TenantSettings() {
                       <Label className="text-xs">ACS / Reply URL (Read Only)</Label>
                       <Input 
                         readOnly 
-                        value={`${window.location.origin}/auth/v1/sso/callback`} 
+                        value={`${getAppBaseUrl()}/auth/v1/sso/callback`} 
                         className="h-8 text-xs font-mono bg-muted/60"
                       />
                     </div>

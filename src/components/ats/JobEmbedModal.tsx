@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Job } from '@/types/hiresort';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { getAppBaseUrl } from '@/lib/app-url';
 import {
   Dialog,
   DialogContent,
@@ -39,8 +40,8 @@ export function JobEmbedModal({ job, open, onOpenChange, onJobUpdated }: JobEmbe
 
   const clientSlug = client?.slug || 'zool';
   const jobSlug = job.slug || job.id;
-  const publicApplicationUrl = `${window.location.origin}/careers/${clientSlug}/${jobSlug}`;
-  const embedIframeUrl = `${window.location.origin}/embed/job/${job.id}`;
+  const publicApplicationUrl = `${getAppBaseUrl()}/careers/${clientSlug}/${jobSlug}`;
+  const embedIframeUrl = `${getAppBaseUrl()}/embed/job/${job.id}`;
 
   const embedSnippet = `<iframe 
   src="${embedIframeUrl}" 
@@ -50,8 +51,8 @@ export function JobEmbedModal({ job, open, onOpenChange, onJobUpdated }: JobEmbe
   title="${job.title} - Application Form"
 ></iframe>`;
 
-  const allJobsPortalUrl = `${window.location.origin}/careers/${clientSlug}`;
-  const allJobsEmbedUrl = `${window.location.origin}/embed/careers/${clientSlug}`;
+  const allJobsPortalUrl = `${getAppBaseUrl()}/careers/${clientSlug}`;
+  const allJobsEmbedUrl = `${getAppBaseUrl()}/embed/careers/${clientSlug}`;
   const allJobsEmbedSnippet = `<iframe 
   src="${allJobsEmbedUrl}" 
   width="100%" 

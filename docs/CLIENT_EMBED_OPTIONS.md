@@ -63,7 +63,7 @@ export default function CareersPage() {
     <div className="max-w-6xl mx-auto py-12 px-4">
       <h1 className="text-3xl font-bold mb-6">Join Our Team</h1>
       <iframe 
-        src="http://localhost:8080/embed/careers/zool?theme=dark" 
+        src="https://hiresortai.zool.in/embed/careers/zool?theme=dark" 
         className="w-full min-h-[750px] border-0 rounded-2xl"
         title="Careers at Zool"
       />
@@ -257,7 +257,7 @@ export const HireSortJobs: React.FC<HireSortJobsProps> = ({
   return (
     <iframe
       ref={iframeRef}
-      src={`http://localhost:8080/embed/careers/${clientSlug}?theme=${theme}`}
+      src={`https://hiresortai.zool.in/embed/careers/${clientSlug}?theme=${theme}`}
       className="w-full border-0 transition-all duration-300"
       style={{ minHeight: '600px' }}
       title="Careers Portal"
