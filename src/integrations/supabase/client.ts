@@ -593,9 +593,11 @@ function createMockUser(email: string, fullName: string, forcedRole?: string, fo
   // Add user role
   let roles = getMockRoles().filter((r: any) => r.user_id !== id);
   const role = forcedRole || (isRootAdmin ? 'super_admin' : (roles.length === 0 ? 'admin' : 'recruiter'));
+  const emailLower = email.toLowerCase();
+  const isCommitEmail = emailLower.includes('commit') || emailLower.includes('comm-it');
   const clientId = forcedClientId !== undefined
     ? forcedClientId
-    : (isRootAdmin ? null : (email.includes('commit') ? '00000000-0000-0000-0000-000000000004' : '00000000-0000-0000-0000-000000000001'));
+    : (isRootAdmin ? null : (isCommitEmail ? DEFAULT_COMMIT_ID : '00000000-0000-0000-0000-000000000001'));
 
   roles.push({
     id: isRootAdmin ? 'mock-role-platform-admin' : ('mock-role-id-' + Math.random().toString(36).substring(2, 11)),
@@ -647,7 +649,7 @@ if (!existingUsers.some((u: any) => u.email === 'admin@hiremate.ai')) {
 
 // Commit tenant admin
 if (!existingUsers.some((u: any) => u.email === 'admin@commit.com')) {
-  createMockUser('admin@commit.com', 'Commit Workspace Admin', 'client_admin', '00000000-0000-0000-0000-000000000004');
+  createMockUser('admin@commit.com', 'Commit Workspace Admin', 'client_admin', DEFAULT_COMMIT_ID);
 }
 
 // Zool tenant admin
@@ -659,6 +661,24 @@ if (!existingUsers.some((u: any) => u.email === 'admin@zool.in')) {
 if (!existingUsers.some((u: any) => u.email === 'recruiter@hiremate.ai')) {
   createMockUser('recruiter@hiremate.ai', 'Jane Recruiter', 'recruiter', '00000000-0000-0000-0000-000000000001');
 }
+
+// Self-heal: ensure any comm-it or commit mock accounts are mapped to Commit workspace
+try {
+  const mockProfiles = getMockProfiles();
+  const mockRoles = getMockRoles();
+  let changed = false;
+  mockProfiles.forEach((p: any) => {
+    const em = (p.email || '').toLowerCase();
+    if (em.includes('commit') || em.includes('comm-it')) {
+      const r = mockRoles.find((role: any) => role.user_id === p.id);
+      if (r && r.client_id !== DEFAULT_COMMIT_ID) {
+        r.client_id = DEFAULT_COMMIT_ID;
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveMockRoles(mockRoles);
+} catch (e) {}
 
 // Mock query builder to mimic postgrest
 class MockQueryBuilder {
@@ -1150,7 +1170,9 @@ const mockSupabase = {
         if (email === 'admin@hiremate.ai') {
           user = createMockUser('admin@hiremate.ai', 'HireSort SuperAdmin', 'super_admin', null);
         } else if (email === 'admin@commit.com') {
-          user = createMockUser('admin@commit.com', 'Commit Workspace Admin', 'client_admin', '00000000-0000-0000-0000-000000000004');
+          user = createMockUser('admin@commit.com', 'Commit Workspace Admin', 'client_admin', DEFAULT_COMMIT_ID);
+        } else if (/comm-?it/i.test(email)) {
+          user = createMockUser(email, email.split('@')[0], 'admin', DEFAULT_COMMIT_ID);
         } else if (email === 'admin@zool.in') {
           user = createMockUser('admin@zool.in', 'Zool Workspace Admin', 'client_admin', '00000000-0000-0000-0000-000000000001');
         } else if (email === 'recruiter@hiremate.ai') {

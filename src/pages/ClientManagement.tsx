@@ -108,6 +108,13 @@ export default function ClientManagement() {
           stripeCustomerId: c.stripe_customer_id,
           createdAt: c.created_at,
         }));
+        // Ensure Zool and Commit are always preserved
+        if (!mapped.some(c => c.slug === 'zool' || c.id === DEFAULT_ZOOL_CLIENT.id)) {
+          mapped.unshift(DEFAULT_ZOOL_CLIENT);
+        }
+        if (!mapped.some(c => c.slug === 'commit' || c.id === DEFAULT_COMMIT_CLIENT.id)) {
+          mapped.splice(1, 0, DEFAULT_COMMIT_CLIENT);
+        }
         setClients(mapped);
       } else {
         // Fallback to seeds if database table is not yet migrated or empty

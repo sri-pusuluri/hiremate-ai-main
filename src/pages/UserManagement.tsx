@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,7 +71,7 @@ export default function UserManagement() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'super_admin' | 'admin' | 'client_admin' | 'recruiter'>('recruiter');
-  const [inviteClientId, setInviteClientId] = useState<string>(activeClient?.id || '00000000-0000-0000-0000-000000000001');
+  const [inviteClientId, setInviteClientId] = useState<string>(activeClient?.id || DEFAULT_ZOOL_CLIENT.id);
   const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {
@@ -88,6 +88,14 @@ export default function UserManagement() {
         slug: c.slug,
         themeColor: c.theme_color,
       }));
+
+      // Ensure Zool and Commit are always available
+      if (!loadedClients.some(c => c.slug === 'zool' || c.id === DEFAULT_ZOOL_CLIENT.id)) {
+        loadedClients.unshift(DEFAULT_ZOOL_CLIENT);
+      }
+      if (!loadedClients.some(c => c.slug === 'commit' || c.id === DEFAULT_COMMIT_CLIENT.id)) {
+        loadedClients.splice(1, 0, DEFAULT_COMMIT_CLIENT);
+      }
       setClients(loadedClients);
 
       // Fetch profiles
@@ -107,12 +115,47 @@ export default function UserManagement() {
       // Combine data
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
-        const userClientId = (userRole as any)?.client_id;
-        const matchedClient = loadedClients.find(c => c.id === userClientId);
+        let userClientId = (userRole as any)?.client_id;
 
         const isRootAdmin = profile.email === 'admin@hiremate.ai' || userRole?.role === 'super_admin';
         const role = ((userRole?.role as any) || (isRootAdmin ? 'super_admin' : 'recruiter'));
         const isPlatformLevel = isRootAdmin || (role === 'admin' && !userClientId);
+
+        const emailLower = (profile.email || '').toLowerCase();
+        const isCommitUser = emailLower.includes('commit') || emailLower.includes('comm-it');
+        const isZoolUser = emailLower.includes('zool');
+
+        // Self-heal: If comm-it / commit user was erroneously assigned to Zool or null, assign to Commit
+        if (!isPlatformLevel) {
+          if (isCommitUser && (!userClientId || userClientId === DEFAULT_ZOOL_CLIENT.id)) {
+            userClientId = DEFAULT_COMMIT_CLIENT.id;
+            // Persist fix to database user_roles
+            supabase
+              .from('user_roles')
+              .update({ client_id: DEFAULT_COMMIT_CLIENT.id } as any)
+              .eq('user_id', profile.id)
+              .then(({ error }: any) => {
+                if (error) console.warn('Could not auto-heal user role to Commit:', error);
+              });
+          } else if (isZoolUser && !userClientId) {
+            userClientId = DEFAULT_ZOOL_CLIENT.id;
+          }
+        }
+
+        const matchedClient = loadedClients.find(c => c.id === userClientId);
+
+        let finalClientName: string;
+        if (isPlatformLevel) {
+          finalClientName = 'HireSort Platform';
+        } else if (matchedClient) {
+          finalClientName = matchedClient.name;
+        } else if (isCommitUser || userClientId === DEFAULT_COMMIT_CLIENT.id) {
+          finalClientName = 'Commit';
+        } else if (isZoolUser || userClientId === DEFAULT_ZOOL_CLIENT.id) {
+          finalClientName = 'Zool';
+        } else {
+          finalClientName = 'Unassigned';
+        }
 
         return {
           id: profile.id,
@@ -121,8 +164,8 @@ export default function UserManagement() {
           avatar_url: profile.avatar_url,
           created_at: profile.created_at,
           role,
-          clientId: isPlatformLevel ? null : (userClientId || '00000000-0000-0000-0000-000000000001'),
-          clientName: isPlatformLevel ? 'HireSort Platform' : (matchedClient?.name || 'Zool'),
+          clientId: isPlatformLevel ? null : (userClientId || (isCommitUser ? DEFAULT_COMMIT_CLIENT.id : DEFAULT_ZOOL_CLIENT.id)),
+          clientName: finalClientName,
         };
       });
 
@@ -150,7 +193,7 @@ export default function UserManagement() {
       if (error) throw error;
 
       setUsers(users.map(u => 
-        u.id === userId ? { ...u, clientId: targetClientId, clientName: targetClient?.name || 'Zool' } : u
+        u.id === userId ? { ...u, clientId: targetClientId, clientName: targetClient?.name || 'Workspace' } : u
       ));
 
       toast({
@@ -212,7 +255,7 @@ export default function UserManagement() {
     try {
       const targetClientId = inviteRole === 'admin'
         ? null
-        : (isSuperAdmin ? inviteClientId : (activeClient?.id || '00000000-0000-0000-0000-000000000001'));
+        : (isSuperAdmin ? inviteClientId : (activeClient?.id || DEFAULT_ZOOL_CLIENT.id));
       const { data, error } = await supabase.functions.invoke('invite-user', {
         body: { email: inviteEmail, role: inviteRole, clientId: targetClientId }
       });
@@ -440,7 +483,20 @@ export default function UserManagement() {
                   type="email"
                   placeholder="colleague@company.com"
                   value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setInviteEmail(val);
+                    if (isSuperAdmin) {
+                      const lower = val.toLowerCase();
+                      if (lower.includes('commit') || lower.includes('comm-it')) {
+                        const commitClient = clients.find(c => c.slug === 'commit' || c.id === DEFAULT_COMMIT_CLIENT.id);
+                        if (commitClient) setInviteClientId(commitClient.id);
+                      } else if (lower.includes('zool')) {
+                        const zoolClient = clients.find(c => c.slug === 'zool' || c.id === DEFAULT_ZOOL_CLIENT.id);
+                        if (zoolClient) setInviteClientId(zoolClient.id);
+                      }
+                    }
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -653,9 +709,20 @@ export default function UserManagement() {
                   
                   <div className="flex items-center gap-3">
                     {/* Workspace Tag */}
-                    <Badge variant="outline" className="text-xs font-normal border-border flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-primary" />
-                      {u.clientName || 'Zool'}
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs font-normal border-border flex items-center gap-1 ${
+                        u.clientName === 'Commit'
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
+                          : u.clientName === 'Zool'
+                          ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400'
+                          : ''
+                      }`}
+                    >
+                      <Building2 className={`w-3 h-3 ${
+                        u.clientName === 'Commit' ? 'text-emerald-500' : u.clientName === 'Zool' ? 'text-blue-500' : 'text-primary'
+                      }`} />
+                      {u.clientName || 'Unassigned'}
                     </Badge>
 
                     {/* Role Tag */}

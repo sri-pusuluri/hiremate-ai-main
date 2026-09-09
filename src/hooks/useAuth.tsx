@@ -206,7 +206,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (roleData) {
         const currentRole = (roleData as any).role as AppRole;
         setRole(currentRole);
-        const assignedClientId = (roleData as any).client_id;
+        let assignedClientId = (roleData as any).client_id;
+
+        const emailLower = (profileData?.email || user?.email || '').toLowerCase();
+        const isCommitUser = emailLower.includes('commit') || emailLower.includes('comm-it');
+        const isZoolUser = emailLower.includes('zool');
+
+        // Self-heal: If user has a comm-it email and was mistakenly assigned to Zool or null, reassign to Commit
+        if (isCommitUser && assignedClientId !== DEFAULT_COMMIT_CLIENT.id) {
+          assignedClientId = DEFAULT_COMMIT_CLIENT.id;
+          supabase
+            .from('user_roles')
+            .update({ client_id: DEFAULT_COMMIT_CLIENT.id } as any)
+            .eq('user_id', userId)
+            .then(({ error }: any) => {
+              if (error) console.warn('Could not heal user_role client_id to Commit:', error);
+            });
+        } else if (isZoolUser && !assignedClientId) {
+          assignedClientId = DEFAULT_ZOOL_CLIENT.id;
+        }
+
         if (assignedClientId) {
           try {
             const { data: clientData } = await supabase
@@ -221,17 +240,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 name: (clientData as any).name,
                 slug: (clientData as any).slug,
                 logoUrl: (clientData as any).logo_url,
-                themeColor: (clientData as any).theme_color || '#2563eb',
+                themeColor: (clientData as any).theme_color || (assignedClientId === DEFAULT_COMMIT_CLIENT.id ? '#10b981' : '#2563eb'),
                 subscriptionTier: (clientData as any).subscription_tier || 'pro',
                 stripeCustomerId: (clientData as any).stripe_customer_id,
               });
-            } else if (assignedClientId === DEFAULT_COMMIT_CLIENT.id) {
+            } else if (assignedClientId === DEFAULT_COMMIT_CLIENT.id || isCommitUser) {
               setClient(DEFAULT_COMMIT_CLIENT);
             } else {
               setClient(DEFAULT_ZOOL_CLIENT);
             }
           } catch (cErr) {
             console.warn('Could not load client details, using default:', cErr);
+            if (isCommitUser || assignedClientId === DEFAULT_COMMIT_CLIENT.id) {
+              setClient(DEFAULT_COMMIT_CLIENT);
+            } else {
+              setClient(DEFAULT_ZOOL_CLIENT);
+            }
           }
         } else {
           // Super Admin / Platform level account without a locked tenant
