@@ -36,7 +36,10 @@ import {
   MoreVertical,
   AlertCircle,
   Loader2,
+  Crown,
+  Globe,
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,7 +73,9 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [memberTypeTab, setMemberTypeTab] = useState<'all' | 'platform' | 'clients'>('all');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteType, setInviteType] = useState<'client' | 'platform'>('client');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'super_admin' | 'admin' | 'client_admin' | 'recruiter'>('recruiter');
   const [inviteClientId, setInviteClientId] = useState<string>(activeClient?.id || DEFAULT_ZOOL_CLIENT.id);
@@ -264,7 +269,8 @@ export default function UserManagement() {
 
     setIsInviting(true);
     try {
-      const targetClientId = inviteRole === 'admin'
+      const isPlatformInvite = isSuperAdmin && (inviteType === 'platform' || inviteRole === 'admin' || inviteRole === 'super_admin');
+      const targetClientId = isPlatformInvite
         ? null
         : (isSuperAdmin ? inviteClientId : (activeClient?.id || DEFAULT_ZOOL_CLIENT.id));
       const { data, error } = await supabase.functions.invoke('invite-user', {
@@ -290,6 +296,7 @@ export default function UserManagement() {
       });
       setInviteDialogOpen(false);
       setInviteEmail('');
+      setInviteType('client');
       setInviteRole('recruiter');
       
       // Refresh the user list
@@ -412,9 +419,18 @@ export default function UserManagement() {
     }
   };
 
+  const platformUsers = users.filter(u => u.clientId === null || u.email === 'admin@hiremate.ai' || u.role === 'super_admin');
+  const clientUsers = users.filter(u => u.clientId !== null && u.email !== 'admin@hiremate.ai' && u.role !== 'super_admin');
+
   const filteredUsers = users.filter((u) => {
-    // If platform super admin
+    // Top-level division: Platform vs Client
     if (isSuperAdmin) {
+      if (memberTypeTab === 'platform') {
+        if (u.clientId !== null && u.email !== 'admin@hiremate.ai' && u.role !== 'super_admin') return false;
+      } else if (memberTypeTab === 'clients') {
+        if (u.clientId === null || u.email === 'admin@hiremate.ai' || u.role === 'super_admin') return false;
+      }
+
       if (selectedTenantFilter === 'platform') {
         if (u.clientId !== null) return false;
       } else if (selectedTenantFilter !== 'all') {
@@ -422,7 +438,6 @@ export default function UserManagement() {
       }
     } else {
       // If client admin / recruiter, strictly isolate to their own company workspace!
-      // They can never see HireSort platform admins or other client users.
       if (!activeClient?.id || u.clientId !== activeClient.id) {
         return false;
       }
@@ -487,6 +502,45 @@ export default function UserManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              {isSuperAdmin && (
+                <div className="space-y-2">
+                  <Label>Member Category</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={inviteType === 'client' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setInviteType('client');
+                        setInviteRole('recruiter');
+                      }}
+                      className="flex items-center justify-center gap-1.5 text-xs h-9"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      Client Member
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={inviteType === 'platform' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setInviteType('platform');
+                        setInviteRole('admin');
+                      }}
+                      className="flex items-center justify-center gap-1.5 text-xs h-9"
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      Platform Team (HQ)
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {inviteType === 'platform' 
+                      ? 'Platform members have global administrative access to manage all tenants and platform configurations.' 
+                      : 'Client members are restricted strictly to their assigned company workspace.'}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="invite-email">Email Address</Label>
                 <Input
@@ -497,7 +551,7 @@ export default function UserManagement() {
                   onChange={(e) => {
                     const val = e.target.value;
                     setInviteEmail(val);
-                    if (isSuperAdmin) {
+                    if (isSuperAdmin && inviteType === 'client') {
                       const lower = val.toLowerCase();
                       if (lower.includes('commit') || lower.includes('comm-it')) {
                         const commitClient = clients.find(c => c.slug === 'commit' || c.id === DEFAULT_COMMIT_CLIENT.id);
@@ -510,6 +564,7 @@ export default function UserManagement() {
                   }}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label>Role</Label>
                 <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as any)}>
@@ -517,17 +572,27 @@ export default function UserManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="recruiter">Recruiter</SelectItem>
-                    <SelectItem value="client_admin">Client Admin</SelectItem>
-                    {isSuperAdmin && <SelectItem value="admin">Platform Admin</SelectItem>}
+                    {inviteType === 'platform' ? (
+                      <>
+                        <SelectItem value="admin">Platform Admin</SelectItem>
+                        <SelectItem value="super_admin">Platform Super Admin</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="recruiter">Recruiter</SelectItem>
+                        <SelectItem value="client_admin">Client Admin</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Client Admins can manage workspace branding and team members. Recruiters manage jobs and candidates.
+                  {inviteType === 'platform'
+                    ? 'Platform Admins manage all tenants, global jobs, and enterprise settings.'
+                    : 'Client Admins manage workspace branding and team members. Recruiters manage jobs and candidates.'}
                 </p>
               </div>
 
-              {isSuperAdmin ? (
+              {isSuperAdmin && inviteType === 'client' ? (
                 clients.length > 0 && (
                   <div className="space-y-2">
                     <Label>Assign to Client Workspace</Label>
@@ -546,15 +611,22 @@ export default function UserManagement() {
                   </div>
                 )
               ) : (
-                activeClient && (
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Assigned Workspace:</span>
-                    <span className="font-semibold text-foreground flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-primary" />
-                      {activeClient.name}
-                    </span>
-                  </div>
-                )
+                <div className="p-3 rounded-lg bg-muted/50 border border-border flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Assigned Workspace:</span>
+                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                    {inviteType === 'platform' ? (
+                      <>
+                        <Shield className="w-3.5 h-3.5 text-purple-600" />
+                        HireSort Platform (Global HQ)
+                      </>
+                    ) : (
+                      <>
+                        <Building2 className="w-3.5 h-3.5 text-primary" />
+                        {activeClient?.name || 'Client Workspace'}
+                      </>
+                    )}
+                  </span>
+                </div>
               )}
             </div>
             <DialogFooter>
@@ -586,33 +658,39 @@ export default function UserManagement() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.length}</p>
-                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-sm text-muted-foreground">Total Accounts</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={isSuperAdmin ? "cursor-pointer hover:border-purple-300 transition-colors" : ""} 
+          onClick={() => isSuperAdmin && setMemberTypeTab('platform')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-ai-surface flex items-center justify-center">
-                <Shield className="w-6 h-6 text-ai-accent" />
+              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
-                <p className="text-sm text-muted-foreground">Admins</p>
+                <p className="text-2xl font-bold">{platformUsers.length}</p>
+                <p className="text-sm text-muted-foreground">Platform HQ Team</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={isSuperAdmin ? "cursor-pointer hover:border-blue-300 transition-colors" : ""} 
+          onClick={() => isSuperAdmin && setMemberTypeTab('clients')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-success" />
+              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{users.filter(u => u.role === 'recruiter').length}</p>
-                <p className="text-sm text-muted-foreground">Recruiters</p>
+                <p className="text-2xl font-bold">{clientUsers.length}</p>
+                <p className="text-sm text-muted-foreground">Client Workspace Members</p>
               </div>
             </div>
           </CardContent>
@@ -634,7 +712,7 @@ export default function UserManagement() {
             </div>
 
             {/* Tenant Filter for Platform Super Admins */}
-            {isSuperAdmin && clients.length > 0 && (
+            {isSuperAdmin && clients.length > 0 && memberTypeTab !== 'platform' && (
               <div className="w-full sm:w-64 shrink-0">
                 <Select value={selectedTenantFilter} onValueChange={setSelectedTenantFilter}>
                   <SelectTrigger className="h-9 text-xs">
@@ -676,11 +754,46 @@ export default function UserManagement() {
 
       {/* Users List */}
       <Card>
-        <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-          <CardDescription>
-            All users in your organization
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span>Team Members</span>
+              {memberTypeTab === 'platform' && (
+                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300">
+                  Platform HQ Only
+                </Badge>
+              )}
+              {memberTypeTab === 'clients' && (
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300">
+                  Client Tenants Only
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              {memberTypeTab === 'platform' 
+                ? 'Internal HireSort Platform HQ staff and super administrators' 
+                : memberTypeTab === 'clients' 
+                  ? 'External client workspace members and recruiters across tenants' 
+                  : 'All users across platform HQ and client workspaces'}
+            </CardDescription>
+          </div>
+          {isSuperAdmin && (
+            <Tabs value={memberTypeTab} onValueChange={(val: any) => setMemberTypeTab(val)} className="w-full sm:w-auto">
+              <TabsList className="grid grid-cols-3 h-9 p-1 w-full sm:w-80">
+                <TabsTrigger value="all" className="text-xs">
+                  All ({users.length})
+                </TabsTrigger>
+                <TabsTrigger value="platform" className="text-xs flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-purple-600" />
+                  Platform ({platformUsers.length})
+                </TabsTrigger>
+                <TabsTrigger value="clients" className="text-xs flex items-center gap-1">
+                  <Building2 className="w-3 h-3 text-blue-600" />
+                  Clients ({clientUsers.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </CardHeader>
         <CardContent>
           {loading ? (

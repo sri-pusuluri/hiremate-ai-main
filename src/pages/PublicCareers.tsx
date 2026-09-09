@@ -48,12 +48,24 @@ export default function PublicCareers() {
     async function loadCareers() {
       try {
         setLoading(true);
-        // 1. Fetch Client Tenant
-        const { data: clientData } = await supabase
+        const normalizedSlug = (slug || 'zool').toLowerCase().trim();
+
+        // 1. Fetch Client Tenant (case-insensitive)
+        let { data: clientData } = await supabase
           .from('clients')
           .select('*')
-          .eq('slug', slug)
+          .eq('slug', normalizedSlug)
           .maybeSingle();
+
+        // Fallback search if exact slug match didn't find (e.g. Zool vs zool)
+        if (!clientData) {
+          const { data: fallbackClient } = await supabase
+            .from('clients')
+            .select('*')
+            .ilike('name', normalizedSlug)
+            .maybeSingle();
+          if (fallbackClient) clientData = fallbackClient;
+        }
 
         if (clientData) {
           setClient({
@@ -67,12 +79,12 @@ export default function PublicCareers() {
         } else {
           setClient({
             ...DEFAULT_ZOOL_CLIENT,
-            name: slug.charAt(0).toUpperCase() + slug.slice(1),
-            slug: slug,
+            name: normalizedSlug.charAt(0).toUpperCase() + normalizedSlug.slice(1),
+            slug: normalizedSlug,
           });
         }
 
-        // 2. Fetch Public Jobs & Candidates scoped to this tenant
+        // 2. Fetch Public Jobs scoped to this tenant
         let jobsQuery = supabase
           .from('jobs')
           .select('*')
@@ -83,20 +95,29 @@ export default function PublicCareers() {
           jobsQuery = jobsQuery.eq('client_id', clientData.id);
         }
 
-        const { data: jobsData } = await jobsQuery;
-
-        let candQuery = supabase
-          .from('candidates')
-          .select('id, full_name, email, job_id, created_at, status, pipeline_stage, experience');
-
-        if (clientData?.id) {
-          candQuery = candQuery.eq('client_id', clientData.id);
+        const { data: jobsData, error: jobsError } = await jobsQuery;
+        if (jobsError) {
+          console.warn('Jobs query warning:', jobsError);
         }
 
-        const { data: candsData } = await candQuery;
+        // 3. Optionally fetch candidate counts (in try-catch so permission errors never crash page)
+        let candsData: any[] = [];
+        try {
+          let candQuery = supabase
+            .from('candidates')
+            .select('id, full_name, email, job_id, created_at, status, pipeline_stage, experience');
 
-        if (candsData) {
-          setCandidatesData(candsData);
+          if (clientData?.id) {
+            candQuery = candQuery.eq('client_id', clientData.id);
+          }
+
+          const { data: resCands } = await candQuery;
+          if (resCands) {
+            candsData = resCands;
+            setCandidatesData(resCands);
+          }
+        } catch (candErr) {
+          console.debug('Candidate count optional fetch skipped:', candErr);
         }
 
         if (jobsData && jobsData.length > 0) {
@@ -107,7 +128,7 @@ export default function PublicCareers() {
               return isActive;
             })
             .map((j: any) => {
-              const jobCands = candsData ? candsData.filter((c: any) => c.job_id === j.id) : [];
+              const jobCands = candsData.filter((c: any) => c.job_id === j.id);
               return {
                 id: j.id,
                 title: j.title,
@@ -390,6 +411,24 @@ export default function PublicCareers() {
               </Card>
             </Link>
           ))}
+
+          {loading && (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-6 rounded-xl border border-border/60 bg-card/60 animate-pulse flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-2.5 flex-1">
+                    <div className="h-5 bg-muted rounded-md w-1/3" />
+                    <div className="h-3.5 bg-muted/60 rounded-md w-3/4" />
+                    <div className="flex gap-3 pt-1">
+                      <div className="h-3 bg-muted/40 rounded w-20" />
+                      <div className="h-3 bg-muted/40 rounded w-24" />
+                    </div>
+                  </div>
+                  <div className="h-9 w-28 bg-muted rounded-lg shrink-0" />
+                </div>
+              ))}
+            </div>
+          )}
 
           {filteredJobs.length === 0 && !loading && (
             <div className="p-12 text-center border border-dashed border-border rounded-xl">
