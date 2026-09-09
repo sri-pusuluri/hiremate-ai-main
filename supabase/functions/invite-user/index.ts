@@ -24,8 +24,11 @@ serve(async (req) => {
       throw new Error('Email and role are required.')
     }
     
-    // Ensure role is valid
-    if (role !== 'admin' && role !== 'recruiter' && role !== 'client_admin' && role !== 'super_admin') {
+    // Ensure role is valid and map to Postgres app_role enum ('admin' | 'recruiter')
+    let dbRole = 'recruiter'
+    if (role === 'admin' || role === 'client_admin' || role === 'super_admin') {
+      dbRole = 'admin'
+    } else if (role !== 'recruiter') {
       throw new Error('Invalid role specified.')
     }
 
@@ -93,7 +96,7 @@ serve(async (req) => {
     // Give the DB trigger a tiny amount of time to run just in case
     await new Promise(r => setTimeout(r, 500))
 
-    const updatePayload: Record<string, any> = { role }
+    const updatePayload: Record<string, any> = { role: dbRole }
     if (targetClientId) {
       updatePayload.client_id = targetClientId
     }

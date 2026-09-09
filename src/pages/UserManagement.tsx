@@ -273,8 +273,10 @@ export default function UserManagement() {
       const targetClientId = isPlatformInvite
         ? null
         : (isSuperAdmin ? inviteClientId : (activeClient?.id || DEFAULT_ZOOL_CLIENT.id));
+      // Map UI role to valid Postgres app_role ('admin' | 'recruiter')
+      const dbRole = (inviteRole === 'client_admin' || inviteRole === 'admin' || inviteRole === 'super_admin') ? 'admin' : 'recruiter';
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email: inviteEmail, role: inviteRole, clientId: targetClientId }
+        body: { email: inviteEmail, role: dbRole, clientId: targetClientId }
       });
 
       if (error) {
@@ -314,8 +316,9 @@ export default function UserManagement() {
   };
   const handleResendInvite = async (email: string, role: string) => {
     try {
+      const dbRole = (role === 'client_admin' || role === 'super_admin' || role === 'admin') ? 'admin' : 'recruiter';
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email, role }
+        body: { email, role: dbRole }
       });
       
       if (error) {
