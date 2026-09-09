@@ -167,10 +167,13 @@ export default function Auth() {
     }
   };
 
-  if (loading) {
+  if (loading || user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-xs text-muted-foreground animate-pulse">
+          {user ? 'Redirecting to workspace...' : 'Authenticating...'}
+        </p>
       </div>
     );
   }

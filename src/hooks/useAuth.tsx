@@ -58,10 +58,56 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getInitialStoredSession(): { user: User | null; session: Session | null } {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return { user: null, session: null };
+  }
+  try {
+    const mockSessionStr = localStorage.getItem('hiremate_mock_session');
+    if (mockSessionStr) {
+      const parsed = JSON.parse(mockSessionStr);
+      if (parsed?.user) return { user: parsed.user, session: parsed };
+    }
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          const sess = parsed?.currentSession || parsed;
+          if (sess?.user) {
+            return { user: sess.user, session: sess };
+          }
+        }
+      }
+    }
+  } catch (e) {}
+  return { user: null, session: null };
+}
+
+function getInitialCachedRole(): AppRole | null {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
+  try {
+    return (localStorage.getItem('hiresort_cached_role') as AppRole) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getInitialCachedProfile(): AuthContextType['profile'] {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem('hiresort_cached_profile');
+    if (saved) return JSON.parse(saved);
+  } catch (e) {}
+  return null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
+  const initialAuth = getInitialStoredSession();
+  const [user, setUser] = useState<User | null>(initialAuth.user);
+  const [session, setSession] = useState<Session | null>(initialAuth.session);
+  const [role, setRole] = useState<AppRole | null>(getInitialCachedRole());
   const [client, setClientState] = useState<ClientTenant | null>(() => {
     try {
       const saved = localStorage.getItem('hiresort_active_tenant');
@@ -81,11 +127,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (e) {}
   };
 
-  const [profile, setProfile] = useState<AuthContextType['profile']>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<AuthContextType['profile']>(getInitialCachedProfile());
+  const [loading, setLoading] = useState<boolean>(() => !initialAuth.user);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     // Check for PKCE token_hash from server-side emails (like invites or server-initiated resets)
     const searchParams = new URLSearchParams(window.location.search);
     const tokenHash = searchParams.get('token_hash');
@@ -127,44 +175,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleRecoveryEvent = () => setNeedsPasswordReset(true);
     window.addEventListener('password_recovery_event', handleRecoveryEvent);
 
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event, newSession) => {
+        if (!isMounted) return;
         if (event === 'PASSWORD_RECOVERY') {
           setNeedsPasswordReset(true);
         }
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer Supabase calls with setTimeout to prevent deadlocks
-        if (session?.user) {
+        if (newSession?.user) {
+          setSession(newSession);
+          setUser(newSession.user);
           setTimeout(() => {
-            fetchUserData(session.user.id);
+            if (isMounted) fetchUserData(newSession.user.id);
           }, 0);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
           setRole(null);
           setProfile(null);
+          try {
+            localStorage.removeItem('hiresort_cached_profile');
+            localStorage.removeItem('hiresort_cached_role');
+          } catch (e) {}
           setLoading(false);
         }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
+    // Authoritative initial session load
+    supabase.auth.getSession().then(({ data: { session: activeSession } }) => {
+      if (!isMounted) return;
+      if (activeSession?.user) {
+        setSession(activeSession);
+        setUser(activeSession.user);
+        fetchUserData(activeSession.user.id);
       } else {
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        setProfile(null);
+        try {
+          localStorage.removeItem('hiresort_cached_profile');
+          localStorage.removeItem('hiresort_cached_role');
+        } catch (e) {}
         setLoading(false);
       }
     }).catch(err => {
       console.error('Error loading session:', err);
-      setLoading(false);
+      if (isMounted) setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
       window.removeEventListener('password_recovery_event', handleRecoveryEvent);
     };
@@ -180,21 +243,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileData) {
-        setProfile({
+        const loadedProfile = {
           id: profileData.id,
           email: profileData.email,
           full_name: profileData.full_name,
           avatar_url: profileData.avatar_url,
-        });
+        };
+        setProfile(loadedProfile);
+        try {
+          localStorage.setItem('hiresort_cached_profile', JSON.stringify(loadedProfile));
+        } catch (e) {}
       } else {
         // Fallback to active user metadata instead of forcefully signing out
         const fallbackName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-        setProfile({
+        const fallbackProfile = {
           id: userId,
           email: user?.email || '',
           full_name: fallbackName,
           avatar_url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(fallbackName)}`,
-        });
+        };
+        setProfile(fallbackProfile);
+        try {
+          localStorage.setItem('hiresort_cached_profile', JSON.stringify(fallbackProfile));
+        } catch (e) {}
       }
 
       // Fetch role and client_id
@@ -207,6 +278,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (roleData) {
         const currentRole = (roleData as any).role as AppRole;
         setRole(currentRole);
+        try {
+          localStorage.setItem('hiresort_cached_role', currentRole);
+        } catch (e) {}
         let assignedClientId = (roleData as any).client_id;
 
         const emailLower = (profileData?.email || user?.email || '').toLowerCase();
@@ -337,14 +411,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setClient(HIRESORT_PLATFORM_CLIENT);
       setNeedsPasswordReset(false);
-      localStorage.removeItem('hiresort_active_tenant');
+      try {
+        localStorage.removeItem('hiresort_active_tenant');
+        localStorage.removeItem('hiresort_cached_profile');
+        localStorage.removeItem('hiresort_cached_role');
+      } catch (e) {}
       
       // Force clear Supabase local storage tokens just in case the API call failed
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-          localStorage.removeItem(key);
-        }
-      });
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {}
     }
   };
 
