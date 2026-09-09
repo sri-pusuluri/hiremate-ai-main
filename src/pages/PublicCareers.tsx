@@ -21,6 +21,7 @@ import {
   Eye,
   ArrowUpRight
 } from 'lucide-react';
+import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 import {
   Dialog,
   DialogContent,
@@ -206,13 +207,47 @@ export default function PublicCareers() {
 
   return (
     <div className={isEmbedMode ? "bg-background text-foreground flex flex-col p-4 font-sans" : "min-h-screen bg-background text-foreground flex flex-col"}>
+      {/* Top Brand Navigation Bar (Standalone Mode) */}
+      {!isEmbedMode && (
+        <nav className="border-b border-border/70 bg-card/80 backdrop-blur-md sticky top-0 z-30 px-6 py-3 shadow-xs">
+          <div className="max-w-5xl mx-auto flex items-center justify-between">
+            <Link to={`/careers/${slug}`} className="flex items-center gap-3 group">
+              <TenantBrandLogo
+                name={client.name}
+                slug={client.slug}
+                logoUrl={client.logoUrl}
+                themeColor={client.themeColor}
+                size="sm"
+                className="group-hover:scale-105 transition-transform"
+              />
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-base tracking-tight text-foreground">{client.name}</span>
+                <Badge variant="outline" className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Careers
+                </Badge>
+              </div>
+            </Link>
+
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {jobs.length} Open Role{jobs.length === 1 ? '' : 's'}
+              </span>
+            </div>
+          </div>
+        </nav>
+      )}
+
       {/* Header: Compact Widget in Embed Mode vs Full Brand Hero Header */}
       {isEmbedMode ? (
         <header className="pb-4 mb-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div 
-              className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" 
-              style={{ backgroundColor: client.themeColor || '#2563eb' }}
+            <TenantBrandLogo
+              name={client.name}
+              slug={client.slug}
+              logoUrl={client.logoUrl}
+              themeColor={client.themeColor}
+              size="md"
             />
             <div>
               <h2 className="text-lg font-bold tracking-tight text-foreground leading-none">
@@ -240,13 +275,24 @@ export default function PublicCareers() {
             background: `radial-gradient(ellipse at 50% 0%, ${client.themeColor || '#2563eb'}22 0%, transparent 70%)`
           }}
         >
-          <div className="max-w-4xl mx-auto text-center space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card/80 backdrop-blur shadow-sm">
+          <div className="max-w-4xl mx-auto text-center space-y-5 flex flex-col items-center">
+            {/* Prominent Client Brand Logo Emblem */}
+            <div className="p-2 rounded-3xl bg-card/90 border border-border shadow-lg backdrop-blur hover:scale-105 transition-transform duration-200">
+              <TenantBrandLogo
+                name={client.name}
+                slug={client.slug}
+                logoUrl={client.logoUrl}
+                themeColor={client.themeColor}
+                size="hero"
+              />
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-border bg-card/90 backdrop-blur shadow-sm">
               <div 
-                className="w-4 h-4 rounded-full" 
+                className="w-2 h-2 rounded-full animate-pulse" 
                 style={{ backgroundColor: client.themeColor || '#2563eb' }}
               />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-xs font-bold uppercase tracking-wider text-foreground">
                 Careers at {client.name}
               </span>
             </div>
@@ -333,15 +379,18 @@ export default function PublicCareers() {
             >
               <Card className="border-border hover:border-primary/50 hover:shadow-md transition-all duration-200 bg-card">
                 <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2.5">
-                      <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
-                        {job.title}
-                      </h3>
-                      <Badge variant="secondary" className="text-xs capitalize font-medium">
-                        {job.type}
-                      </Badge>
-                    </div>
+                  <div className="flex items-start gap-4">
+                    <TenantBrandLogo client={client} size="md" className="mt-0.5 rounded-xl hidden sm:flex" />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2.5">
+                        <TenantBrandLogo client={client} size="xs" className="sm:hidden" />
+                        <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                          {job.title}
+                        </h3>
+                        <Badge variant="secondary" className="text-xs capitalize font-medium">
+                          {job.type}
+                        </Badge>
+                      </div>
 
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {job.description}
@@ -398,6 +447,7 @@ export default function PublicCareers() {
                       )}
                     </div>
                   </div>
+                </div>
 
                   <div className="shrink-0 flex items-center gap-2">
                     <Button 
@@ -445,7 +495,18 @@ export default function PublicCareers() {
       {/* Footer (hidden in embed mode for clean host integration) */}
       {!isEmbedMode && (
         <footer className="border-t border-border py-8 px-6 text-center text-xs text-muted-foreground mt-auto bg-muted/20">
-          <p>© {new Date().getFullYear()} {client.name}. Powered by HireSortAi Multi-Tenant ATS.</p>
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <TenantBrandLogo client={client} size="sm" showBorder={false} />
+              <span className="font-semibold text-foreground text-sm">{client.name}</span>
+            </div>
+            <p>© {new Date().getFullYear()} {client.name}. Multi-Tenant ATS powered by HireSort AI.</p>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Careers Portal</span>
+              <span>•</span>
+              <span className="font-medium text-foreground">{client.name}</span>
+            </div>
+          </div>
         </footer>
       )}
       {/* Applied Candidates Modal for Client Listing */}

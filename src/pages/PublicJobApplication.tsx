@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 
 export default function PublicJobApplication() {
   const { clientSlug, jobSlug } = useParams<{ clientSlug: string; jobSlug: string }>();
@@ -328,8 +329,12 @@ export default function PublicJobApplication() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card className="max-w-md w-full border-border text-center p-8 space-y-5 shadow-lg">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10" />
+          <div className="flex justify-center mb-1">
+            <TenantBrandLogo client={client} size="xl" />
+          </div>
+
+          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-7 h-7" />
           </div>
 
           <div className="space-y-1">
@@ -371,13 +376,13 @@ export default function PublicJobApplication() {
             <span>All {client.name} Jobs</span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: client.themeColor || '#2563eb' }}
-            />
+          <Link 
+            to={`/careers/${client.slug}`}
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+          >
+            <TenantBrandLogo client={client} size="sm" />
             <span className="font-semibold text-sm">{client.name} Careers</span>
-          </div>
+          </Link>
         </div>
       </header>
 
@@ -386,11 +391,17 @@ export default function PublicJobApplication() {
         {/* Left Column: Job Description */}
         <div className="lg:col-span-7 space-y-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="secondary" className="text-xs">{job?.department}</Badge>
-              <Badge variant="outline" className="text-xs capitalize">{job?.type}</Badge>
+            <div className="flex items-start gap-4 mb-3">
+              <TenantBrandLogo client={client} size="lg" className="rounded-2xl shrink-0" />
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{client.name}</span>
+                  <Badge variant="secondary" className="text-xs">{job?.department}</Badge>
+                  <Badge variant="outline" className="text-xs capitalize">{job?.type}</Badge>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{job?.title}</h1>
+              </div>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight">{job?.title}</h1>
             
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-3">
               <span className="flex items-center gap-1">
@@ -469,10 +480,15 @@ export default function PublicJobApplication() {
         <div className="lg:col-span-5">
           <Card className="border-border shadow-md sticky top-24">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl">Apply for this position</CardTitle>
-              <CardDescription className="text-xs">
-                Upload your resume to let our AI auto-fill your contact details.
-              </CardDescription>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xl">Apply for this position</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">
+                    Upload your resume to let our AI auto-fill your contact details.
+                  </CardDescription>
+                </div>
+                <TenantBrandLogo client={client} size="sm" showBorder={false} />
+              </div>
             </CardHeader>
 
             <CardContent>
@@ -743,6 +759,22 @@ export default function PublicJobApplication() {
           </Card>
         </div>
       </main>
+
+      {/* Branded Footer */}
+      <footer className="border-t border-border py-8 px-6 text-center text-xs text-muted-foreground mt-auto bg-muted/20">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <TenantBrandLogo client={client} size="sm" showBorder={false} />
+            <span className="font-semibold text-foreground text-sm">{client.name}</span>
+          </div>
+          <p>© {new Date().getFullYear()} {client.name}. Multi-Tenant ATS powered by HireSort AI.</p>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Link to={`/careers/${client.slug}`} className="hover:underline text-foreground">
+              All Open Positions
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

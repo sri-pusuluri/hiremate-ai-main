@@ -19,7 +19,8 @@ export const DEFAULT_ZOOL_CLIENT: ClientTenant = {
   id: '00000000-0000-0000-0000-000000000001',
   name: 'Zool',
   slug: 'zool',
-  themeColor: '#2563eb',
+  logoUrl: '/logos/zool-logo.svg',
+  themeColor: '#10b981',
   subscriptionTier: 'pro',
 };
 
@@ -27,7 +28,8 @@ export const DEFAULT_COMMIT_CLIENT: ClientTenant = {
   id: '00000000-0000-0000-0000-000000000004',
   name: 'Commit',
   slug: 'commit',
-  themeColor: '#f97316',
+  logoUrl: '/logos/commit-logo.svg',
+  themeColor: '#2563eb',
   subscriptionTier: 'enterprise',
 };
 

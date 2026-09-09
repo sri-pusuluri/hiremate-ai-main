@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Job } from '@/types/hiresort';
+import { Job, ClientTenant } from '@/types/hiresort';
+import { DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +18,13 @@ import {
   FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 
 export default function EmbedJobWidget() {
   const { jobId, clientSlug } = useParams<{ jobId?: string; clientSlug?: string }>();
   const { toast } = useToast();
 
+  const [client, setClient] = useState<ClientTenant>(DEFAULT_ZOOL_CLIENT);
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState('');
@@ -62,7 +65,38 @@ export default function EmbedJobWidget() {
               postedDate: '2026-02-01',
               candidateCount: 0,
             });
+
+            // Fetch Client branding if available
+            const cid = (data as any).client_id;
+            if (cid) {
+              const { data: clientRow } = await supabase.from('clients').select('*').eq('id', cid).maybeSingle();
+              if (clientRow) {
+                setClient({
+                  id: (clientRow as any).id,
+                  name: (clientRow as any).name,
+                  slug: (clientRow as any).slug,
+                  logoUrl: (clientRow as any).logo_url,
+                  themeColor: (clientRow as any).theme_color,
+                  subscriptionTier: (clientRow as any).subscription_tier || 'pro'
+                });
+              }
+            }
             return;
+          }
+        }
+
+        // If clientSlug prop provided
+        if (clientSlug) {
+          const { data: clientRow } = await supabase.from('clients').select('*').eq('slug', clientSlug).maybeSingle();
+          if (clientRow) {
+            setClient({
+              id: (clientRow as any).id,
+              name: (clientRow as any).name,
+              slug: (clientRow as any).slug,
+              logoUrl: (clientRow as any).logo_url,
+              themeColor: (clientRow as any).theme_color,
+              subscriptionTier: (clientRow as any).subscription_tier || 'pro'
+            });
           }
         }
 
@@ -146,12 +180,15 @@ export default function EmbedJobWidget() {
   if (submitted) {
     return (
       <div className="p-8 text-center bg-card rounded-xl border border-border max-w-lg mx-auto shadow-sm my-6 space-y-4">
+        <div className="flex justify-center mb-1">
+          <TenantBrandLogo client={client} size="lg" />
+        </div>
         <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-8 h-8" />
         </div>
         <h3 className="text-xl font-bold text-foreground">Application Submitted!</h3>
         <p className="text-xs text-muted-foreground">
-          Thank you for applying to {job?.title}. Our talent acquisition team will review your profile.
+          Thank you for applying to {job?.title} at {client.name}. Our talent acquisition team will review your profile.
         </p>
       </div>
     );
@@ -162,20 +199,24 @@ export default function EmbedJobWidget() {
       <Card className="border-border shadow-sm">
         <CardContent className="p-6 space-y-5">
           {/* Header */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">{job?.department}</Badge>
-              <Badge variant="outline" className="text-xs capitalize">{job?.type}</Badge>
-            </div>
-            <h2 className="text-2xl font-bold text-foreground">{job?.title}</h2>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" />
-                {job?.location}
-              </span>
-              {job?.salary && (
-                <span className="font-semibold text-foreground">{job.salary}</span>
-              )}
+          <div className="flex items-start gap-3.5">
+            <TenantBrandLogo client={client} size="md" className="rounded-xl shrink-0 mt-0.5" />
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{client.name}</span>
+                <Badge variant="secondary" className="text-[10px]">{job?.department}</Badge>
+                <Badge variant="outline" className="text-[10px] capitalize">{job?.type}</Badge>
+              </div>
+              <h2 className="text-xl font-bold text-foreground">{job?.title}</h2>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {job?.location}
+                </span>
+                {job?.salary && (
+                  <span className="font-semibold text-foreground">{job.salary}</span>
+                )}
+              </div>
             </div>
           </div>
 
