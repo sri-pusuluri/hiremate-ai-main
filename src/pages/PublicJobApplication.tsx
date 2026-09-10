@@ -38,6 +38,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
+import TurnstileWidget from '@/components/common/TurnstileWidget';
 
 export default function PublicJobApplication() {
   const { clientSlug, jobSlug } = useParams<{ clientSlug: string; jobSlug: string }>();
@@ -58,6 +59,7 @@ export default function PublicJobApplication() {
   const [noticePeriod, setNoticePeriod] = useState('30 Days');
   const [customAnswer, setCustomAnswer] = useState('');
   const [consentAgreed, setConsentAgreed] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
 
   // File Upload & AI Parsing State
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -228,6 +230,16 @@ export default function PublicJobApplication() {
       toast({
         title: 'Consent Required',
         description: 'Please check the consent box to proceed with data processing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+    if (turnstileSiteKey && !turnstileToken) {
+      toast({
+        title: 'Verification Required',
+        description: 'Please complete the Cloudflare security verification.',
         variant: 'destructive',
       });
       return;
@@ -719,13 +731,10 @@ export default function PublicJobApplication() {
                     </span>
                   </label>
 
-                  <div className="p-2.5 rounded-lg border border-border bg-muted/30 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                      <span>Cloudflare Turnstile Verified</span>
-                    </div>
-                    <span className="font-mono text-[10px]">Spam Protected</span>
-                  </div>
+                  <TurnstileWidget
+                    onVerify={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken('')}
+                  />
                 </div>
 
                 {/* Submit Button */}
