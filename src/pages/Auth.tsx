@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Check, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Check, KeyRound, Eye, EyeOff, Zap, Crosshair, Wind } from 'lucide-react';
 import { z } from 'zod';
 import { isMockMode, enableMockMode, disableMockMode } from '@/integrations/supabase/client';
 import { markInvitationAccepted } from '@/lib/invitations';
@@ -26,6 +26,10 @@ export default function Auth() {
   const [success, setSuccess] = useState<string | null>(null);
   const { toast } = useToast();
   
+  // Falcon Background Video / Image State
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
   // Local Mock State
   const [mockActive, setMockActive] = useState(isMockMode());
 
@@ -184,21 +188,119 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">TS</span>
+    <div className="min-h-screen grid lg:grid-cols-12 bg-background">
+      {/* Left Falcon Hero Showcase Panel */}
+      <div className="relative hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-between overflow-hidden bg-slate-950 text-white p-8 xl:p-12 select-none border-r border-border/40">
+        {/* Background Falcon Visual (Video loop if present, else animated image) */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {!videoError && (
+            <video 
+              src="/videos/falcon-flying.mp4" 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
+              onLoadedData={() => setVideoLoaded(true)}
+              onError={() => setVideoError(true)}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+          )}
+
+          <img 
+            src="/images/falcon-hero.jpg" 
+            alt="HireSort Falcon - High Velocity AI Recruitment"
+            className={`absolute inset-0 w-full h-full object-cover object-center animate-falcon-glide scale-105 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-90'}`}
+          />
+
+          {/* Aerodynamic Speed Streaks / Wind Trails */}
+          <div className="absolute inset-0 overflow-hidden opacity-40">
+            <div className="absolute top-[22%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/80 to-transparent animate-falcon-streak-fast" />
+            <div className="absolute top-[42%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-sky-300 to-transparent animate-falcon-streak-med" />
+            <div className="absolute top-[65%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-falcon-streak-slow" />
+          </div>
+
+          {/* Falcon Eye HUD Targeting Ring (Simulating AI Signal Vision) */}
+          <div className="absolute top-[38%] left-[64%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="w-20 h-20 rounded-full border border-sky-400/50 animate-falcon-hud flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full border border-amber-400/70 flex items-center justify-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+              </div>
+            </div>
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-sky-500/40 text-[9px] font-mono text-sky-300 tracking-wider whitespace-nowrap shadow-sm flex items-center gap-1">
+              <Crosshair className="w-2.5 h-2.5 text-sky-400 animate-spin" />
+              <span>SIGNAL DETECTED • 99.4%</span>
+            </div>
+          </div>
+
+          {/* Vignette Gradients for readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-background/20" />
+        </div>
+
+        {/* Top Brand Logo inside Hero */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+            <span className="text-primary-foreground font-bold text-base tracking-tight">HS</span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">HireSortAi</h1>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Sparkles className="w-3.5 h-3.5 text-ai-accent" />
-              <span>AI-Powered Hiring Platform</span>
+            <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+              HireSortAi
+            </span>
+            <span className="text-xs text-slate-300 block -mt-0.5">Enterprise Talent Intelligence</span>
+          </div>
+        </div>
+
+        {/* Bottom Hero Typography & Metrics */}
+        <div className="relative z-10 space-y-4 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs font-medium text-slate-200 shadow-sm">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>Built for fast-moving teams</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl xl:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            Find Signal to Action Instantly
+          </h1>
+
+          <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+            Autonomous multi-tenant candidate screening, AI resume synthesis, and deep talent ranking with aerodynamic precision.
+          </p>
+
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            <div className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
+              <div className="text-xs text-slate-400 font-medium">Velocity</div>
+              <div className="text-base font-bold text-white mt-0.5">389 km/h</div>
+              <div className="text-[10px] text-slate-400">Peak Screening Speed</div>
+            </div>
+            <div className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
+              <div className="text-xs text-slate-400 font-medium">Precision</div>
+              <div className="text-base font-bold text-white mt-0.5">99.4%</div>
+              <div className="text-[10px] text-slate-400">Signal Match Rate</div>
+            </div>
+            <div className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
+              <div className="text-xs text-slate-400 font-medium">Partitions</div>
+              <div className="text-base font-bold text-white mt-0.5">Zero Leak</div>
+              <div className="text-[10px] text-slate-400">Tenant Data Isolation</div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Right Login / Sign Up Form Column */}
+      <div className="lg:col-span-6 xl:col-span-5 flex items-center justify-center p-4 sm:p-8 lg:p-12 overflow-y-auto bg-gradient-to-b from-background via-background to-muted/20">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-3 mb-6 lg:mb-8">
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+              <span className="text-primary-foreground font-bold text-lg">HS</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">HireSortAi</h1>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Sparkles className="w-3.5 h-3.5 text-ai-accent" />
+                <span>AI-Powered Hiring Platform</span>
+              </div>
+            </div>
+          </div>
 
         <Card className="border-border/50 shadow-lg">
           <CardHeader className="text-center pb-4">
@@ -528,5 +630,6 @@ export default function Auth() {
         </p>
       </div>
     </div>
-  );
+  </div>
+);
 }

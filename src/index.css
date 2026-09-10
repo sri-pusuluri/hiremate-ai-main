@@ -224,3 +224,62 @@
   color: #ffffff !important;
   font-weight: 600 !important;
 }
+
+/* Falcon Hero Aerodynamic Flight & HUD Animations */
+@keyframes falcon-glide {
+  0%, 100% {
+    transform: translateY(0) scale(1.03) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.05) rotate(0.5deg);
+  }
+}
+
+@keyframes falcon-streak {
+  0% {
+    transform: translateX(120%) scaleX(0.2);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.6;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(-140%) scaleX(2);
+    opacity: 0;
+  }
+}
+
+@keyframes falcon-hud-pulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.85;
+  }
+}
+
+.animate-falcon-glide {
+  animation: falcon-glide 8s ease-in-out infinite;
+}
+
+.animate-falcon-streak-fast {
+  animation: falcon-streak 1.5s linear infinite;
+}
+
+.animate-falcon-streak-med {
+  animation: falcon-streak 2.4s linear infinite;
+}
+
+.animate-falcon-streak-slow {
+  animation: falcon-streak 3.6s linear infinite;
+}
+
+.animate-falcon-hud {
+  animation: falcon-hud-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
