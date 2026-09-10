@@ -277,33 +277,30 @@ export default function Auth() {
         </div>
 
         {/* Right Floating Glass Panel (Linear / Apple style) */}
-        <div className="col-span-1 lg:col-span-6 xl:col-span-5 h-full flex items-center justify-center lg:justify-end">
-          <div className="w-full max-w-md h-full max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] rounded-3xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl shadow-black/30 p-6 sm:p-8 flex flex-col justify-between overflow-hidden">
-            {/* Panel Top Header: Mobile logo fallback + Status pill */}
-            <div className="flex items-center justify-between min-h-[32px]">
-              <div className="flex items-center gap-2.5 lg:hidden">
-                <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-                  <span className="text-primary-foreground font-bold text-xs">HS</span>
-                </div>
-                <div>
-                  <h2 className="text-xs font-bold text-foreground leading-tight">HireSortAi</h2>
-                  <p className="text-[10px] text-muted-foreground">Enterprise ATS Platform</p>
-                </div>
+        <div className="col-span-1 lg:col-span-6 xl:col-span-5 h-full flex items-center justify-center lg:justify-end py-4">
+          <div className="w-full max-w-md rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl shadow-black/30 p-6 sm:p-7 flex flex-col gap-3.5 overflow-hidden">
+            {/* Mobile logo fallback */}
+            <div className="flex items-center gap-2.5 lg:hidden">
+              <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+                <span className="text-primary-foreground font-bold text-xs">HS</span>
               </div>
-              <div className="hidden lg:block" />
-              <Badge variant="outline" className="text-[10px] font-medium border-border/60 bg-background/50 backdrop-blur-sm text-muted-foreground ml-auto">
-                v1.0 Production
-              </Badge>
+              <div>
+                <h2 className="text-xs font-bold text-foreground leading-tight">HireSortAi</h2>
+                <p className="text-[10px] text-muted-foreground">Enterprise ATS Platform</p>
+              </div>
             </div>
 
-            {/* Panel Body */}
-            <div className="my-auto space-y-4 py-2">
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold text-foreground tracking-tight">Welcome back</h2>
-                <p className="text-xs text-muted-foreground">
-                  Sign in to your account to continue
-                </p>
+            {/* Header: v1.0 Production badge cleanly above Welcome back */}
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-semibold tracking-wide w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                v1.0 Production
               </div>
+              <h2 className="text-2xl font-bold text-foreground tracking-tight pt-0.5">Welcome back</h2>
+              <p className="text-xs text-muted-foreground">
+                Sign in to your account to continue
+              </p>
+            </div>
 
               {error && (
                 <Alert variant="destructive" className="py-2 text-xs">
@@ -543,7 +540,6 @@ export default function Auth() {
                   </form>
                 </TabsContent>
               </Tabs>
-            </div>
 
             {/* Bottom Status bar */}
             <div className="pt-2.5 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
