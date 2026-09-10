@@ -42,6 +42,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ScreeningQuestion, SYSTEM_QUESTION_LIBRARY } from '@/lib/question-library';
 import { QuestionLibraryModal } from './QuestionLibraryModal';
+import { assembleJobDescription, parseJobMarkdown, normalizeJobType } from '@/lib/job-parser';
 
 interface CreateJobModalProps {
   open: boolean;
@@ -157,13 +158,14 @@ export function CreateJobModal({
 
     if (jobToEdit) {
       setSelectedCreatorId(jobToEdit.createdBy || user?.id || '');
+      const fullDescription = assembleJobDescription(jobToEdit);
       setFormData({
         title: jobToEdit.title || '',
         department: jobToEdit.department || 'Engineering',
         location: jobToEdit.location || 'Remote',
-        type: (jobToEdit.type as any) || 'full-time',
+        type: normalizeJobType(jobToEdit.type),
         salary: jobToEdit.salary || '',
-        description: jobToEdit.description || '',
+        description: fullDescription,
         isPublic: jobToEdit.isPublic ?? true,
       });
 
@@ -245,8 +247,20 @@ export function CreateJobModal({
         required: q.required ?? false
       }));
 
+      const parsed = parseJobMarkdown(formData.description);
+
       if (isEditMode && jobToEdit) {
         // UPDATE EXISTING JOB
+        const resolvedResponsibilities = parsed.responsibilities.length > 0 
+          ? parsed.responsibilities 
+          : (jobToEdit.responsibilities || []);
+        const resolvedRequirements = parsed.requirements.length > 0 
+          ? parsed.requirements 
+          : (jobToEdit.requirements || []);
+        const resolvedNiceToHave = parsed.niceToHave.length > 0 
+          ? parsed.niceToHave 
+          : (jobToEdit.niceToHave || []);
+
         const updatePayload = {
           title: formData.title,
           department: formData.department,
@@ -254,6 +268,9 @@ export function CreateJobModal({
           type: formData.type,
           salary: formData.salary,
           description: formData.description,
+          responsibilities: resolvedResponsibilities,
+          requirements: resolvedRequirements,
+          nice_to_have: resolvedNiceToHave,
           is_public: formData.isPublic,
           expires_at: expiresAt,
           custom_questions: formattedQuestions,
@@ -280,6 +297,9 @@ export function CreateJobModal({
           type: (data as any).type,
           salary: (data as any).salary,
           description: (data as any).description,
+          responsibilities: (data as any).responsibilities || resolvedResponsibilities,
+          requirements: (data as any).requirements || resolvedRequirements,
+          niceToHave: (data as any).nice_to_have || resolvedNiceToHave,
           isPublic: (data as any).is_public,
           expiresAt: (data as any).expires_at || undefined,
           customQuestions: formattedQuestions as any,
@@ -322,17 +342,17 @@ export function CreateJobModal({
           status: 'active',
           expires_at: expiresAt,
           custom_questions: formattedQuestions,
-          responsibilities: [
+          responsibilities: parsed.responsibilities.length > 0 ? parsed.responsibilities : [
             'Lead feature development and technical design across the product stack',
             'Collaborate with product and design to craft intuitive, accessible UX',
             'Optimize code quality, automated tests, and CI/CD pipelines'
           ],
-          requirements: [
+          requirements: parsed.requirements.length > 0 ? parsed.requirements : [
             '3+ years relevant engineering or domain experience',
             'Strong problem solving and cross-functional communication skills',
             'Proven track record delivering reliable, customer-facing applications'
           ],
-          nice_to_have: ['Experience with AI/LLM integrations', 'Contributions to open source']
+          nice_to_have: parsed.niceToHave.length > 0 ? parsed.niceToHave : ['Experience with AI/LLM integrations', 'Contributions to open source']
         };
 
         const { data, error } = await supabase
@@ -503,11 +523,11 @@ export function CreateJobModal({
               <div className="space-y-1.5">
                 <Label htmlFor="job-type">Employment Type</Label>
                 <Select 
-                  value={formData.type} 
-                  onValueChange={(val: any) => setFormData(prev => ({ ...prev, type: val }))}
+                  value={formData.type || 'full-time'} 
+                  onValueChange={(val: any) => setFormData(prev => ({ ...prev, type: normalizeJobType(val) }))}
                 >
                   <SelectTrigger id="job-type">
-                    <SelectValue />
+                    <SelectValue placeholder="Select type..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="full-time">Full-Time</SelectItem>
