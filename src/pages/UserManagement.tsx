@@ -38,6 +38,8 @@ import {
   Loader2,
   Crown,
   Globe,
+  Copy,
+  Link2,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -310,9 +312,16 @@ export default function UserManagement() {
         throw new Error(errorMessage);
       }
 
+      const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(inviteEmail)}&mode=signup`;
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(directLink);
+        } catch (e) {}
+      }
+
       toast({
-        title: 'Invitation Sent',
-        description: `Invitation sent to ${inviteEmail}`,
+        title: 'Invitation Created! 🎉',
+        description: `Invitation sent to ${inviteEmail}. Direct setup link copied to clipboard.`,
       });
       setInviteDialogOpen(false);
       setInviteEmail('');
@@ -332,6 +341,18 @@ export default function UserManagement() {
       setIsInviting(false);
     }
   };
+
+  const handleCopyInviteLink = (targetEmail: string) => {
+    const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(targetEmail)}&mode=signup`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(directLink);
+      toast({
+        title: 'Direct Setup Link Copied! 📋',
+        description: `Invitation onboarding link for ${targetEmail} copied to clipboard.`,
+      });
+    }
+  };
+
   const handleResendInvite = async (email: string, role: string) => {
     try {
       const dbRole = (role === 'client_admin' || role === 'super_admin' || role === 'admin') ? 'admin' : 'recruiter';
@@ -965,14 +986,25 @@ export default function UserManagement() {
 
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            onClick={() => handleResendInvite(u.email || '', u.role)}
+                            onClick={() => handleCopyInviteLink(u.email || '')}
+                            className="cursor-pointer gap-2"
                           >
-                            Resend Invitation
+                            <Copy className="w-3.5 h-3.5 text-primary" />
+                            <span>Copy Direct Invite Link</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleResendInvite(u.email || '', u.role)}
+                            className="cursor-pointer gap-2"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span>Resend Invitation Email</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleSendPasswordReset(u.email || '')}
+                            className="cursor-pointer gap-2"
                           >
-                            Send Password Reset
+                            <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span>Send Password Reset</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
