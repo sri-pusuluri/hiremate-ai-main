@@ -372,18 +372,15 @@ export default function PublicCareers() {
             >
               <Card className="border-border hover:border-primary/50 hover:shadow-md transition-all duration-200 bg-card">
                 <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <TenantBrandLogo client={client} size="md" className="mt-0.5 rounded-xl hidden sm:flex" />
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2.5">
-                        <TenantBrandLogo client={client} size="xs" className="sm:hidden" />
-                        <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
-                          {job.title}
-                        </h3>
-                        <Badge variant="secondary" className="text-xs capitalize font-medium">
-                          {job.type}
-                        </Badge>
-                      </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                        {job.title}
+                      </h3>
+                      <Badge variant="secondary" className="text-xs capitalize font-medium">
+                        {job.type}
+                      </Badge>
+                    </div>
 
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {job.description}
@@ -440,7 +437,6 @@ export default function PublicCareers() {
                       )}
                     </div>
                   </div>
-                </div>
 
                   <div className="shrink-0 flex items-center gap-2">
                     <Button 

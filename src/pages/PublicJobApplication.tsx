@@ -391,17 +391,11 @@ export default function PublicJobApplication() {
         {/* Left Column: Job Description */}
         <div className="lg:col-span-7 space-y-6">
           <div>
-            <div className="flex items-start gap-4 mb-3">
-              <TenantBrandLogo client={client} size="lg" className="rounded-2xl shrink-0" />
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{client.name}</span>
-                  <Badge variant="secondary" className="text-xs">{job?.department}</Badge>
-                  <Badge variant="outline" className="text-xs capitalize">{job?.type}</Badge>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{job?.title}</h1>
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="secondary" className="text-xs">{job?.department}</Badge>
+              <Badge variant="outline" className="text-xs capitalize">{job?.type}</Badge>
             </div>
+            <h1 className="text-3xl font-extrabold tracking-tight">{job?.title}</h1>
             
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-3">
               <span className="flex items-center gap-1">
@@ -460,7 +454,7 @@ export default function PublicJobApplication() {
             </div>
           )}
 
-          {/* Nice to have */}
+          {/* Nice to Have */}
           {job?.niceToHave && job.niceToHave.length > 0 && (
             <div className="space-y-3">
               <h2 className="text-lg font-bold">Nice to Have</h2>
@@ -480,15 +474,10 @@ export default function PublicJobApplication() {
         <div className="lg:col-span-5">
           <Card className="border-border shadow-md sticky top-24">
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-xl">Apply for this position</CardTitle>
-                  <CardDescription className="text-xs mt-0.5">
-                    Upload your resume to let our AI auto-fill your contact details.
-                  </CardDescription>
-                </div>
-                <TenantBrandLogo client={client} size="sm" showBorder={false} />
-              </div>
+              <CardTitle className="text-xl">Apply for this position</CardTitle>
+              <CardDescription className="text-xs">
+                Upload your resume to let our AI auto-fill your contact details.
+              </CardDescription>
             </CardHeader>
 
             <CardContent>

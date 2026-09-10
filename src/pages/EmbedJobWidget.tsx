@@ -199,24 +199,20 @@ export default function EmbedJobWidget() {
       <Card className="border-border shadow-sm">
         <CardContent className="p-6 space-y-5">
           {/* Header */}
-          <div className="flex items-start gap-3.5">
-            <TenantBrandLogo client={client} size="md" className="rounded-xl shrink-0 mt-0.5" />
-            <div className="space-y-1 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{client.name}</span>
-                <Badge variant="secondary" className="text-[10px]">{job?.department}</Badge>
-                <Badge variant="outline" className="text-[10px] capitalize">{job?.type}</Badge>
-              </div>
-              <h2 className="text-xl font-bold text-foreground">{job?.title}</h2>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {job?.location}
-                </span>
-                {job?.salary && (
-                  <span className="font-semibold text-foreground">{job.salary}</span>
-                )}
-              </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px]">{job?.department}</Badge>
+              <Badge variant="outline" className="text-[10px] capitalize">{job?.type}</Badge>
+            </div>
+            <h2 className="text-xl font-bold text-foreground">{job?.title}</h2>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
+                {job?.location}
+              </span>
+              {job?.salary && (
+                <span className="font-semibold text-foreground">{job.salary}</span>
+              )}
             </div>
           </div>
 
