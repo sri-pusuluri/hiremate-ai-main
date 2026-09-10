@@ -105,4 +105,15 @@ describe('All Demo Personas Authentication Suite', () => {
     const { data } = await supabase.auth.getSession();
     expect(data.session).toBeNull();
   });
+
+  it('6. Registering onAuthStateChange does NOT emit SIGNED_OUT when initial session is null', async () => {
+    let receivedEvent: string | null = null;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+      receivedEvent = event;
+    });
+
+    await new Promise(r => setTimeout(r, 20));
+    expect(receivedEvent).not.toBe('SIGNED_OUT');
+    subscription.unsubscribe();
+  });
 });

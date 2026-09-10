@@ -65,21 +65,44 @@ function getInitialStoredSession(): { user: User | null; session: Session | null
     return { user: null, session: null };
   }
   try {
+    // 1. Direct hiresort cached session & user
+    const cachedSessionStr = localStorage.getItem('hiresort_cached_session');
+    if (cachedSessionStr) {
+      try {
+        const parsed = JSON.parse(cachedSessionStr);
+        if (parsed?.user) return { user: parsed.user, session: parsed };
+      } catch (e) {}
+    }
+    const cachedUserStr = localStorage.getItem('hiresort_cached_user');
+    if (cachedUserStr) {
+      try {
+        const parsedUser = JSON.parse(cachedUserStr);
+        if (parsedUser?.id) return { user: parsedUser, session: null };
+      } catch (e) {}
+    }
+
+    // 2. Mock mode session
     const mockSessionStr = localStorage.getItem('hiremate_mock_session');
     if (mockSessionStr) {
-      const parsed = JSON.parse(mockSessionStr);
-      if (parsed?.user) return { user: parsed.user, session: parsed };
+      try {
+        const parsed = JSON.parse(mockSessionStr);
+        if (parsed?.user) return { user: parsed.user, session: parsed };
+      } catch (e) {}
     }
+
+    // 3. Supabase standard auth tokens
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+      if (key && (key.startsWith('sb-') || key.includes('-auth-token'))) {
         const item = localStorage.getItem(key);
         if (item) {
-          const parsed = JSON.parse(item);
-          const sess = parsed?.currentSession || parsed;
-          if (sess?.user) {
-            return { user: sess.user, session: sess };
-          }
+          try {
+            const parsed = JSON.parse(item);
+            const sess = parsed?.currentSession || (parsed?.user ? parsed : null);
+            if (sess?.user) {
+              return { user: sess.user, session: sess };
+            }
+          } catch (e) {}
         }
       }
     }
@@ -188,6 +211,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (newSession?.user) {
           setSession(newSession);
           setUser(newSession.user);
+          try {
+            localStorage.setItem('hiresort_cached_user', JSON.stringify(newSession.user));
+            localStorage.setItem('hiresort_cached_session', JSON.stringify(newSession));
+          } catch (e) {}
           setTimeout(() => {
             if (isMounted) fetchUserData(newSession.user.id);
           }, 0);
@@ -197,6 +224,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRole(null);
           setProfile(null);
           try {
+            localStorage.removeItem('hiresort_cached_user');
+            localStorage.removeItem('hiresort_cached_session');
             localStorage.removeItem('hiresort_cached_profile');
             localStorage.removeItem('hiresort_cached_role');
           } catch (e) {}
@@ -211,16 +240,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (activeSession?.user) {
         setSession(activeSession);
         setUser(activeSession.user);
+        try {
+          localStorage.setItem('hiresort_cached_user', JSON.stringify(activeSession.user));
+          localStorage.setItem('hiresort_cached_session', JSON.stringify(activeSession));
+        } catch (e) {}
         fetchUserData(activeSession.user.id);
       } else {
-        setSession(null);
-        setUser(null);
-        setRole(null);
-        setProfile(null);
-        try {
-          localStorage.removeItem('hiresort_cached_profile');
-          localStorage.removeItem('hiresort_cached_role');
-        } catch (e) {}
+        // Clear cached auth only if Supabase truly has no active session
+        const cachedUser = localStorage.getItem('hiresort_cached_user');
+        if (!cachedUser) {
+          setSession(null);
+          setUser(null);
+          setRole(null);
+          setProfile(null);
+          try {
+            localStorage.removeItem('hiresort_cached_profile');
+            localStorage.removeItem('hiresort_cached_role');
+          } catch (e) {}
+        }
         setLoading(false);
       }
     }).catch(err => {
@@ -387,6 +424,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const activeSession = authRes.data.session;
       setSession(activeSession);
       setUser(activeSession.user);
+      try {
+        localStorage.setItem('hiresort_cached_user', JSON.stringify(activeSession.user));
+        localStorage.setItem('hiresort_cached_session', JSON.stringify(activeSession));
+      } catch (e) {}
       if (activeSession.user) {
         await fetchUserData(activeSession.user.id);
       }
@@ -424,6 +465,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setClient(HIRESORT_PLATFORM_CLIENT);
       setNeedsPasswordReset(false);
       try {
+        localStorage.removeItem('hiresort_cached_user');
+        localStorage.removeItem('hiresort_cached_session');
         localStorage.removeItem('hiresort_active_tenant');
         localStorage.removeItem('hiresort_cached_profile');
         localStorage.removeItem('hiresort_cached_role');
