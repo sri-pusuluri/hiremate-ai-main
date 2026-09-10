@@ -91,20 +91,15 @@ export default function Support() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Help, Docs & Support Center
-            </h1>
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-xs font-semibold">
-              24/7 SLA Desk
-            </Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Search developer setup guides, widget embeddings, or submit support requests directly to our team.
-          </p>
+      {/* Top Action Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-xs font-semibold">
+            24/7 SLA Desk
+          </Badge>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            Enterprise support & documentation for tenant administrators and hiring teams
+          </span>
         </div>
 
         <div className="flex items-center gap-2">

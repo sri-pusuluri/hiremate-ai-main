@@ -83,20 +83,15 @@ export default function Interviews() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Interviews & Evaluations
-            </h1>
-            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30 text-xs">
-              Live Pipeline
-            </Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Coordinate candidate interview rounds, synchronize video meetings, and manage 5-star rubric scorecards.
-          </p>
+      {/* Top Action Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30 text-xs font-semibold">
+            Live Pipeline
+          </Badge>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            Coordinate candidate interview rounds, synchronize video meetings, and manage 5-star rubric scorecards
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
