@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
+import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT, HIRESORT_PLATFORM_CLIENT } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { SEED_CLIENTS } from './ClientManagement';
 import { getAppBaseUrl } from '@/lib/app-url';
@@ -71,9 +71,15 @@ export default function UserManagement() {
   const [clients, setClients] = useState<ClientTenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('all');
+  
+  const isViewingSpecificTenant = isSuperAdmin && !!activeClient && activeClient.id !== HIRESORT_PLATFORM_CLIENT.id;
+  const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>(
+    isViewingSpecificTenant ? activeClient.id : 'all'
+  );
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [memberTypeTab, setMemberTypeTab] = useState<'all' | 'platform' | 'clients'>('all');
+  const [memberTypeTab, setMemberTypeTab] = useState<'all' | 'platform' | 'clients'>(
+    isViewingSpecificTenant ? 'clients' : 'all'
+  );
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteType, setInviteType] = useState<'client' | 'platform'>('client');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -86,6 +92,18 @@ export default function UserManagement() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // When activeClient switches in the sidebar or banner, automatically update tenant filter
+  useEffect(() => {
+    if (activeClient && activeClient.id !== HIRESORT_PLATFORM_CLIENT.id) {
+      setSelectedTenantFilter(activeClient.id);
+      setMemberTypeTab('clients');
+      setInviteClientId(activeClient.id);
+    } else {
+      setSelectedTenantFilter('all');
+      setMemberTypeTab('all');
+    }
+  }, [activeClient?.id]);
 
   const fetchUsers = async () => {
     try {
@@ -480,12 +498,16 @@ export default function UserManagement() {
             {activeClient && (
               <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/30 text-primary bg-primary/5 font-medium">
                 <Building2 className="w-3 h-3 mr-1" />
-                {isSuperAdmin ? 'Platform SuperAdmin (All Tenants)' : activeClient.name}
+                {isSuperAdmin && activeClient.id === HIRESORT_PLATFORM_CLIENT.id 
+                  ? 'Platform SuperAdmin (All Tenants)' 
+                  : `${activeClient.name} Workspace`}
               </Badge>
             )}
           </div>
           <p className="text-muted-foreground">
-            {isSuperAdmin 
+            {isSuperAdmin && activeClient && activeClient.id !== HIRESORT_PLATFORM_CLIENT.id
+              ? `Viewing and managing team members assigned to ${activeClient.name}`
+              : isSuperAdmin 
               ? 'Manage platform-wide team members across all enterprise client tenants'
               : `Manage team members, roles, and recruiting permissions for ${activeClient?.name || 'this workspace'}`}
           </p>
