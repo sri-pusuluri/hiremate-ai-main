@@ -757,216 +757,287 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
   const isExpired = job.expiresAt ? new Date(job.expiresAt) < new Date() : false;
   const isActive = (job.status === 'active' || job.status === 'published' || !job.status) && !isExpired;
 
+  const formatRankedDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString(undefined, { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   const getAIStatusDisplay = () => {
     if (!job.hireSortEnabled) {
-      return null;
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Sparkles className="w-3.5 h-3.5 opacity-40" />
+          <span>HireSort AI disabled</span>
+        </div>
+      );
     }
     
     switch (job.aiProcessingStatus) {
       case 'processing':
         return (
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-xs">
             <div className="flex items-center gap-1.5 text-ai-accent">
-              <Clock className="w-4 h-4 animate-pulse-soft" />
-              <span className="font-medium">Ranking in progress...</span>
+              <Clock className="w-3.5 h-3.5 animate-pulse-soft" />
+              <span className="font-medium">Screening in progress...</span>
             </div>
-            <div className="w-24 h-1.5 bg-ai-surface rounded-full overflow-hidden">
+            <div className="w-20 h-1.5 bg-ai-surface rounded-full overflow-hidden border border-ai-accent/20">
               <div 
                 className="h-full bg-ai-accent rounded-full transition-all duration-500"
                 style={{ width: `${job.aiProcessingProgress || 0}%` }}
               />
             </div>
-            <span className="text-muted-foreground text-xs">{job.aiProcessingProgress}%</span>
+            <span className="text-muted-foreground font-mono">{job.aiProcessingProgress}%</span>
           </div>
         );
       case 'complete':
         return (
-          <div className="flex items-center gap-1.5 text-success text-sm">
-            <CheckCircle2 className="w-4 h-4" />
-            <span className="font-medium">Ranked</span>
-            <span className="text-muted-foreground ml-1">• Updated {job.lastRankedAt}</span>
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Ranked</span>
+            {job.lastRankedAt && (
+              <span className="text-muted-foreground font-normal">
+                • Updated {formatRankedDate(job.lastRankedAt)}
+              </span>
+            )}
           </div>
         );
       default:
-        return null;
+        return (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/70" />
+            <span>Ranked</span>
+            {job.lastRankedAt && (
+              <span className="font-normal">
+                • Updated {formatRankedDate(job.lastRankedAt)}
+              </span>
+            )}
+          </div>
+        );
     }
   };
 
   return (
     <div className={cn(
-      "bg-card border rounded-xl p-5 hover:shadow-card-hover transition-all duration-200 group",
-      isActive ? "border-border" : "border-border/60 opacity-85 bg-muted/20"
+      "bg-card border rounded-xl p-5 hover:shadow-card-hover hover:border-primary/40 transition-all duration-200 group flex flex-col justify-between gap-3.5",
+      isActive ? "border-border shadow-2xs" : "border-border/60 opacity-90 bg-muted/20"
     )}>
-      <div className="flex items-start justify-between gap-4">
-        {/* Left: Job Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h3 className="text-lg font-semibold text-foreground truncate">
+      {/* 1. Top Header Row: Role Title, Status, Badges & Candidates CTA */}
+      <div className="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
+        {/* Left: Role Title & Status Pills */}
+        <div className="min-w-0 space-y-2">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h3 
+              onClick={onSelect}
+              className="text-lg font-bold text-foreground hover:text-primary transition-colors cursor-pointer tracking-tight"
+            >
               {job.title}
             </h3>
 
-            {/* Status Badge & Interactive Toggle Button */}
+            {/* Interactive Status Pill */}
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleStatus();
               }}
               className={cn(
-                "px-2.5 py-0.5 text-[11px] font-semibold rounded-full border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs",
+                "px-2.5 py-0.5 text-xs font-medium rounded-full border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs",
                 isActive 
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300" 
-                  : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 hover:border-rose-300 hover:bg-rose-50/60" 
+                  : "bg-muted text-muted-foreground border-border hover:border-emerald-300 hover:bg-emerald-50/60 hover:text-emerald-700"
               )}
-              title={isActive ? "Click to manually make job Inactive" : "Click to Reactivate job"}
+              title={isActive ? "Job is Active. Click to set Inactive." : "Job is Inactive. Click to reactivate."}
             >
-              <span className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-emerald-500" : "bg-rose-500")} />
-              {isActive ? "Active" : isExpired ? "Expired / Inactive" : "Inactive"}
-              <span className="text-[9px] opacity-70 underline ml-0.5 font-normal">
-                {isActive ? "(Set Inactive)" : "(Reactivate)"}
-              </span>
+              <span className={cn("w-2 h-2 rounded-full", isActive ? "bg-emerald-500 animate-pulse-soft" : "bg-muted-foreground/50")} />
+              <span>{isActive ? "Active" : isExpired ? "Expired" : "Inactive"}</span>
             </button>
 
             {job.hireSortEnabled && <AIBadge size="sm" />}
+
             {job.isPublic && (
-              <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 flex items-center gap-1 font-medium">
+              <Badge variant="outline" className="text-[11px] text-blue-600 border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/40 flex items-center gap-1 font-medium">
                 <Globe className="w-3 h-3" /> Public Careers
               </Badge>
             )}
-          </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
-            <span className="flex items-center gap-1.5">
-              <Briefcase className="w-4 h-4" />
-              {job.department}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              {job.location}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4" />
-              Posted {job.postedDate}
-            </span>
-            <span 
-              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-xs"
-              title={`Job Owner / Creator: ${job.creatorName || job.creatorEmail || 'Admin'}`}
-            >
-              <UserCheck className="w-3.5 h-3.5 text-primary" />
-              <span>Created by <strong className="font-semibold text-foreground">{job.creatorName || job.creatorEmail || 'Admin'}</strong></span>
-            </span>
-            {job.expiresAt && (
-              <span className={cn(
-                "flex items-center gap-1.5",
-                isExpired ? "text-rose-600 dark:text-rose-400 font-semibold" : "text-muted-foreground"
-              )}>
-                <Clock className="w-4 h-4" />
-                {isExpired ? `Expired on ${new Date(job.expiresAt).toLocaleDateString()}` : `Expires ${new Date(job.expiresAt).toLocaleDateString()}`}
+            {job.salary && (
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted/60 rounded border border-border/40">
+                {job.salary}
               </span>
             )}
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewJD();
-              }}
-              className="flex items-center gap-1.5 text-primary hover:underline cursor-pointer"
-            >
-              <FileText className="w-4 h-4" />
-              View JD
-            </button>
           </div>
-
-          {/* AI Status */}
-          {getAIStatusDisplay()}
         </div>
 
-        {/* Right: Candidate Count & Actions */}
-        <div className="flex flex-col items-end gap-3">
-          {/* Candidate Count */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
-            <Users className="w-4 h-4 text-muted-foreground" />
-            <span className="text-lg font-semibold text-foreground">{job.candidateCount}</span>
-            <span className="text-sm text-muted-foreground">candidates</span>
+        {/* Right: Candidate Count & Primary Action CTA */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div 
+            onClick={onSelect}
+            className="flex items-center gap-2 px-3 py-1.5 bg-muted/60 hover:bg-muted border border-border/70 rounded-lg cursor-pointer transition-colors"
+            title="Total applied candidates"
+          >
+            <Users className="w-4 h-4 text-primary" />
+            <span className="text-base font-bold text-foreground">{job.candidateCount}</span>
+            <span className="text-xs text-muted-foreground">candidates</span>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="text-muted-foreground hover:text-foreground hover:bg-primary/10"
-              title="Edit Job Details & Screening Questions"
-            >
-              <Pencil className="w-4 h-4 mr-1 text-primary" />
-              Edit
-            </Button>
+          <Button 
+            onClick={onSelect}
+            size="sm"
+            className="gap-1.5 font-medium shadow-xs"
+          >
+            <span>View Candidates</span>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
 
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEmbed();
-              }}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Code2 className="w-4 h-4 mr-1 text-primary" />
-              Embed & Share
-            </Button>
+      {/* 2. Middle Row: Clean Job Metadata Strip */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5 font-medium text-foreground/80">
+          <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+          {job.department}
+        </span>
+        <span className="text-border/80">•</span>
+        <span className="flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+          {job.location}
+        </span>
+        <span className="text-border/80">•</span>
+        <span className="flex items-center gap-1.5 capitalize">
+          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+          {job.type}
+        </span>
+        <span className="text-border/80">•</span>
+        <span className="flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+          Posted {job.postedDate}
+        </span>
+        <span className="text-border/80">•</span>
+        <span 
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium"
+          title={`Job Owner / Creator: ${job.creatorName || job.creatorEmail || 'Admin'}`}
+        >
+          <UserCheck className="w-3 h-3 text-primary" />
+          <span>Created by <strong className="font-semibold text-foreground">{job.creatorName || job.creatorEmail || 'Admin'}</strong></span>
+        </span>
+        {job.expiresAt && (
+          <>
+            <span className="text-border/80">•</span>
+            <span className={cn(
+              "flex items-center gap-1.5 font-medium",
+              isExpired ? "text-rose-600 dark:text-rose-400 font-semibold" : "text-muted-foreground"
+            )}>
+              <Clock className="w-3.5 h-3.5" />
+              {isExpired ? `Expired on ${new Date(job.expiresAt).toLocaleDateString()}` : `Expires ${new Date(job.expiresAt).toLocaleDateString()}`}
+            </span>
+          </>
+        )}
+      </div>
 
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              title="Delete Job"
-            >
-              <Trash2 className="w-4 h-4 mr-1 text-destructive/80" />
-              Delete
-            </Button>
+      {/* 3. Footer Bar: AI Status & Utility Actions */}
+      <div className="border-t border-border/60 pt-3 flex items-center justify-between flex-wrap gap-2.5">
+        {/* Left: AI Status & View JD */}
+        <div className="flex items-center gap-2.5">
+          {getAIStatusDisplay()}
+          <span className="text-border/80">•</span>
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewJD();
+            }}
+            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2 cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5 text-primary" />
+            <span>View JD</span>
+          </Button>
+        </div>
 
-            {job.hireSortEnabled ? (
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEnableHireSort();
-                }}
-              >
-                <Sparkles className="w-4 h-4 mr-1 text-ai-accent" />
-                Re-enable HireSortAi
-              </Button>
-            ) : (
-              <Button 
-                variant="ai" 
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEnableHireSort();
-                }}
-              >
-                <Sparkles className="w-4 h-4 mr-1" />
-                Enable HireSortAi
-              </Button>
-            )}
+        {/* Right: Secondary Actions */}
+        <div className="flex items-center gap-1.5">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-primary/10 gap-1.5 px-2.5"
+            title="Edit Job Details, Owner & Screening Questions"
+          >
+            <Pencil className="w-3.5 h-3.5 text-primary" />
+            <span>Edit</span>
+          </Button>
+
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEmbed();
+            }}
+            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2.5"
+            title="Embed widget or share public link"
+          >
+            <Code2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Embed & Share</span>
+          </Button>
+
+          {job.hireSortEnabled ? (
             <Button 
               variant="outline" 
               size="sm"
-              onClick={onSelect}
-              className="group-hover:border-primary group-hover:text-primary"
+              className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 gap-1.5 px-2.5 font-normal"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEnableHireSort();
+              }}
+              title="Re-run AI candidate screening"
             >
-              View Candidates
-              <ChevronRight className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5 text-ai-accent" />
+              <span>Re-enable HireSortAi</span>
             </Button>
-          </div>
+          ) : (
+            <Button 
+              variant="ai" 
+              size="sm"
+              className="h-7 text-xs gap-1.5 px-2.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEnableHireSort();
+              }}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Enable HireSortAi</span>
+            </Button>
+          )}
+
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 px-2"
+            title="Delete Job"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-destructive/80" />
+            <span>Delete</span>
+          </Button>
         </div>
       </div>
     </div>
