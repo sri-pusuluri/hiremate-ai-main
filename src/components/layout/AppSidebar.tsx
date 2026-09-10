@@ -19,6 +19,7 @@ import {
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT, HIRESORT_PLATFORM_CLIENT } from '@/hooks/useAuth';
 import { ClientTenant } from '@/types/hiresort';
 import { supabase } from '@/integrations/supabase/client';
+import TenantBrandLogo, { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Globe, ShieldCheck } from 'lucide-react';
@@ -73,12 +74,13 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
     async function loadClients() {
       if (!isSuperAdmin) return;
       try {
-        const { data } = await supabase.from('clients').select('id, name, slug, theme_color, subscription_tier');
+        const { data } = await supabase.from('clients').select('id, name, slug, logo_url, theme_color, subscription_tier');
         if (data && data.length > 0) {
           const mapped = data.map((c: any) => ({
             id: c.id,
             name: c.name,
             slug: c.slug,
+            logoUrl: (c.logo_url && !c.logo_url.includes('localhost')) ? c.logo_url : getResolvedTenantLogo(c.slug, c.name, c.logo_url),
             themeColor: c.theme_color || '#2563eb',
             subscriptionTier: c.subscription_tier || 'pro'
           }));
@@ -147,12 +149,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
                 ) : (
                   <>
                     <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                      <div 
-                        className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-xs" 
-                        style={{ backgroundColor: client?.themeColor || '#2563eb' }}
-                      >
-                        {client?.name ? client.name.substring(0, 2).toUpperCase() : 'ZL'}
-                      </div>
+                      <TenantBrandLogo client={client} size="xs" />
                       <span className="truncate text-xs font-semibold text-sidebar-foreground group-hover:text-primary transition-colors">
                         {client?.name || 'Zool'}
                       </span>
@@ -207,12 +204,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
                     )}
                   >
                     <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                      <div 
-                        className="w-4 h-4 rounded text-[9px] font-bold text-white flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: c.themeColor || '#2563eb' }}
-                      >
-                        {c.name.substring(0, 2).toUpperCase()}
-                      </div>
+                      <TenantBrandLogo client={c} size="xs" />
                       <div className="truncate">
                         <span className="text-xs">{c.name}</span>
                         <span className="text-[10px] text-muted-foreground ml-1.5 uppercase font-mono">({c.subscriptionTier || 'pro'})</span>
@@ -235,12 +227,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
         ) : (
           <div className="mt-3 p-2 rounded-lg bg-sidebar-accent/50 border border-sidebar-border flex items-center justify-between">
             <div className="flex items-center gap-2 overflow-hidden">
-              <div 
-                className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0" 
-                style={{ backgroundColor: client?.themeColor || '#2563eb' }}
-              >
-                {client?.name ? client.name.substring(0, 2).toUpperCase() : 'ZL'}
-              </div>
+              <TenantBrandLogo client={client} size="xs" />
               <span className="truncate text-xs font-semibold text-sidebar-foreground">
                 {client?.name || 'Zool'}
               </span>

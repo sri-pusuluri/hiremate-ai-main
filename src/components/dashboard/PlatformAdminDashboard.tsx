@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { ClientTenant } from '@/types/hiresort';
+import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -320,12 +321,10 @@ export function PlatformAdminDashboard({ onNavigate, onSwitchToClientPreview }: 
             return (
               <div key={c.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-xs"
-                    style={{ backgroundColor: c.theme_color || '#2563eb' }}
-                  >
-                    {c.name.substring(0, 2).toUpperCase()}
-                  </div>
+                  <TenantBrandLogo 
+                    client={{ name: c.name, slug: c.slug, logoUrl: c.logo_url, themeColor: c.theme_color }} 
+                    size="md" 
+                  />
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-semibold text-foreground">{c.name}</h4>

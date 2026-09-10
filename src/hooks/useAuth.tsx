@@ -4,6 +4,7 @@ import { supabase, getNeedsPasswordReset, enableMockMode } from '@/integrations/
 import { getAppBaseUrl } from '@/lib/app-url';
 
 import { ClientTenant } from '@/types/hiresort';
+import { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
 
 export type AppRole = 'super_admin' | 'admin' | 'client_admin' | 'recruiter';
 
@@ -19,8 +20,8 @@ export const DEFAULT_ZOOL_CLIENT: ClientTenant = {
   id: '00000000-0000-0000-0000-000000000001',
   name: 'Zool',
   slug: 'zool',
-  logoUrl: '/logos/zool-logo-dark.png',
-  themeColor: '#10b981',
+  logoUrl: '/logos/zool-icon.png',
+  themeColor: '#2563eb',
   subscriptionTier: 'pro',
 };
 
@@ -29,7 +30,7 @@ export const DEFAULT_COMMIT_CLIENT: ClientTenant = {
   name: 'Commit',
   slug: 'commit',
   logoUrl: '/logos/commit-logo.png',
-  themeColor: '#2563eb',
+  themeColor: '#f97316',
   subscriptionTier: 'enterprise',
 };
 
@@ -372,12 +373,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .maybeSingle();
 
             if (clientData) {
+              const rawLogo = (clientData as any).logo_url;
+              const resolvedLogo = (rawLogo && !rawLogo.includes('localhost')) 
+                ? rawLogo 
+                : getResolvedTenantLogo((clientData as any).slug, (clientData as any).name, rawLogo);
+
               setClient({
                 id: (clientData as any).id,
                 name: (clientData as any).name,
                 slug: (clientData as any).slug,
-                logoUrl: (clientData as any).logo_url,
-                themeColor: (clientData as any).theme_color || (assignedClientId === DEFAULT_COMMIT_CLIENT.id ? '#10b981' : '#2563eb'),
+                logoUrl: resolvedLogo,
+                themeColor: (clientData as any).theme_color || (assignedClientId === DEFAULT_COMMIT_CLIENT.id ? '#f97316' : '#2563eb'),
                 subscriptionTier: (clientData as any).subscription_tier || 'pro',
                 stripeCustomerId: (clientData as any).stripe_customer_id,
               });

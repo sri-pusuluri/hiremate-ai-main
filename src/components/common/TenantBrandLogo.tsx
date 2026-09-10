@@ -21,6 +21,11 @@ export const getResolvedTenantLogo = (
   logoUrl?: string | null,
   variant: 'icon' | 'full' | 'auto' = 'auto'
 ): string | null => {
+  // If custom uploaded logo is provided and not a broken localhost URL
+  if (logoUrl && typeof logoUrl === 'string' && logoUrl.trim().length > 0 && !logoUrl.includes('localhost')) {
+    return logoUrl.trim();
+  }
+
   const s = (slug || name || '').toLowerCase();
   const isZool = s.includes('zool');
   const isCommit = s.includes('commit') || s.includes('comm-it');
@@ -31,11 +36,8 @@ export const getResolvedTenantLogo = (
   }
 
   if (isCommit) {
+    if (variant === 'icon') return '/logos/commit-icon.png';
     return '/logos/commit-logo.png';
-  }
-
-  if (logoUrl && typeof logoUrl === 'string' && logoUrl.trim().length > 0 && !logoUrl.includes('localhost')) {
-    return logoUrl.trim();
   }
 
   return null;
@@ -75,7 +77,8 @@ export default function TenantBrandLogo({
 
   const effectiveName = name || client?.name || 'Company';
   const effectiveSlug = slug || client?.slug || '';
-  const effectiveLogoUrl = logoUrl !== undefined ? logoUrl : client?.logoUrl;
+  const rawLogoUrl = logoUrl !== undefined ? logoUrl : client?.logoUrl;
+  const effectiveLogoUrl = rawLogoUrl && !rawLogoUrl.includes('localhost') ? rawLogoUrl : null;
   const effectiveThemeColor = themeColor || client?.themeColor || '#2563eb';
 
   const s = (effectiveSlug || effectiveName).toLowerCase();
@@ -85,7 +88,34 @@ export default function TenantBrandLogo({
   // If full wordmark variant is requested or auto on hero size
   const useFullVariant = variant === 'full' || (variant === 'auto' && size === 'hero');
 
-  // 1. Official Zool Full Wordmark
+  // If there's an explicit custom logo url that isn't one of our internal paths
+  const hasCustomLogo = effectiveLogoUrl && 
+    !effectiveLogoUrl.startsWith('/logos/') && 
+    effectiveLogoUrl.trim().length > 0;
+
+  // 1. Explicit Custom Logo
+  if (hasCustomLogo && !imageError) {
+    return (
+      <div 
+        className={cn(
+          "relative shrink-0 flex items-center justify-center overflow-hidden bg-card/95 transition-transform duration-200",
+          showBorder && "border border-border/80 shadow-sm",
+          useFullVariant ? fullSizeClasses[size] : sizeClasses[size],
+          className
+        )}
+      >
+        <img
+          src={effectiveLogoUrl}
+          alt={alt || `${effectiveName} Logo`}
+          className="w-full h-full object-contain p-0.5 rounded-[inherit]"
+          onError={() => setImageError(true)}
+          loading="eager"
+        />
+      </div>
+    );
+  }
+
+  // 2. Official Zool Full Wordmark
   if (isZool && useFullVariant && !imageError) {
     return (
       <div 
@@ -114,29 +144,38 @@ export default function TenantBrandLogo({
     );
   }
 
-  // 2. Official Commit Logo
+  // 3. Official Commit Logo (Icon for square sizes, full wordmark for wide/hero sizes)
   if (isCommit && !imageError) {
+    const useIcon = !useFullVariant && (size === 'xs' || size === 'sm' || size === 'md');
     return (
       <div 
         className={cn(
-          "relative shrink-0 flex items-center justify-center transition-transform duration-200",
+          "relative shrink-0 flex items-center justify-center transition-transform duration-200 overflow-hidden",
           useFullVariant ? fullSizeClasses[size] : sizeClasses[size],
           showBorder && "border border-border/80 rounded-xl p-1 bg-card/95 shadow-sm",
           className
         )}
       >
         <img
-          src="/logos/commit-logo.png"
+          src={useIcon ? "/logos/commit-icon.png" : "/logos/commit-logo.png"}
           alt={alt || `${effectiveName} Logo`}
           className="w-full h-full object-contain p-0.5"
-          onError={() => setImageError(true)}
+          onError={() => {
+            // Fallback to commit-logo if commit-icon fails
+            if (useIcon) {
+              const target = event?.target as HTMLImageElement | undefined;
+              if (target) target.src = "/logos/commit-logo.png";
+            } else {
+              setImageError(true);
+            }
+          }}
           loading="eager"
         />
       </div>
     );
   }
 
-  // 3. Official Zool 4-Ring Icon Mark
+  // 4. Official Zool 4-Ring Icon Mark
   if (isZool && !imageError) {
     return (
       <div 

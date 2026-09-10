@@ -402,6 +402,8 @@ const SEED_MOCK_CLIENTS = [
     id: '00000000-0000-0000-0000-000000000001',
     name: 'Zool',
     slug: 'zool',
+    logo_url: '/logos/zool-icon.png',
+    logoUrl: '/logos/zool-icon.png',
     theme_color: '#2563eb',
     themeColor: '#2563eb',
     subscription_tier: 'pro',
@@ -412,6 +414,8 @@ const SEED_MOCK_CLIENTS = [
     id: '00000000-0000-0000-0000-000000000004',
     name: 'Commit',
     slug: 'commit',
+    logo_url: '/logos/commit-logo.png',
+    logoUrl: '/logos/commit-logo.png',
     theme_color: '#f97316',
     themeColor: '#f97316',
     subscription_tier: 'enterprise',
@@ -450,6 +454,17 @@ export function getMockClients() {
   try {
     let parsed = JSON.parse(data);
     if (Array.isArray(parsed) && parsed.length > 0) {
+      parsed = parsed.map((c: any) => {
+        if (!c.logo_url || c.logo_url.includes('localhost') || !c.logoUrl) {
+          if (c.slug === 'zool') {
+            return { ...c, logo_url: '/logos/zool-icon.png', logoUrl: '/logos/zool-icon.png' };
+          }
+          if (c.slug === 'commit') {
+            return { ...c, logo_url: '/logos/commit-logo.png', logoUrl: '/logos/commit-logo.png' };
+          }
+        }
+        return c;
+      });
       // Ensure Zool and Commit are never missing
       if (!parsed.some((c: any) => c.slug === 'zool')) {
         parsed.unshift(SEED_MOCK_CLIENTS[0]);

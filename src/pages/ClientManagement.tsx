@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import TenantLogoUploader from '@/components/common/TenantLogoUploader';
+import TenantBrandLogo, { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
 
 export const SEED_CLIENTS: ClientTenant[] = [
   DEFAULT_ZOOL_CLIENT,
@@ -99,21 +100,33 @@ export default function ClientManagement() {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        const mapped: ClientTenant[] = data.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          slug: c.slug,
-          logoUrl: c.logo_url,
-          themeColor: c.theme_color || '#2563eb',
-          subscriptionTier: (c.subscription_tier as any) || 'pro',
-          stripeCustomerId: c.stripe_customer_id,
-          createdAt: c.created_at,
-        }));
-        // Ensure Zool and Commit are always preserved
-        if (!mapped.some(c => c.slug === 'zool' || c.id === DEFAULT_ZOOL_CLIENT.id)) {
+        const mapped: ClientTenant[] = data.map((c: any) => {
+          const resolvedLogo = (c.logo_url && !c.logo_url.includes('localhost'))
+            ? c.logo_url
+            : getResolvedTenantLogo(c.slug, c.name, c.logo_url);
+          return {
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            logoUrl: resolvedLogo,
+            themeColor: c.theme_color || (c.slug === 'commit' ? '#f97316' : '#2563eb'),
+            subscriptionTier: (c.subscription_tier as any) || 'pro',
+            stripeCustomerId: c.stripe_customer_id,
+            createdAt: c.created_at,
+          };
+        });
+        // Ensure Zool and Commit are always preserved with brand logos
+        const zoolIdx = mapped.findIndex(c => c.slug === 'zool' || c.id === DEFAULT_ZOOL_CLIENT.id);
+        if (zoolIdx >= 0) {
+          if (!mapped[zoolIdx].logoUrl) mapped[zoolIdx].logoUrl = DEFAULT_ZOOL_CLIENT.logoUrl;
+        } else {
           mapped.unshift(DEFAULT_ZOOL_CLIENT);
         }
-        if (!mapped.some(c => c.slug === 'commit' || c.id === DEFAULT_COMMIT_CLIENT.id)) {
+
+        const commitIdx = mapped.findIndex(c => c.slug === 'commit' || c.id === DEFAULT_COMMIT_CLIENT.id);
+        if (commitIdx >= 0) {
+          if (!mapped[commitIdx].logoUrl) mapped[commitIdx].logoUrl = DEFAULT_COMMIT_CLIENT.logoUrl;
+        } else {
           mapped.splice(1, 0, DEFAULT_COMMIT_CLIENT);
         }
         setClients(mapped);
@@ -356,10 +369,7 @@ export default function ClientManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold text-foreground flex items-center gap-2">
-              <span 
-                className="w-3 h-3 rounded-full inline-block" 
-                style={{ backgroundColor: activeClient?.themeColor || '#2563eb' }}
-              />
+              <TenantBrandLogo client={activeClient} size="xs" />
               {activeClient?.name || 'Zool'}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -404,20 +414,7 @@ export default function ClientManagement() {
                   <tr key={client.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm overflow-hidden border border-border/50 shrink-0 bg-muted"
-                          style={{ backgroundColor: client.logoUrl ? 'transparent' : (client.themeColor || '#2563eb') }}
-                        >
-                          {client.logoUrl ? (
-                            <img 
-                              src={client.logoUrl} 
-                              alt={client.name} 
-                              className="w-full h-full object-cover" 
-                            />
-                          ) : (
-                            client.name.substring(0, 2).toUpperCase()
-                          )}
-                        </div>
+                        <TenantBrandLogo client={client} size="md" />
                         <div>
                           <div className="font-semibold text-foreground flex items-center gap-2">
                             {client.name}
