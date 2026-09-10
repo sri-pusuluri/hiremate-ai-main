@@ -438,7 +438,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const isSuperAdmin = role === 'super_admin' || user?.email === 'admin@hiremate.ai' || user?.email === 'srini@zool.in';
+  const isSuperAdmin = role === 'super_admin' || user?.email === 'admin@hiremate.ai';
   const isClientAdmin = isSuperAdmin || role === 'client_admin' || role === 'admin';
   const isAdmin = isSuperAdmin || isClientAdmin;
 

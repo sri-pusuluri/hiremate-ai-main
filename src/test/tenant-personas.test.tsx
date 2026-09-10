@@ -21,7 +21,7 @@ describe('Multi-Tenant Persona Architecture', () => {
 
   it('correctly calculates role boundaries', () => {
     const isSuperAdminCheck = (role: string, email: string) => {
-      return role === 'super_admin' || email === 'admin@hiremate.ai' || email === 'srini@zool.in';
+      return role === 'super_admin' || email === 'admin@hiremate.ai';
     };
 
     const isClientAdminCheck = (isSuper: boolean, role: string) => {
