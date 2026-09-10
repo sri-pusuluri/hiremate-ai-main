@@ -267,21 +267,19 @@ export default function Auth() {
       </div>
 
       <div className="lg:col-span-6 xl:col-span-5 h-full overflow-hidden flex flex-col justify-between p-6 sm:p-10 xl:p-12 bg-background">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-              <span className="text-primary-foreground font-bold text-sm">HS</span>
+        {/* Mobile-only branding header (on desktop, branding is exclusively on the hero image) */}
+        <div className="flex items-center justify-between min-h-[32px]">
+          <div className="flex items-center gap-2.5 lg:hidden">
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+              <span className="text-primary-foreground font-bold text-xs">HS</span>
             </div>
             <div>
-              <h2 className="text-sm font-bold text-foreground leading-tight">HireSortAi</h2>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-primary" />
-                Enterprise ATS Platform
-              </p>
+              <h2 className="text-xs font-bold text-foreground leading-tight">HireSortAi</h2>
+              <p className="text-[10px] text-muted-foreground">Enterprise ATS Platform</p>
             </div>
           </div>
-          <Badge variant="outline" className="text-[10px] font-medium border-border">
-            v1.0 Production
+          <Badge variant="outline" className="text-[10px] font-medium border-border/60 text-muted-foreground ml-auto">
+            v1.0
           </Badge>
         </div>
 
