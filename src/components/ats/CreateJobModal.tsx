@@ -335,7 +335,7 @@ export function CreateJobModal({
           description: formData.description,
           is_public: formData.isPublic,
           slug: slug,
-          client_id: clientId || DEFAULT_ZOOL_CLIENT.id,
+          client_id: (clientId && clientId !== 'hiresort-platform-hq') ? clientId : DEFAULT_ZOOL_CLIENT.id,
           created_by: selectedCreatorId || user?.id || null,
           hire_sort_enabled: true,
           ai_processing_status: 'idle',

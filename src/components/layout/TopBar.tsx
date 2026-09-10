@@ -2,6 +2,7 @@ import { Bell, Search, Building2, Globe, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 
 interface TopBarProps {
   title: string;
@@ -56,7 +57,7 @@ export function TopBar({ title, subtitle }: TopBarProps) {
             </>
           ) : (
             <>
-              <Building2 className="w-3.5 h-3.5 text-primary" />
+              <TenantBrandLogo client={client} size="xs" />
               <span className="font-semibold">{client?.name}</span>
               <span className="text-muted-foreground">({client?.slug})</span>
             </>

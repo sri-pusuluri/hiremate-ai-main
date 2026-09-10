@@ -183,7 +183,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       try {
         setLoading(true);
         let query = supabase.from('jobs').select('*');
-        if (clientId) {
+        if (clientId && clientId !== 'hiresort-platform-hq') {
           query = query.eq('client_id', clientId);
         }
         let { data: jobData } = await query;

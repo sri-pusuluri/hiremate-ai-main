@@ -1005,7 +1005,7 @@ export default function UserManagement() {
                         isSuperAdmin && u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in' ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''
                       } ${
                         u.clientName === 'Commit'
-                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
+                          ? 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400'
                           : u.clientName === 'Zool'
                           ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400'
                           : u.clientName === 'HireSort Platform'
@@ -1016,7 +1016,7 @@ export default function UserManagement() {
                     >
                       <Building2 className={`w-3 h-3 ${
                         u.clientName === 'Commit' 
-                          ? 'text-emerald-500' 
+                          ? 'text-orange-500' 
                           : u.clientName === 'Zool' 
                           ? 'text-blue-500' 
                           : u.clientName === 'HireSort Platform'

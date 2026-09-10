@@ -109,9 +109,9 @@ export default function Reports() {
     async function loadData() {
       setLoading(true);
       try {
-        // Fetch Jobs for client
+        // Fetch Jobs for client (or all jobs for Platform HQ)
         let jobQuery = supabase.from('jobs').select('*');
-        if (clientId) {
+        if (clientId && clientId !== 'hiresort-platform-hq') {
           jobQuery = jobQuery.eq('client_id', clientId);
         }
         const { data: jobsData } = await jobQuery;
@@ -142,9 +142,9 @@ export default function Reports() {
           jobTitleMap[j.id] = j.title;
         });
 
-        // Fetch Candidates for client
+        // Fetch Candidates for client (or all candidates for Platform HQ)
         let candQuery = supabase.from('candidates').select('*').order('created_at', { ascending: false });
-        if (clientId) {
+        if (clientId && clientId !== 'hiresort-platform-hq') {
           candQuery = candQuery.eq('client_id', clientId);
         }
         const { data: candData } = await candQuery;

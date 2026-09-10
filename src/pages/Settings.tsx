@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
+import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { ClientTenant } from '@/types/hiresort';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { mockJobs, mockCandidates } from '@/data/mockData';
 import samplePayload from '../../samples/ats_import_payload.json';
-import TenantBrandLogo from '@/components/common/TenantBrandLogo';
+import TenantBrandLogo, { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
 import TenantLogoUploader from '@/components/common/TenantLogoUploader';
 import { getAppBaseUrl } from '@/lib/app-url';
 import {
@@ -45,9 +46,20 @@ import {
 } from '@/components/ui/select';
 
 export default function Settings() {
-  const { profile, user, isAdmin, client, setClient } = useAuth();
+  const { profile, user, isAdmin, isSuperAdmin, client, setClient } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+
+  const isPlatformMode = !client || client.id === 'hiresort-platform-hq';
+
+  // Client Tenants List for Platform Mode / Super Admins
+  const [availableTenants, setAvailableTenants] = useState<ClientTenant[]>([
+    DEFAULT_ZOOL_CLIENT,
+    DEFAULT_COMMIT_CLIENT,
+  ]);
+  const [selectedTenantId, setSelectedTenantId] = useState<string>(
+    client && client.id !== 'hiresort-platform-hq' ? client.id : DEFAULT_ZOOL_CLIENT.id
+  );
 
   // Client Workspace / Organization settings (customizable & client-specific)
   const [orgName, setOrgName] = useState(client?.name || 'Zool');
@@ -76,24 +88,64 @@ export default function Settings() {
     return localStorage.getItem(`hsa_session_hours_${client?.id}`) || '8';
   });
 
+  // Fetch available tenants from Supabase
+  useEffect(() => {
+    async function loadTenants() {
+      try {
+        const { data } = await supabase.from('clients').select('id, name, slug, logo_url, theme_color, subscription_tier');
+        if (data && data.length > 0) {
+          const mapped: ClientTenant[] = data.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            logoUrl: (c.logo_url && !c.logo_url.includes('localhost')) ? c.logo_url : getResolvedTenantLogo(c.slug, c.name, c.logo_url),
+            themeColor: c.theme_color || (c.slug === 'commit' ? '#f97316' : '#2563eb'),
+            subscriptionTier: c.subscription_tier || 'pro',
+          }));
+          if (!mapped.some(c => c.slug === 'zool')) mapped.unshift(DEFAULT_ZOOL_CLIENT);
+          if (!mapped.some(c => c.slug === 'commit')) mapped.splice(1, 0, DEFAULT_COMMIT_CLIENT);
+          setAvailableTenants(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load clients list:', err);
+      }
+    }
+    loadTenants();
+  }, []);
+
+  const applyTenantData = (targetId: string, customList?: ClientTenant[]) => {
+    const list = customList || availableTenants;
+    const target = list.find(t => t.id === targetId) || (targetId === DEFAULT_COMMIT_CLIENT.id ? DEFAULT_COMMIT_CLIENT : DEFAULT_ZOOL_CLIENT);
+    
+    setOrgName(target.name || '');
+    setOrgSlug(target.slug || '');
+    setOrgLogoUrl(target.logoUrl || '');
+    setOrgThemeColor(target.themeColor || (target.slug === 'commit' ? '#f97316' : '#2563eb'));
+    setOrgTier((target.subscriptionTier as any) || 'pro');
+
+    const defDom = target.slug === 'commit' ? 'comm-it.in' : (target.slug === 'zool' ? 'zool.in' : `${target.slug || 'company'}.com`);
+    const storedDom = localStorage.getItem(`hsa_email_domain_${target.id}`);
+    setEmailDomain(storedDom || defDom);
+    setRestrictDomain(localStorage.getItem(`hsa_restrict_domain_${target.id}`) === 'true');
+    setRequire2FA(localStorage.getItem(`hsa_require_2fa_${target.id}`) === 'true');
+    setSessionTimeout(localStorage.getItem(`hsa_session_timeout_${target.id}`) !== 'false');
+    setSessionHours(localStorage.getItem(`hsa_session_hours_${target.id}`) || '8');
+  };
+
   // Synchronize when active client changes
   useEffect(() => {
-    if (client) {
-      setOrgName(client.name || '');
-      setOrgSlug(client.slug || '');
-      setOrgLogoUrl(client.logoUrl || '');
-      setOrgThemeColor(client.themeColor || '#2563eb');
-      setOrgTier((client.subscriptionTier as any) || 'pro');
-
-      const defDom = client.slug === 'commit' ? 'comm-it.in' : (client.slug === 'zool' ? 'zool.in' : `${client.slug || 'company'}.com`);
-      const storedDom = localStorage.getItem(`hsa_email_domain_${client.id}`);
-      setEmailDomain(storedDom || defDom);
-      setRestrictDomain(localStorage.getItem(`hsa_restrict_domain_${client.id}`) === 'true');
-      setRequire2FA(localStorage.getItem(`hsa_require_2fa_${client.id}`) === 'true');
-      setSessionTimeout(localStorage.getItem(`hsa_session_timeout_${client.id}`) !== 'false');
-      setSessionHours(localStorage.getItem(`hsa_session_hours_${client.id}`) || '8');
+    if (client && client.id !== 'hiresort-platform-hq') {
+      setSelectedTenantId(client.id);
+      applyTenantData(client.id);
+    } else {
+      applyTenantData(selectedTenantId);
     }
   }, [client]);
+
+  const handleTenantSelect = (newId: string) => {
+    setSelectedTenantId(newId);
+    applyTenantData(newId);
+  };
 
   const handleSaveOrganization = async () => {
     if (!orgName.trim() || !orgSlug.trim()) {
@@ -107,7 +159,7 @@ export default function Settings() {
 
     setSavingOrg(true);
     try {
-      const clientId = client?.id || DEFAULT_ZOOL_CLIENT.id;
+      const clientIdToSave = (client && client.id !== 'hiresort-platform-hq') ? client.id : selectedTenantId;
 
       // Update in Supabase
       const { error } = await supabase
@@ -119,21 +171,31 @@ export default function Settings() {
           logo_url: orgLogoUrl || null,
           subscription_tier: orgTier,
         } as any)
-        .eq('id', clientId);
+        .eq('id', clientIdToSave);
 
       if (error) {
         console.warn('Supabase clients update warning:', error);
       }
 
       // Persist client customizable security settings
-      localStorage.setItem(`hsa_email_domain_${clientId}`, emailDomain.trim().toLowerCase());
-      localStorage.setItem(`hsa_restrict_domain_${clientId}`, String(restrictDomain));
-      localStorage.setItem(`hsa_require_2fa_${clientId}`, String(require2FA));
-      localStorage.setItem(`hsa_session_timeout_${clientId}`, String(sessionTimeout));
-      localStorage.setItem(`hsa_session_hours_${clientId}`, sessionHours);
+      localStorage.setItem(`hsa_email_domain_${clientIdToSave}`, emailDomain.trim().toLowerCase());
+      localStorage.setItem(`hsa_restrict_domain_${clientIdToSave}`, String(restrictDomain));
+      localStorage.setItem(`hsa_require_2fa_${clientIdToSave}`, String(require2FA));
+      localStorage.setItem(`hsa_session_timeout_${clientIdToSave}`, String(sessionTimeout));
+      localStorage.setItem(`hsa_session_hours_${clientIdToSave}`, sessionHours);
 
-      // Update active client in auth context
-      if (client && setClient) {
+      // Update in local availableTenants state
+      setAvailableTenants(prev => prev.map(t => t.id === clientIdToSave ? {
+        ...t,
+        name: orgName.trim(),
+        slug: orgSlug.trim().toLowerCase(),
+        themeColor: orgThemeColor,
+        logoUrl: orgLogoUrl || undefined,
+        subscriptionTier: orgTier,
+      } : t));
+
+      // Update active client in auth context if this is the active workspace
+      if (client && client.id === clientIdToSave && setClient) {
         setClient({
           ...client,
           name: orgName.trim(),
@@ -586,7 +648,7 @@ export default function Settings() {
           {isAdmin && (
             <TabsTrigger value="organization" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              Organization ({client?.name || 'Workspace'})
+              Organization {isPlatformMode ? `(${orgName || 'Workspace'})` : `(${client?.name || 'Workspace'})`}
             </TabsTrigger>
           )}
         </TabsList>
@@ -1024,6 +1086,58 @@ export default function Settings() {
               </CardHeader>
 
               <CardContent className="space-y-6 pt-6">
+                {/* Platform Mode Tenant Selector Banner */}
+                {isPlatformMode && (
+                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <Building2 className="w-5 h-5 text-purple-500 shrink-0" />
+                      <div>
+                        <div className="text-xs font-semibold text-foreground flex items-center gap-2">
+                          <span>Platform HQ Overview Mode</span>
+                          <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30">
+                            Super Admin
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Select any client workspace below to customize its organization profile, careers portal branding, and domain policies.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Select value={selectedTenantId} onValueChange={handleTenantSelect}>
+                        <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                          <SelectValue placeholder="Select Client" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTenants.map((t) => (
+                            <SelectItem key={t.id} value={t.id} className="text-xs">
+                              {t.name} ({t.slug})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const target = availableTenants.find(t => t.id === selectedTenantId);
+                          if (target && setClient) {
+                            setClient(target);
+                            toast({
+                              title: 'Active Workspace Switched',
+                              description: `You are now working in the ${target.name} workspace context.`,
+                            });
+                          }
+                        }}
+                        className="h-8 text-xs gap-1.5"
+                      >
+                        <span>Set as Active</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Careers Portal URL Quick Card */}
                 <div className="p-3.5 rounded-xl bg-muted/40 border border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 text-xs">
@@ -1248,7 +1362,7 @@ export default function Settings() {
                 {/* Action Footer */}
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xs text-muted-foreground">
-                    Active Client ID: <code className="font-mono text-foreground">{client?.id || DEFAULT_ZOOL_CLIENT.id}</code>
+                    Target Workspace Client ID: <code className="font-mono text-foreground">{(client && client.id !== 'hiresort-platform-hq') ? client.id : selectedTenantId}</code>
                   </span>
                   <Button 
                     onClick={handleSaveOrganization} 

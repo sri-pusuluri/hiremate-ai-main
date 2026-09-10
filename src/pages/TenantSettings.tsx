@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
+import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { getAppBaseUrl } from '@/lib/app-url';
-import { Department, Position, QuestionBankItem } from '@/types/hiresort';
+import { Department, Position, QuestionBankItem, ClientTenant } from '@/types/hiresort';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,6 +110,18 @@ export default function TenantSettings() {
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'api');
 
+  const isPlatformMode = !client || client.id === 'hiresort-platform-hq';
+
+  const [availableTenants, setAvailableTenants] = useState<ClientTenant[]>([
+    DEFAULT_ZOOL_CLIENT,
+    DEFAULT_COMMIT_CLIENT
+  ]);
+  const [selectedTenantId, setSelectedTenantId] = useState<string>(
+    client && client.id !== 'hiresort-platform-hq' ? client.id : DEFAULT_ZOOL_CLIENT.id
+  );
+
+  const effectiveClientId = (client && client.id !== 'hiresort-platform-hq') ? client.id : selectedTenantId;
+
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
@@ -187,39 +199,75 @@ export default function TenantSettings() {
   const [auditSearch, setAuditSearch] = useState('');
   const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
 
+  // Load available clients from Supabase
   useEffect(() => {
-    if (client) {
-      setName(client.name);
-      setSlug(client.slug);
-      setThemeColor(client.themeColor || '#2563eb');
-      setLogoUrl(client.logoUrl || '');
-
-      const storedKey = localStorage.getItem(`hsa_api_key_${client.id}`);
-      if (storedKey) setApiKey(storedKey);
-
-      const storedStrategy = localStorage.getItem(`hiresort_ai_strategy_${client.id}`) as any;
-      if (storedStrategy) setAiStrategy(storedStrategy);
-
-      const storedByokKey = localStorage.getItem(`hiresort_byok_key_${client.id}`);
-      if (storedByokKey) setByokApiKey(storedByokKey);
-
-      const storedEndpoint = localStorage.getItem(`hiresort_byok_endpoint_${client.id}`);
-      if (storedEndpoint) setByokEndpoint(storedEndpoint);
-
-      const storedLogin = localStorage.getItem(`hiresort_login_method_${client.id}`) as any;
-      if (storedLogin) setLoginMethod(storedLogin);
+    async function loadTenants() {
+      try {
+        const { data } = await supabase.from('clients').select('id, name, slug, logo_url, theme_color, subscription_tier');
+        if (data && data.length > 0) {
+          const mapped: ClientTenant[] = data.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            logoUrl: c.logo_url,
+            themeColor: c.theme_color || (c.slug === 'commit' ? '#f97316' : '#2563eb'),
+            subscriptionTier: c.subscription_tier || 'pro',
+          }));
+          if (!mapped.some(c => c.slug === 'zool')) mapped.unshift(DEFAULT_ZOOL_CLIENT);
+          if (!mapped.some(c => c.slug === 'commit')) mapped.splice(1, 0, DEFAULT_COMMIT_CLIENT);
+          setAvailableTenants(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load tenants list in TenantSettings:', err);
+      }
     }
-  }, [client]);
+    loadTenants();
+  }, []);
+
+  const applyTenantContext = (targetId: string, customList?: ClientTenant[]) => {
+    const list = customList || availableTenants;
+    const target = list.find(t => t.id === targetId) || (targetId === DEFAULT_COMMIT_CLIENT.id ? DEFAULT_COMMIT_CLIENT : DEFAULT_ZOOL_CLIENT);
+    
+    setName(target.name);
+    setSlug(target.slug);
+    setThemeColor(target.themeColor || (target.slug === 'commit' ? '#f97316' : '#2563eb'));
+    setLogoUrl(target.logoUrl || '');
+
+    const storedKey = localStorage.getItem(`hsa_api_key_${target.id}`);
+    if (storedKey) setApiKey(storedKey);
+    else setApiKey(`hsa_live_${target.slug || 'tenant'}_${Math.random().toString(36).substring(2, 10)}`);
+
+    const storedStrategy = localStorage.getItem(`hiresort_ai_strategy_${target.id}`) as any;
+    if (storedStrategy) setAiStrategy(storedStrategy);
+
+    const storedByokKey = localStorage.getItem(`hiresort_byok_key_${target.id}`);
+    if (storedByokKey) setByokApiKey(storedByokKey);
+
+    const storedEndpoint = localStorage.getItem(`hiresort_byok_endpoint_${target.id}`);
+    if (storedEndpoint) setByokEndpoint(storedEndpoint);
+
+    const storedLogin = localStorage.getItem(`hiresort_login_method_${target.id}`) as any;
+    if (storedLogin) setLoginMethod(storedLogin);
+  };
+
+  useEffect(() => {
+    if (client && client.id !== 'hiresort-platform-hq') {
+      setSelectedTenantId(client.id);
+      applyTenantContext(client.id);
+    } else {
+      applyTenantContext(selectedTenantId);
+    }
+  }, [client, selectedTenantId]);
 
   // Load audit logs
   useEffect(() => {
     loadAuditLogs();
-  }, [clientId]);
+  }, [effectiveClientId]);
 
   const loadAuditLogs = async () => {
     setLoadingAuditLogs(true);
     try {
-      const logs = await fetchAuditLogs(clientId || undefined);
+      const logs = await fetchAuditLogs(effectiveClientId !== 'hiresort-platform-hq' ? effectiveClientId : undefined);
       setAuditLogs(logs);
     } catch (e) {
       console.error("Failed loading audit logs:", e);
@@ -231,33 +279,37 @@ export default function TenantSettings() {
   // Fetch libraries for active client
   useEffect(() => {
     async function loadLibraries() {
-      if (!clientId) return;
+      if (!effectiveClientId || effectiveClientId === 'hiresort-platform-hq') return;
       try {
         // Departments
         const { data: deptData } = await supabase
           .from('departments')
           .select('name')
-          .eq('client_id', clientId)
+          .eq('client_id', effectiveClientId)
           .order('name');
         if (deptData && deptData.length > 0) {
           setDepartments(deptData.map(d => d.name));
+        } else {
+          setDepartments(DEFAULT_DEPARTMENTS);
         }
 
         // Positions
         const { data: posData } = await supabase
           .from('positions')
           .select('title')
-          .eq('client_id', clientId)
+          .eq('client_id', effectiveClientId)
           .order('title');
         if (posData && posData.length > 0) {
           setPositions(posData.map(p => p.title));
+        } else {
+          setPositions(DEFAULT_POSITIONS);
         }
 
         // Questions
         const { data: qData } = await supabase
           .from('question_bank')
           .select('id, question_text, question_type, options')
-          .eq('client_id', clientId);
+          .eq('client_id', effectiveClientId);
         if (qData && qData.length > 0) {
           setQuestionBank(qData.map(q => ({
             id: q.id,
@@ -265,13 +317,15 @@ export default function TenantSettings() {
             type: q.question_type as any,
             options: q.options ? (Array.isArray(q.options) ? q.options : JSON.parse(q.options as any)) : undefined
           })));
+        } else {
+          setQuestionBank(DEFAULT_QUESTIONS.map((q, idx) => ({ id: `q-${idx + 1}`, ...q })));
         }
       } catch (err) {
         console.error('Error loading libraries from Supabase:', err);
       }
     }
     loadLibraries();
-  }, [clientId]);
+  }, [effectiveClientId]);
 
   // Save Branding
   const handleSaveBranding = async () => {
@@ -294,11 +348,11 @@ export default function TenantSettings() {
           theme_color: themeColor,
           logo_url: logoUrl || null,
         } as any)
-        .eq('id', client?.id || DEFAULT_ZOOL_CLIENT.id);
+        .eq('id', effectiveClientId);
 
       if (error) throw error;
 
-      if (client) {
+      if (client && client.id === effectiveClientId && setClient) {
         setClient({
           ...client,
           name,
@@ -309,7 +363,7 @@ export default function TenantSettings() {
       }
 
       await logAuditEvent({
-        clientId: client?.id || DEFAULT_ZOOL_CLIENT.id,
+        clientId: effectiveClientId,
         clientName: name,
         userId: user?.id,
         userEmail: user?.email || 'admin@hiresort.ai',
@@ -488,9 +542,9 @@ export default function TenantSettings() {
     const nameToAdd = newDepartment.trim();
     setDepartments(prev => [...prev, nameToAdd]);
     setNewDepartment('');
-    if (clientId) {
+    if (effectiveClientId && effectiveClientId !== 'hiresort-platform-hq') {
       try {
-        await supabase.from('departments').insert([{ client_id: clientId, name: nameToAdd }]);
+        await supabase.from('departments').insert([{ client_id: effectiveClientId, name: nameToAdd }]);
       } catch (e) {}
     }
   };
@@ -501,9 +555,9 @@ export default function TenantSettings() {
     const titleToAdd = newPosition.trim();
     setPositions(prev => [...prev, titleToAdd]);
     setNewPosition('');
-    if (clientId) {
+    if (effectiveClientId && effectiveClientId !== 'hiresort-platform-hq') {
       try {
-        await supabase.from('positions').insert([{ client_id: clientId, title: titleToAdd }]);
+        await supabase.from('positions').insert([{ client_id: effectiveClientId, title: titleToAdd }]);
       } catch (e) {}
     }
   };
@@ -526,10 +580,10 @@ export default function TenantSettings() {
     setIsQuestionModalOpen(false);
     setNewQuestionText('');
 
-    if (clientId) {
+    if (effectiveClientId && effectiveClientId !== 'hiresort-platform-hq') {
       try {
         await supabase.from('question_bank').insert([{
-          client_id: clientId,
+          client_id: effectiveClientId,
           question_text: newQ.text,
           question_type: newQ.type,
           options: opts || []
@@ -592,16 +646,41 @@ export default function TenantSettings() {
       </div>
 
       {/* Workspace Actions Bar */}
-      <div className="flex items-center justify-between pb-1">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Workspace Settings & Enterprise Config
           </span>
           <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/5">
             {name}
           </Badge>
+
+          {/* Platform Mode / Super Admin Workspace Selector */}
+          {(isPlatformMode || isSuperAdmin) && (
+            <div className="flex items-center gap-2 ml-1">
+              <span className="text-xs text-muted-foreground font-medium">Switch Tenant:</span>
+              <Select 
+                value={selectedTenantId} 
+                onValueChange={(val) => {
+                  setSelectedTenantId(val);
+                  applyTenantContext(val);
+                }}
+              >
+                <SelectTrigger className="w-[160px] h-7 text-xs bg-background">
+                  <SelectValue placeholder="Select Workspace" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTenants.map((t) => (
+                    <SelectItem key={t.id} value={t.id} className="text-xs">
+                      {t.name} ({t.slug})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
-        <Button variant="outline" size="sm" onClick={handleExportAuditCSV} className="h-8 text-xs gap-1.5">
+        <Button variant="outline" size="sm" onClick={handleExportAuditCSV} className="h-8 text-xs gap-1.5 shrink-0">
           <Download className="w-3.5 h-3.5" />
           Export Audit Log
         </Button>

@@ -82,21 +82,22 @@ export default function Candidates() {
       try {
         setLoadingData(true);
         let jobQuery = supabase.from('jobs').select('*');
-        if (clientId) {
+        if (clientId && clientId !== 'hiresort-platform-hq') {
           jobQuery = jobQuery.eq('client_id', clientId);
         }
         const { data: dbJobs } = await jobQuery;
         const tenantJobIds = (dbJobs || []).map((j: any) => j.id);
 
         let candQuery = supabase.from('candidates').select('*');
-        if (clientId) {
+        if (clientId && clientId !== 'hiresort-platform-hq') {
           candQuery = candQuery.eq('client_id', clientId);
         }
         const { data: rawCandidates } = await candQuery;
 
-        // Ensure we only show candidates belonging to this tenant or this tenant's jobs
+        // Ensure we show candidates belonging to this tenant (or all if in Platform HQ)
         const dbCandidates = (rawCandidates || []).filter((c: any) => {
-          if (c.client_id && clientId) return c.client_id === clientId;
+          if (!clientId || clientId === 'hiresort-platform-hq') return true;
+          if (c.client_id) return c.client_id === clientId;
           if (c.job_id && tenantJobIds.length > 0) return tenantJobIds.includes(c.job_id);
           return false;
         });
