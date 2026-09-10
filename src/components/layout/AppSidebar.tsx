@@ -14,7 +14,9 @@ import {
   ChevronsUpDown,
   Check,
   Plus,
-  BarChart3
+  BarChart3,
+  CalendarDays,
+  LifeBuoy
 } from 'lucide-react';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT, HIRESORT_PLATFORM_CLIENT } from '@/hooks/useAuth';
 import { ClientTenant } from '@/types/hiresort';
@@ -40,11 +42,13 @@ interface SidebarProps {
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'jobs', label: 'Jobs & ATS', icon: Briefcase },
+  { id: 'interviews', label: 'Interviews & Evaluations', icon: CalendarDays },
   { id: 'shortlisted', label: 'Shortlisted', icon: Star },
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
 ];
 
 const bottomItems = [
+  { id: 'support', label: 'Help & Support', icon: LifeBuoy },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

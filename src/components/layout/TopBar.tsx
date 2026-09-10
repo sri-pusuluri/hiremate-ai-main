@@ -1,8 +1,11 @@
-import { Bell, Search, Building2, Globe, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, Search, Building2, Globe, ShieldCheck, HelpCircle, LifeBuoy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
+import { HelpDrawer } from '@/components/support/HelpDrawer';
+import { useNavigate } from 'react-router-dom';
 
 interface TopBarProps {
   title: string;
@@ -11,6 +14,8 @@ interface TopBarProps {
 
 export function TopBar({ title, subtitle }: TopBarProps) {
   const { profile, user, client, role, isSuperAdmin } = useAuth();
+  const navigate = useNavigate();
+  const [showHelpDrawer, setShowHelpDrawer] = useState(false);
   
   const getInitials = () => {
     const nameToUse = profile?.full_name || user?.user_metadata?.full_name;
@@ -74,11 +79,29 @@ export function TopBar({ title, subtitle }: TopBarProps) {
           />
         </div>
 
+        {/* Quick Help & Docs Drawer */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowHelpDrawer(true)}
+          className="h-8 px-2.5 text-xs gap-1.5 border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300 hover:bg-blue-500/10 cursor-pointer"
+          title="Open Help & Knowledge Base"
+        >
+          <LifeBuoy className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span className="hidden sm:inline">Help & Docs</span>
+        </Button>
+
         {/* Notifications */}
         <Button variant="ghost" size="icon-sm" title="Notifications">
           <Bell className="w-5 h-5" />
         </Button>
       </div>
+
+      <HelpDrawer 
+        open={showHelpDrawer} 
+        onOpenChange={setShowHelpDrawer}
+        onNavigateToSupportPage={() => navigate('/support')}
+      />
     </header>
   );
 }

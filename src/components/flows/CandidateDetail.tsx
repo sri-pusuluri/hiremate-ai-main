@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { logAuditEvent } from '@/lib/audit-logger';
+import { CandidateInterviewHistory } from '@/components/interviews/CandidateInterviewHistory';
 
 interface CandidateDetailProps {
   candidate: Candidate;
@@ -370,6 +371,11 @@ export function CandidateDetail({
               {/* Predictive Insights - NEW */}
               <div className="mb-6">
                 <PredictiveInsightsPanel candidate={candidate} />
+              </div>
+
+              {/* Interview Pipeline & Scorecards - NEW */}
+              <div className="mb-6 p-4 rounded-xl border border-border bg-card shadow-2xs">
+                <CandidateInterviewHistory candidate={candidate} job={job} />
               </div>
 
               {/* Feedback Section */}

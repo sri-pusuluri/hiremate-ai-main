@@ -10,6 +10,8 @@ import Settings from './Settings';
 import ClientManagement from './ClientManagement';
 import TenantSettings from './TenantSettings';
 import Reports from './Reports';
+import Interviews from './Interviews';
+import Support from './Support';
 import { HireSortApp } from '@/components/HireSortApp';
 import { Loader2 } from 'lucide-react';
 
@@ -29,6 +31,8 @@ const Index = ({ initialView }: IndexProps) => {
     if (path.includes('/settings')) return 'settings';
     if (path.includes('/clients')) return 'clients';
     if (path.includes('/jobs')) return 'jobs';
+    if (path.includes('/interviews')) return 'interviews';
+    if (path.includes('/support')) return 'support';
     if (path.includes('/candidates')) return 'candidates';
     if (path.includes('/shortlisted')) return 'shortlisted';
     if (path.includes('/reports')) return 'reports';
@@ -74,8 +78,14 @@ const Index = ({ initialView }: IndexProps) => {
       case 'shortlisted':
         navigate('/shortlisted');
         break;
+      case 'interviews':
+        navigate('/interviews');
+        break;
       case 'reports':
         navigate('/reports');
+        break;
+      case 'support':
+        navigate('/support');
         break;
       case 'users':
         navigate('/users');
@@ -112,6 +122,12 @@ const Index = ({ initialView }: IndexProps) => {
           subtitle: 'Manage job postings, publishing, and screening questions', 
           component: <HireSortApp /> 
         };
+      case 'interviews':
+        return { 
+          title: 'Interviews & Evaluations', 
+          subtitle: 'Multi-round candidate interview pipelines, calendar sync, and scorecards', 
+          component: <Interviews /> 
+        };
       case 'candidates':
         return { 
           title: 'Candidates Directory', 
@@ -129,6 +145,12 @@ const Index = ({ initialView }: IndexProps) => {
           title: 'Reports & Analytics', 
           subtitle: 'Candidate selection, AI match analysis, and pipeline reports', 
           component: <Reports /> 
+        };
+      case 'support':
+        return { 
+          title: 'Help, Docs & Support Center', 
+          subtitle: 'Search knowledge base documentation or open support tickets', 
+          component: <Support /> 
         };
       case 'users':
         return { 
