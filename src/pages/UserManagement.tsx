@@ -3,6 +3,7 @@ import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT, HIRESORT_PLATFORM_
 import { supabase } from '@/integrations/supabase/client';
 import { SEED_CLIENTS } from './ClientManagement';
 import { getAppBaseUrl } from '@/lib/app-url';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
