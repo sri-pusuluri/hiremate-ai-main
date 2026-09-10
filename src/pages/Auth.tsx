@@ -5,11 +5,11 @@ import { getAppBaseUrl } from '@/lib/app-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Check, KeyRound, Eye, EyeOff, Zap, Crosshair, Wind } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Building2, Check, KeyRound, Eye, EyeOff, Zap, Crosshair, Wind } from 'lucide-react';
 import { z } from 'zod';
 import { isMockMode, enableMockMode, disableMockMode } from '@/integrations/supabase/client';
 import { markInvitationAccepted } from '@/lib/invitations';
@@ -188,10 +188,8 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-12 bg-background">
-      {/* Left Falcon Hero Showcase Panel */}
+    <div className="h-screen w-screen overflow-hidden grid lg:grid-cols-12 bg-background select-none">
       <div className="relative hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-between overflow-hidden bg-slate-950 text-white p-8 xl:p-12 select-none border-r border-border/40">
-        {/* Background Falcon Visual (Video loop if present, else animated image) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {!videoError && (
             <video 
@@ -209,50 +207,33 @@ export default function Auth() {
           <img 
             src="/images/falcon-hero.jpg" 
             alt="HireSort Falcon - High Velocity AI Recruitment"
-            className={`absolute inset-0 w-full h-full object-cover object-center animate-falcon-glide scale-105 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-90'}`}
+            className={`absolute inset-0 w-full h-full object-cover object-center animate-falcon-glide scale-105 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-95'}`}
           />
 
-          {/* Aerodynamic Speed Streaks / Wind Trails */}
-          <div className="absolute inset-0 overflow-hidden opacity-40">
+          <div className="absolute inset-0 overflow-hidden opacity-30">
             <div className="absolute top-[22%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/80 to-transparent animate-falcon-streak-fast" />
-            <div className="absolute top-[42%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-sky-300 to-transparent animate-falcon-streak-med" />
-            <div className="absolute top-[65%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-falcon-streak-slow" />
+            <div className="absolute top-[48%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-sky-200 to-transparent animate-falcon-streak-med" />
+            <div className="absolute top-[72%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-falcon-streak-slow" />
           </div>
 
-          {/* Falcon Eye HUD Targeting Ring (Simulating AI Signal Vision) */}
-          <div className="absolute top-[38%] left-[64%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <div className="w-20 h-20 rounded-full border border-sky-400/50 animate-falcon-hud flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full border border-amber-400/70 flex items-center justify-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-              </div>
-            </div>
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-sky-500/40 text-[9px] font-mono text-sky-300 tracking-wider whitespace-nowrap shadow-sm flex items-center gap-1">
-              <Crosshair className="w-2.5 h-2.5 text-sky-400 animate-spin" />
-              <span>SIGNAL DETECTED • 99.4%</span>
-            </div>
-          </div>
-
-          {/* Vignette Gradients for readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-background/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-background/30" />
         </div>
 
-        {/* Top Brand Logo inside Hero */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
             <span className="text-primary-foreground font-bold text-base tracking-tight">HS</span>
           </div>
           <div>
-            <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+            <span className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
               HireSortAi
             </span>
-            <span className="text-xs text-slate-300 block -mt-0.5">Enterprise Talent Intelligence</span>
+            <span className="text-xs text-slate-300 block -mt-0.5">Autonomous Talent Intelligence</span>
           </div>
         </div>
 
-        {/* Bottom Hero Typography & Metrics */}
-        <div className="relative z-10 space-y-4 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs font-medium text-slate-200 shadow-sm">
+        <div className="relative z-10 space-y-3 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-xs font-medium text-slate-200 shadow-sm">
             <Zap className="w-3.5 h-3.5 text-amber-400" />
             <span>Built for fast-moving teams</span>
           </div>
@@ -261,375 +242,181 @@ export default function Auth() {
             Find Signal to Action Instantly
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-            Autonomous multi-tenant candidate screening, AI resume synthesis, and deep talent ranking with aerodynamic precision.
+          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-lg">
+            High-velocity multi-tenant candidate screening, AI resume synthesis, and deep talent ranking with aerodynamic precision.
           </p>
 
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
-              <div className="text-xs text-slate-400 font-medium">Velocity</div>
+          <div className="grid grid-cols-3 gap-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
+              <div className="text-[11px] text-slate-400 font-medium">Screening Speed</div>
               <div className="text-base font-bold text-white mt-0.5">389 km/h</div>
-              <div className="text-[10px] text-slate-400">Peak Screening Speed</div>
+              <div className="text-[10px] text-slate-400">Peak Velocity</div>
             </div>
-            <div className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
-              <div className="text-xs text-slate-400 font-medium">Precision</div>
+            <div className="p-2.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
+              <div className="text-[11px] text-slate-400 font-medium">Signal Match</div>
               <div className="text-base font-bold text-white mt-0.5">99.4%</div>
-              <div className="text-[10px] text-slate-400">Signal Match Rate</div>
+              <div className="text-[10px] text-slate-400">High-Relevance ATS</div>
             </div>
-            <div className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
-              <div className="text-xs text-slate-400 font-medium">Partitions</div>
+            <div className="p-2.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10">
+              <div className="text-[11px] text-slate-400 font-medium">Tenant Silos</div>
               <div className="text-base font-bold text-white mt-0.5">Zero Leak</div>
-              <div className="text-[10px] text-slate-400">Tenant Data Isolation</div>
+              <div className="text-[10px] text-slate-400">Data Isolation</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Login / Sign Up Form Column */}
-      <div className="lg:col-span-6 xl:col-span-5 flex items-center justify-center p-4 sm:p-8 lg:p-12 overflow-y-auto bg-gradient-to-b from-background via-background to-muted/20">
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-3 mb-6 lg:mb-8">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-              <span className="text-primary-foreground font-bold text-lg">HS</span>
+      <div className="lg:col-span-6 xl:col-span-5 h-full overflow-hidden flex flex-col justify-between p-6 sm:p-10 xl:p-12 bg-background">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+              <span className="text-primary-foreground font-bold text-sm">HS</span>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">HireSortAi</h1>
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Sparkles className="w-3.5 h-3.5 text-ai-accent" />
-                <span>AI-Powered Hiring Platform</span>
-              </div>
+              <h2 className="text-sm font-bold text-foreground leading-tight">HireSortAi</h2>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-primary" />
+                Enterprise ATS Platform
+              </p>
             </div>
           </div>
+          <Badge variant="outline" className="text-[10px] font-medium border-border">
+            v1.0 Production
+          </Badge>
+        </div>
 
-        <Card className="border-border/50 shadow-lg">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl">Welcome back</CardTitle>
-            <CardDescription>
+        <div className="w-full max-w-sm mx-auto my-auto space-y-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Welcome back</h1>
+            <p className="text-xs text-muted-foreground">
               Sign in to your account to continue
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            </p>
+          </div>
 
-            {success && (
-              <Alert className="mb-4 border-success/50 bg-success/10">
-                <AlertDescription className="text-success">{success}</AlertDescription>
-              </Alert>
-            )}
+          {error && (
+            <Alert variant="destructive" className="py-2 text-xs">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
+          {success && (
+            <Alert className="py-2 text-xs border-success/50 bg-success/10">
+              <AlertDescription className="text-success">{success}</AlertDescription>
+            </Alert>
+          )}
 
-              <TabsContent value="login">
-                {/* One-Click Demo Credentials */}
-                <div className="p-3 rounded-xl bg-muted/40 border border-border/80 space-y-2 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                      <KeyRound className="w-3.5 h-3.5 text-primary" />
-                      <span>Demo Credentials (1-Click Personas)</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
-                  </div>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4 h-9">
+              <TabsTrigger value="login" className="text-xs">Login</TabsTrigger>
+              <TabsTrigger value="signup" className="text-xs">Sign Up</TabsTrigger>
+            </TabsList>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* HireSort SuperAdmin Card */}
-                    <button
-                      type="button"
-                      onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')}
-                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
-                        loginEmail === 'admin@hiremate.ai'
-                          ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-1 ring-purple-500'
-                          : 'border-border/70 bg-background hover:border-purple-500/50 hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1 text-purple-400">
-                          <ShieldCheck className="w-3.5 h-3.5 text-purple-500" />
-                          <span className="text-xs font-bold text-foreground">SuperAdmin</span>
-                        </div>
-                        {loginEmail === 'admin@hiremate.ai' && (
-                          <span className="text-[9px] text-purple-400 font-semibold flex items-center gap-0.5">
-                            <Check className="w-2.5 h-2.5" /> Selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">HireSort Platform HQ</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">admin@hiremate.ai</p>
-                    </button>
+            <TabsContent value="login" className="space-y-3.5 mt-0">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-primary" />
+                    Demo Credentials
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
+                </div>
 
-                    {/* Commit Client Admin Card */}
-                    <button
-                      type="button"
-                      onClick={() => handleAutofill('admin@commit.com', 'commit123')}
-                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
-                        loginEmail === 'admin@commit.com'
-                          ? 'border-orange-500 bg-orange-500/10 shadow-xs ring-1 ring-orange-500'
-                          : 'border-border/70 bg-background hover:border-orange-500/50 hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1 text-orange-500">
-                          <span className="w-3.5 h-3.5 rounded bg-orange-500 text-white font-bold text-[8px] flex items-center justify-center">C</span>
-                          <span className="text-xs font-bold text-foreground">Commit Admin</span>
-                        </div>
-                        {loginEmail === 'admin@commit.com' && (
-                          <span className="text-[9px] text-orange-500 font-semibold flex items-center gap-0.5">
-                            <Check className="w-2.5 h-2.5" /> Selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Tenant Admin (Commit)</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">admin@commit.com</p>
-                    </button>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button type="button" onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')} className={`p-2 rounded-lg border text-left transition-all relative ${loginEmail === 'admin@hiremate.ai' ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-1 ring-purple-500' : 'border-border/70 bg-muted/30 hover:border-purple-500/50 hover:bg-muted/60'}`}>
+                    <div className="flex items-center justify-between"><span className="text-xs font-bold text-foreground flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-purple-500" />SuperAdmin</span>{loginEmail === 'admin@hiremate.ai' && <Check className="w-3 h-3 text-purple-500" />}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@hiremate.ai</div>
+                  </button>
+                  <button type="button" onClick={() => handleAutofill('admin@commit.com', 'commit123')} className={`p-2 rounded-lg border text-left transition-all relative ${loginEmail === 'admin@commit.com' ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-1 ring-blue-500' : 'border-border/70 bg-muted/30 hover:border-blue-500/50 hover:bg-muted/60'}`}>
+                    <div className="flex items-center justify-between"><span className="text-xs font-bold text-foreground flex items-center gap-1"><Building2 className="w-3 h-3 text-blue-500" />Commit Admin</span>{loginEmail === 'admin@commit.com' && <Check className="w-3 h-3 text-blue-500" />}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@commit.com</div>
+                  </button>
+                  <button type="button" onClick={() => handleAutofill('admin@zool.in', 'zool123')} className={`p-2 rounded-lg border text-left transition-all relative ${loginEmail === 'admin@zool.in' ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500' : 'border-border/70 bg-muted/30 hover:border-emerald-500/50 hover:bg-muted/60'}`}>
+                    <div className="flex items-center justify-between"><span className="text-xs font-bold text-foreground flex items-center gap-1"><Building2 className="w-3 h-3 text-emerald-500" />Zool Admin</span>{loginEmail === 'admin@zool.in' && <Check className="w-3 h-3 text-emerald-500" />}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@zool.in</div>
+                  </button>
+                  <button type="button" onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')} className={`p-2 rounded-lg border text-left transition-all relative ${loginEmail === 'recruiter@hiremate.ai' ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary' : 'border-border/70 bg-muted/30 hover:border-primary/50 hover:bg-muted/60'}`}>
+                    <div className="flex items-center justify-between"><span className="text-xs font-bold text-foreground flex items-center gap-1"><User className="w-3 h-3 text-primary" />Recruiter</span>{loginEmail === 'recruiter@hiremate.ai' && <Check className="w-3 h-3 text-primary" />}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">recruiter@hiremate.ai</div>
+                  </button>
+                </div>
+              </div>
 
-                    {/* Zool Client Admin Card */}
-                    <button
-                      type="button"
-                      onClick={() => handleAutofill('admin@zool.in', 'zool123')}
-                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
-                        loginEmail === 'admin@zool.in'
-                          ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-1 ring-blue-500'
-                          : 'border-border/70 bg-background hover:border-blue-500/50 hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1 text-blue-500">
-                          <span className="w-3.5 h-3.5 rounded bg-blue-600 text-white font-bold text-[8px] flex items-center justify-center">Z</span>
-                          <span className="text-xs font-bold text-foreground">Zool Admin</span>
-                        </div>
-                        {loginEmail === 'admin@zool.in' && (
-                          <span className="text-[9px] text-blue-500 font-semibold flex items-center gap-0.5">
-                            <Check className="w-2.5 h-2.5" /> Selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Tenant Admin (Zool)</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">admin@zool.in</p>
-                    </button>
-
-                    {/* Recruiter Card */}
-                    <button
-                      type="button"
-                      onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')}
-                      className={`p-2.5 rounded-lg border text-left transition-all relative ${
-                        loginEmail === 'recruiter@hiremate.ai'
-                          ? 'border-sky-500 bg-sky-500/10 shadow-xs ring-1 ring-sky-500'
-                          : 'border-border/70 bg-background hover:border-sky-500/50 hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1 text-sky-600">
-                          <Briefcase className="w-3.5 h-3.5 text-sky-600" />
-                          <span className="text-xs font-bold text-foreground">Recruiter</span>
-                        </div>
-                        {loginEmail === 'recruiter@hiremate.ai' && (
-                          <span className="text-[9px] text-sky-600 font-semibold flex items-center gap-0.5">
-                            <Check className="w-2.5 h-2.5" /> Selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Hiring Recruiter</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/90 truncate">recruiter@hiremate.ai</p>
-                    </button>
+              <form onSubmit={handleLogin} className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="login-email" className="text-xs">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input id="login-email" type="email" placeholder="name@example.com" className="pl-9 h-9 text-xs" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
                   </div>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="you@company.com"
-                        className="pl-10"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="login-password"
-                        type={showLoginPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        className="pl-10 pr-10"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPassword(!showLoginPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
-                        aria-label={showLoginPassword ? 'Hide value' : 'Show value'}
-                        title={showLoginPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showLoginPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="login-password" className="text-xs">Password</Label>
                     <button
                       type="button"
                       onClick={handleForgotPassword}
-                      className="text-xs text-primary hover:underline"
-                      disabled={isSubmitting}
+                      className="text-[11px] text-primary hover:underline focus:outline-none"
                     >
                       Forgot Password?
                     </button>
                   </div>
-
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="John Doe"
-                        className="pl-10"
-                        value={signupName}
-                        onChange={(e) => setSignupName(e.target.value)}
-                        required
-                      />
-                    </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input id="login-password" type={showLoginPassword ? "text" : "password"} placeholder="••••••••" className="pl-9 pr-9 h-9 text-xs font-mono" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+                    <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none">{showLoginPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}</button>
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="you@company.com"
-                        className="pl-10"
-                        value={signupEmail}
-                        onChange={(e) => setSignupEmail(e.target.value)}
-                        required
-                      />
-                    </div>
+                <Button type="submit" className="w-full h-9 text-xs font-semibold shadow-xs" disabled={isSubmitting}>
+                  {isSubmitting ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Signing in...</> : 'Sign In'}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="signup" className="space-y-3 mt-0">
+              <form onSubmit={handleSignup} className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="signup-name" className="text-xs">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input id="signup-name" type="text" placeholder="Jane Doe" className="pl-9 h-9 text-xs" value={signupName} onChange={(e) => setSignupName(e.target.value)} required />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type={showSignupPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        className="pl-10 pr-10"
-                        value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSignupPassword(!showSignupPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
-                        aria-label={showSignupPassword ? 'Hide value' : 'Show value'}
-                        title={showSignupPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showSignupPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="signup-email" className="text-xs">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input id="signup-email" type="email" placeholder="name@company.com" className="pl-9 h-9 text-xs" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
                   </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    First user to sign up becomes admin. All others become recruiters.
-                  </p>
-
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Creating account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        {/* Database Mode Switcher */}
-        <div className="mt-6 p-4 rounded-lg border border-border bg-card shadow-sm text-center">
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-left">
-              <p className="text-xs font-semibold text-foreground">Database Connectivity</p>
-              <p className="text-[11px] text-muted-foreground">
-                {mockActive ? 'Offline (Local Mock Mode)' : 'Online (Supabase Connection)'}
-              </p>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-xs h-8" 
-              onClick={handleToggleMockMode}
-            >
-              Switch to {mockActive ? 'Supabase' : 'Offline Mock'}
-            </Button>
-          </div>
-          {mockActive && (
-            <div className="mt-3 pt-3 border-t border-border text-left">
-              <p className="text-[11px] text-muted-foreground font-semibold">Offline Demo Accounts:</p>
-              <ul className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
-                <li>• Admin: <code className="bg-muted px-1 py-0.5 rounded font-mono">admin@hiremate.ai</code> / <code className="bg-muted px-1 py-0.5 rounded font-mono">admin123</code></li>
-                <li>• Recruiter: <code className="bg-muted px-1 py-0.5 rounded font-mono">recruiter@hiremate.ai</code> / <code className="bg-muted px-1 py-0.5 rounded font-mono">recruiter123</code></li>
-              </ul>
-            </div>
-          )}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="signup-password" className="text-xs">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input id="signup-password" type={showSignupPassword ? "text" : "password"} placeholder="••••••••" className="pl-9 pr-9 h-9 text-xs font-mono" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required />
+                    <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none">{showSignupPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}</button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-9 text-xs font-semibold" disabled={isSubmitting}>
+                  {isSubmitting ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Creating account...</> : 'Create Account'}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          By continuing, you agree to our Terms of Service and Privacy Policy.
-        </p>
+        <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${mockActive ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+            <span>{mockActive ? 'Offline Mock Mode' : 'Supabase Live Connected'}</span>
+          </div>
+          <button type="button" onClick={handleToggleMockMode} className="hover:text-foreground underline underline-offset-2 transition-colors cursor-pointer">
+            Switch to {mockActive ? 'Supabase Live' : 'Offline Mock'}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
