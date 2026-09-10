@@ -18,7 +18,7 @@ interface IndexProps {
 }
 
 const Index = ({ initialView }: IndexProps) => {
-  const { user, loading, isSuperAdmin } = useAuth();
+  const { user, loading, isSuperAdmin, client } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
