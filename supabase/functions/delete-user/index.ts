@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error('Server misconfiguration: missing Supabase credentials.')
     }
 
-    const { userId } = await req.json()
+    const { userId, reassignJobsToUserId } = await req.json()
     if (!userId) {
       throw new Error('User ID is required.')
     }
@@ -48,7 +48,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
-    if (callerRoleError || callerRoleData?.role !== 'admin') {
+    if (callerRoleError || (callerRoleData?.role !== 'admin' && callerRoleData?.role !== 'super_admin')) {
       throw new Error('Only admins can delete users.')
     }
 
@@ -59,6 +59,17 @@ serve(async (req) => {
         persistSession: false
       }
     })
+
+    // Reassign jobs created by this user if requested
+    if (reassignJobsToUserId) {
+      const { error: reassignError } = await supabaseAdmin
+        .from('jobs')
+        .update({ created_by: reassignJobsToUserId })
+        .eq('created_by', userId)
+      if (reassignError) {
+        console.warn('Could not reassign jobs before user deletion:', reassignError)
+      }
+    }
 
     // Delete the user
     const { data: deleteData, error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)

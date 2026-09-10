@@ -30,7 +30,9 @@ import {
   Building2,
   Pencil,
   Copy,
-  ExternalLink
+  ExternalLink,
+  User,
+  UserCheck
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -216,6 +218,16 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
 
         const { data: candData } = await supabase.from('candidates').select('job_id');
 
+        let profilesMap = new Map<string, any>();
+        try {
+          const { data: profilesData } = await supabase.from('profiles').select('id, full_name, email');
+          if (profilesData) {
+            profilesData.forEach((p: any) => profilesMap.set(p.id, p));
+          }
+        } catch (e) {
+          console.warn('Could not fetch profiles for job creator lookup:', e);
+        }
+
         if (jobData && jobData.length > 0) {
           // Clean up any phantom/empty jobs from mock localStorage cache
           try {
@@ -240,6 +252,10 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 supabase.from('jobs').update({ status: 'inactive' }).eq('id', j.id).then();
               }
 
+              const creator = j.created_by ? profilesMap.get(j.created_by) : null;
+              const creatorName = creator?.full_name || (creator?.email ? creator.email.split('@')[0] : (j.created_by ? 'Team Member' : 'Admin'));
+              const creatorEmail = creator?.email || null;
+
               return {
                 id: j.id,
                 title: j.title,
@@ -260,7 +276,10 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 status: resolvedStatus,
                 expiresAt: j.expires_at || undefined,
                 customQuestions: j.custom_questions || [],
-                postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                createdBy: j.created_by || null,
+                creatorName: creatorName,
+                creatorEmail: creatorEmail,
               };
             });
           setJobs(mappedJobs);
@@ -827,6 +846,13 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
             <span className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4" />
               Posted {job.postedDate}
+            </span>
+            <span 
+              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-xs"
+              title={`Job Owner / Creator: ${job.creatorName || job.creatorEmail || 'Admin'}`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-primary" />
+              <span>Created by <strong className="font-semibold text-foreground">{job.creatorName || job.creatorEmail || 'Admin'}</strong></span>
             </span>
             {job.expiresAt && (
               <span className={cn(

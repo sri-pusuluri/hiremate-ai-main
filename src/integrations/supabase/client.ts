@@ -1015,6 +1015,8 @@ class MockQueryBuilder {
             isPublic: payload.is_public !== undefined ? payload.is_public : true,
             is_public: payload.is_public !== undefined ? payload.is_public : true,
             slug: payload.slug,
+            created_by: payload.created_by || null,
+            client_id: payload.client_id || DEFAULT_ZOOL_ID,
             predictiveEffectiveness: payload.predictiveEffectiveness || null
           };
           jobs.push(newJob);
@@ -1233,6 +1235,17 @@ const mockSupabase = {
         const adminUser = getMockUsers().find((u: any) => u.email === 'admin@hiremate.ai');
         if (adminUser && userId === adminUser.id) {
           return { data: null, error: new Error('Action prohibited: Root HireSort platform admin account cannot be deleted.') };
+        }
+
+        if (options?.body?.reassignJobsToUserId) {
+          const targetId = options.body.reassignJobsToUserId;
+          let jobs = getMockJobs().map((j: any) => {
+            if (j.created_by === userId) {
+              return { ...j, created_by: targetId };
+            }
+            return j;
+          });
+          saveMockJobs(jobs);
         }
 
         let profiles = getMockProfiles().filter(p => p.id !== userId);

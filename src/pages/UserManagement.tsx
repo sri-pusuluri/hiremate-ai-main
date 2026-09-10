@@ -43,6 +43,8 @@ import {
   Link2,
   Clock,
   CheckCircle2,
+  UserCheck,
+  Trash2,
 } from 'lucide-react';
 import { isInvitationPending, markInvitationPending } from '@/lib/invitations';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -94,6 +96,12 @@ export default function UserManagement() {
   const [isInviting, setIsInviting] = useState(false);
   const [reassignModalUser, setReassignModalUser] = useState<UserWithRole | null>(null);
   const [reassignTargetClientId, setReassignTargetClientId] = useState<string>('');
+  const [jobReallotModal, setJobReallotModal] = useState<{
+    userToDelete: UserWithRole;
+    jobs: { id: string; title: string; department?: string }[];
+    targetUserId: string;
+  } | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -468,15 +476,58 @@ export default function UserManagement() {
       return;
     }
 
+    const userObj = users.find(u => u.id === userId);
+    if (!userObj) return;
+
+    // Check if this user has created any jobs
+    try {
+      const { data: userJobs } = await supabase
+        .from('jobs')
+        .select('id, title, department')
+        .eq('created_by', userId);
+
+      if (userJobs && userJobs.length > 0) {
+        // Find default target (current admin, or first other user in tenant)
+        const candidateTargets = users.filter(u => u.id !== userId);
+        const defaultTargetId = candidateTargets.find(u => u.id === user?.id)?.id || candidateTargets[0]?.id || '';
+        
+        setJobReallotModal({
+          userToDelete: userObj,
+          jobs: userJobs,
+          targetUserId: defaultTargetId
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('Could not query jobs for user deletion check:', e);
+    }
+
     if (!window.confirm(`Are you sure you want to completely remove ${email}? This action cannot be undone.`)) {
       return;
     }
 
+    await performDeleteUser(userId, email, null, 0);
+  };
+
+  const performDeleteUser = async (userId: string, email: string, reassignToUserId: string | null, jobCount: number) => {
+    setIsDeletingUser(true);
     try {
+      if (reassignToUserId) {
+        // Reassign jobs to designated team member or admin
+        const { error: reassignError } = await supabase
+          .from('jobs')
+          .update({ created_by: reassignToUserId })
+          .eq('created_by', userId);
+
+        if (reassignError) {
+          console.warn('Direct job reassignment error, continuing via edge function:', reassignError);
+        }
+      }
+
       let functionSuccess = false;
       try {
         const { error } = await supabase.functions.invoke('delete-user', {
-          body: { userId }
+          body: { userId, reassignJobsToUserId: reassignToUserId }
         });
         if (!error) functionSuccess = true;
       } catch (e) {
@@ -488,11 +539,15 @@ export default function UserManagement() {
         await supabase.from('user_roles').delete().eq('user_id', userId);
         await supabase.from('profiles').delete().eq('id', userId);
       }
-      
+
+      const targetUser = reassignToUserId ? users.find(u => u.id === reassignToUserId) : null;
       toast({
-        title: 'User Removed',
-        description: `${email} has been removed.`,
+        title: reassignToUserId ? 'User Removed & Jobs Re-allotted' : 'User Removed',
+        description: reassignToUserId 
+          ? `${email} was removed. ${jobCount} job(s) were successfully re-allotted to ${targetUser?.full_name || targetUser?.email || 'Admin'}.`
+          : `${email} has been removed.`,
       });
+      setJobReallotModal(null);
       fetchUsers();
     } catch (error: any) {
       console.error('Error deleting user:', error);
@@ -501,6 +556,8 @@ export default function UserManagement() {
         description: error.message || 'Could not remove the user.',
         variant: 'destructive',
       });
+    } finally {
+      setIsDeletingUser(false);
     }
   };
 
@@ -1232,6 +1289,98 @@ export default function UserManagement() {
               }}
             >
               Assign Workspace
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reassign Jobs & Remove User Dialog */}
+      <Dialog open={!!jobReallotModal} onOpenChange={(open) => !open && !isDeletingUser && setJobReallotModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+              <AlertCircle className="w-5 h-5" />
+              <DialogTitle>Reassign Jobs & Remove Member</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2 text-xs">
+              <strong>{jobReallotModal?.userToDelete.full_name || jobReallotModal?.userToDelete.email}</strong> created{' '}
+              <strong className="text-foreground">{jobReallotModal?.jobs.length} active job(s)</strong>.
+              Please select a team member or administrator to take over and be allotted these jobs before removing this account.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                Jobs to be Re-allotted ({jobReallotModal?.jobs.length}):
+              </Label>
+              <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-md bg-muted/40 border border-border">
+                {jobReallotModal?.jobs.map((j) => (
+                  <div key={j.id} className="text-xs flex items-center justify-between p-2 rounded bg-background border border-border/50">
+                    <span className="font-medium text-foreground truncate max-w-[240px]">{j.title}</span>
+                    <Badge variant="outline" className="text-[10px] shrink-0">{j.department || 'General'}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <Label className="text-xs font-semibold">
+                Re-allot All Jobs To *
+              </Label>
+              <Select
+                value={jobReallotModal?.targetUserId || ''}
+                onValueChange={(val) => setJobReallotModal(prev => prev ? { ...prev, targetUserId: val } : null)}
+              >
+                <SelectTrigger className="w-full text-xs">
+                  <SelectValue placeholder="Select team member or admin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users
+                    .filter(u => u.id !== jobReallotModal?.userToDelete.id)
+                    .map((u) => (
+                      <SelectItem key={u.id} value={u.id} className="text-xs">
+                        {u.full_name ? `${u.full_name} (${u.email})` : u.email}
+                        {u.id === user?.id ? ' (You - Admin)' : ` [${u.role}]`}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-3 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setJobReallotModal(null)}
+              disabled={isDeletingUser}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (jobReallotModal) {
+                  performDeleteUser(
+                    jobReallotModal.userToDelete.id,
+                    jobReallotModal.userToDelete.email || '',
+                    jobReallotModal.targetUserId,
+                    jobReallotModal.jobs.length
+                  );
+                }
+              }}
+              disabled={isDeletingUser || !jobReallotModal?.targetUserId}
+            >
+              {isDeletingUser ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  Reassigning & Removing...
+                </>
+              ) : (
+                'Reassign Jobs & Remove Member'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

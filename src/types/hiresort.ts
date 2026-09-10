@@ -101,6 +101,11 @@ export interface Job {
     required?: boolean;
     options?: string[];
   }>;
+
+  // Creator & Ownership
+  createdBy?: string | null;
+  creatorName?: string | null;
+  creatorEmail?: string | null;
 }
 
 export interface ClientTenant {

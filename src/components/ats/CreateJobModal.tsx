@@ -28,7 +28,9 @@ import {
   Trash2, 
   BookOpen, 
   Library, 
-  Pencil 
+  Pencil,
+  User,
+  UserCheck
 } from 'lucide-react';
 import {
   Select,
@@ -56,7 +58,7 @@ export function CreateJobModal({
   onJobUpdated, 
   jobToEdit 
 }: CreateJobModalProps) {
-  const { client, clientId } = useAuth();
+  const { client, clientId, user, isAdmin, isSuperAdmin, isClientAdmin } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -87,6 +89,31 @@ export function CreateJobModal({
   
   // Question Library Modal dialog state
   const [showLibraryModal, setShowLibraryModal] = useState(false);
+
+  // Job Creator & Owner state
+  const [availableCreators, setAvailableCreators] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [selectedCreatorId, setSelectedCreatorId] = useState<string>('');
+
+  // Load active workspace team members for job ownership assignment
+  useEffect(() => {
+    async function loadCreators() {
+      try {
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email');
+        if (profiles && profiles.length > 0) {
+          setAvailableCreators(profiles.map((p: any) => ({
+            id: p.id,
+            name: p.full_name || p.email?.split('@')[0] || 'Team Member',
+            email: p.email || '',
+          })));
+        }
+      } catch (e) {
+        console.warn('Could not fetch profiles for job creator assignment:', e);
+      }
+    }
+    if (open) {
+      loadCreators();
+    }
+  }, [open]);
 
   // Quick custom question form state
   const [showAddCustomQuestion, setShowAddCustomQuestion] = useState(false);
@@ -129,6 +156,7 @@ export function CreateJobModal({
     if (!open) return;
 
     if (jobToEdit) {
+      setSelectedCreatorId(jobToEdit.createdBy || user?.id || '');
       setFormData({
         title: jobToEdit.title || '',
         department: jobToEdit.department || 'Engineering',
@@ -229,6 +257,7 @@ export function CreateJobModal({
           is_public: formData.isPublic,
           expires_at: expiresAt,
           custom_questions: formattedQuestions,
+          created_by: selectedCreatorId || jobToEdit.createdBy || user?.id || null,
         };
 
         const { data, error } = await supabase
@@ -239,6 +268,9 @@ export function CreateJobModal({
           .single();
 
         if (error) throw error;
+
+        const updatedCreatorId = (data as any).created_by || selectedCreatorId || jobToEdit.createdBy || user?.id || null;
+        const assignedCreator = availableCreators.find(c => c.id === updatedCreatorId);
 
         const updatedJob: Job = {
           ...jobToEdit,
@@ -251,6 +283,9 @@ export function CreateJobModal({
           isPublic: (data as any).is_public,
           expiresAt: (data as any).expires_at || undefined,
           customQuestions: formattedQuestions as any,
+          createdBy: updatedCreatorId,
+          creatorName: assignedCreator?.name || jobToEdit.creatorName || (user?.id === updatedCreatorId ? (user.user_metadata?.full_name || user.email) : null),
+          creatorEmail: assignedCreator?.email || jobToEdit.creatorEmail || (user?.id === updatedCreatorId ? user.email : null),
         };
 
         if (onJobUpdated) {
@@ -281,6 +316,7 @@ export function CreateJobModal({
           is_public: formData.isPublic,
           slug: slug,
           client_id: clientId || DEFAULT_ZOOL_CLIENT.id,
+          created_by: selectedCreatorId || user?.id || null,
           hire_sort_enabled: true,
           ai_processing_status: 'idle',
           status: 'active',
@@ -307,6 +343,9 @@ export function CreateJobModal({
 
         if (error) throw error;
 
+        const newCreatorId = (data as any).created_by || selectedCreatorId || user?.id || null;
+        const newCreator = availableCreators.find(c => c.id === newCreatorId);
+
         const createdJob: Job = {
           id: (data as any).id,
           title: (data as any).title,
@@ -326,6 +365,9 @@ export function CreateJobModal({
           isPublic: (data as any).is_public,
           slug: (data as any).slug,
           customQuestions: formattedQuestions as any,
+          createdBy: newCreatorId,
+          creatorName: newCreator?.name || (user?.id === newCreatorId ? (user.user_metadata?.full_name || user.email) : 'You'),
+          creatorEmail: newCreator?.email || (user?.id === newCreatorId ? user.email : null),
         };
 
         if (onJobCreated) {
@@ -561,6 +603,44 @@ export function CreateJobModal({
                   />
                 </div>
               )}
+            </div>
+
+            {/* Job Creator & Ownership Assignment */}
+            <div className="p-3.5 rounded-lg border border-border bg-muted/40 space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-primary" />
+                    <Label className="font-semibold text-xs">Job Creator / Assigned Owner</Label>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {isEditMode 
+                      ? 'Team member or administrator who owns and manages this job.' 
+                      : 'Assigned owner of this job. Admins can reassign anytime.'}
+                  </p>
+                </div>
+                <Select 
+                  value={selectedCreatorId || user?.id || ''} 
+                  onValueChange={(val) => setSelectedCreatorId(val)}
+                  disabled={isEditMode && !isAdmin && !isSuperAdmin && !isClientAdmin}
+                >
+                  <SelectTrigger className="w-[200px] h-8 text-xs bg-background">
+                    <SelectValue placeholder="Select Owner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCreators.map((m) => (
+                      <SelectItem key={m.id} value={m.id} className="text-xs">
+                        {m.name} {m.id === user?.id ? '(You)' : `(${m.email})`}
+                      </SelectItem>
+                    ))}
+                    {availableCreators.length === 0 && user && (
+                      <SelectItem value={user.id} className="text-xs">
+                        {user.user_metadata?.full_name || user.email} (You)
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* APPLICATION SCREENING QUESTIONS SECTION */}
