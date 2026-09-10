@@ -117,8 +117,11 @@ export default function UserManagement() {
       setSelectedTenantFilter('all');
     } else if (newTab === 'platform') {
       setSelectedTenantFilter('platform');
-    } else if (newTab === 'clients' && selectedTenantFilter === 'platform') {
-      setSelectedTenantFilter('all');
+    } else if (newTab === 'clients') {
+      const usersInCurrentTenant = users.filter(u => u.clientId === selectedTenantFilter);
+      if (usersInCurrentTenant.length === 0 || selectedTenantFilter === 'platform') {
+        setSelectedTenantFilter('all');
+      }
     }
   };
 
@@ -771,7 +774,7 @@ export default function UserManagement() {
         </Card>
         <Card 
           className={isSuperAdmin ? "cursor-pointer hover:border-blue-300 transition-colors" : ""} 
-          onClick={() => isSuperAdmin && setMemberTypeTab('clients')}
+          onClick={() => isSuperAdmin && handleTabChange('clients')}
         >
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -779,8 +782,17 @@ export default function UserManagement() {
                 <Building2 className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{clientUsers.length}</p>
-                <p className="text-sm text-muted-foreground">Client Workspace Members</p>
+                <p className="text-2xl font-bold">
+                  {isViewingSpecificTenant ? users.filter(u => u.clientId === activeClient?.id).length : clientUsers.length}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isViewingSpecificTenant ? `${activeClient?.name} Members` : 'Client Workspace Members'}
+                </p>
+                {isViewingSpecificTenant && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    ({clientUsers.length} across all tenants)
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -826,12 +838,15 @@ export default function UserManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Workspaces (Platform & Tenants)</SelectItem>
-                    <SelectItem value="platform">HireSort Platform Team</SelectItem>
-                    {clients.map(c => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="platform">HireSort Platform Team ({platformUsers.length})</SelectItem>
+                    {clients.map(c => {
+                      const count = users.filter(u => u.clientId === c.id).length;
+                      return (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} ({count})
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
