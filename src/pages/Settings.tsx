@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -22,11 +23,19 @@ import {
   ArrowRight,
   Coins,
   ShieldCheck,
-  Trash2
+  Trash2,
+  Globe,
+  Copy,
+  ExternalLink,
+  Layers,
+  Lock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { mockJobs, mockCandidates } from '@/data/mockData';
 import samplePayload from '../../samples/ats_import_payload.json';
+import TenantBrandLogo from '@/components/common/TenantBrandLogo';
+import TenantLogoUploader from '@/components/common/TenantLogoUploader';
+import { getAppBaseUrl } from '@/lib/app-url';
 import {
   Select,
   SelectContent,
@@ -36,9 +45,120 @@ import {
 } from '@/components/ui/select';
 
 export default function Settings() {
-  const { profile, user, isAdmin } = useAuth();
+  const { profile, user, isAdmin, client, setClient } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+
+  // Client Workspace / Organization settings (customizable & client-specific)
+  const [orgName, setOrgName] = useState(client?.name || 'Zool');
+  const [orgSlug, setOrgSlug] = useState(client?.slug || 'zool');
+  const [orgLogoUrl, setOrgLogoUrl] = useState(client?.logoUrl || '');
+  const [orgThemeColor, setOrgThemeColor] = useState(client?.themeColor || '#2563eb');
+  const [orgTier, setOrgTier] = useState<'free' | 'pro' | 'enterprise'>((client?.subscriptionTier as any) || 'pro');
+  const [copiedOrgUrl, setCopiedOrgUrl] = useState(false);
+  const [savingOrg, setSavingOrg] = useState(false);
+
+  // Client Security & Corporate Domain policies
+  const defaultDomain = client?.slug === 'commit' ? 'comm-it.in' : (client?.slug === 'zool' ? 'zool.in' : `${client?.slug || 'company'}.com`);
+  const [emailDomain, setEmailDomain] = useState(() => {
+    return localStorage.getItem(`hsa_email_domain_${client?.id}`) || defaultDomain;
+  });
+  const [restrictDomain, setRestrictDomain] = useState(() => {
+    return localStorage.getItem(`hsa_restrict_domain_${client?.id}`) === 'true';
+  });
+  const [require2FA, setRequire2FA] = useState(() => {
+    return localStorage.getItem(`hsa_require_2fa_${client?.id}`) === 'true';
+  });
+  const [sessionTimeout, setSessionTimeout] = useState(() => {
+    return localStorage.getItem(`hsa_session_timeout_${client?.id}`) !== 'false';
+  });
+  const [sessionHours, setSessionHours] = useState(() => {
+    return localStorage.getItem(`hsa_session_hours_${client?.id}`) || '8';
+  });
+
+  // Synchronize when active client changes
+  useEffect(() => {
+    if (client) {
+      setOrgName(client.name || '');
+      setOrgSlug(client.slug || '');
+      setOrgLogoUrl(client.logoUrl || '');
+      setOrgThemeColor(client.themeColor || '#2563eb');
+      setOrgTier((client.subscriptionTier as any) || 'pro');
+
+      const defDom = client.slug === 'commit' ? 'comm-it.in' : (client.slug === 'zool' ? 'zool.in' : `${client.slug || 'company'}.com`);
+      const storedDom = localStorage.getItem(`hsa_email_domain_${client.id}`);
+      setEmailDomain(storedDom || defDom);
+      setRestrictDomain(localStorage.getItem(`hsa_restrict_domain_${client.id}`) === 'true');
+      setRequire2FA(localStorage.getItem(`hsa_require_2fa_${client.id}`) === 'true');
+      setSessionTimeout(localStorage.getItem(`hsa_session_timeout_${client.id}`) !== 'false');
+      setSessionHours(localStorage.getItem(`hsa_session_hours_${client.id}`) || '8');
+    }
+  }, [client]);
+
+  const handleSaveOrganization = async () => {
+    if (!orgName.trim() || !orgSlug.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Organization Name and Portal Slug cannot be blank.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSavingOrg(true);
+    try {
+      const clientId = client?.id || DEFAULT_ZOOL_CLIENT.id;
+
+      // Update in Supabase
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          name: orgName.trim(),
+          slug: orgSlug.trim().toLowerCase(),
+          theme_color: orgThemeColor,
+          logo_url: orgLogoUrl || null,
+          subscription_tier: orgTier,
+        } as any)
+        .eq('id', clientId);
+
+      if (error) {
+        console.warn('Supabase clients update warning:', error);
+      }
+
+      // Persist client customizable security settings
+      localStorage.setItem(`hsa_email_domain_${clientId}`, emailDomain.trim().toLowerCase());
+      localStorage.setItem(`hsa_restrict_domain_${clientId}`, String(restrictDomain));
+      localStorage.setItem(`hsa_require_2fa_${clientId}`, String(require2FA));
+      localStorage.setItem(`hsa_session_timeout_${clientId}`, String(sessionTimeout));
+      localStorage.setItem(`hsa_session_hours_${clientId}`, sessionHours);
+
+      // Update active client in auth context
+      if (client && setClient) {
+        setClient({
+          ...client,
+          name: orgName.trim(),
+          slug: orgSlug.trim().toLowerCase(),
+          themeColor: orgThemeColor,
+          logoUrl: orgLogoUrl || undefined,
+          subscriptionTier: orgTier,
+        });
+      }
+
+      toast({
+        title: 'Organization Settings Saved',
+        description: `Workspace "${orgName}" details and security policies have been updated.`,
+      });
+    } catch (err: any) {
+      console.error('Error saving organization settings:', err);
+      toast({
+        title: 'Save Failed',
+        description: err.message || 'Could not save organization settings.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingOrg(false);
+    }
+  };
 
   // Profile settings
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -466,7 +586,7 @@ export default function Settings() {
           {isAdmin && (
             <TabsTrigger value="organization" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              Organization
+              Organization ({client?.name || 'Workspace'})
             </TabsTrigger>
           )}
         </TabsList>
@@ -866,73 +986,277 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* Organization Tab (Admin Only) */}
+        {/* Organization / Client Workspace Tab (Admin Only) */}
         {isAdmin && (
           <TabsContent value="organization">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5" />
-                  Organization Settings
-                </CardTitle>
-                <CardDescription>
-                  Manage your organization's global settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="orgName">Organization Name</Label>
-                    <Input
-                      id="orgName"
-                      defaultValue="Hiresort Technologies"
-                      placeholder="Your organization name"
+            <Card className="border-border shadow-sm">
+              <CardHeader className="pb-4 border-b border-border/40">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <TenantBrandLogo 
+                      client={{ name: orgName, slug: orgSlug, logoUrl: orgLogoUrl, themeColor: orgThemeColor }} 
+                      size="md" 
                     />
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <span>{orgName || 'Workspace'} Settings</span>
+                        <Badge variant="outline" className="text-xs uppercase font-mono">
+                          {orgTier} Plan
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>
+                        Customizable organization profile, portal branding, and security access controls for this client workspace.
+                      </CardDescription>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="domain">Email Domain</Label>
-                    <Input
-                      id="domain"
-                      defaultValue="hiresort.io"
-                      placeholder="company.com"
+                  {/* Careers Portal Link Button */}
+                  <a
+                    href={`/careers/${orgSlug || client?.slug || 'zool'}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-mono bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 shrink-0 self-start sm:self-auto"
+                  >
+                    <span>/careers/{orgSlug || client?.slug || 'zool'}</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-6 pt-6">
+                {/* Careers Portal URL Quick Card */}
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 text-xs">
+                    <Globe className="w-4 h-4 text-primary shrink-0" />
+                    <div>
+                      <span className="font-semibold text-foreground">Live Public Careers Portal URL:</span>
+                      <span className="ml-2 font-mono text-muted-foreground break-all">
+                        {`${getAppBaseUrl()}/careers/${orgSlug || client?.slug || 'zool'}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${getAppBaseUrl()}/careers/${orgSlug || client?.slug || 'zool'}`);
+                        setCopiedOrgUrl(true);
+                        setTimeout(() => setCopiedOrgUrl(false), 2000);
+                        toast({ title: 'Careers URL Copied to clipboard!' });
+                      }}
+                      className="h-8 text-xs gap-1.5"
+                    >
+                      {copiedOrgUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedOrgUrl ? 'Copied' : 'Copy Link'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* General Organization Fields */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-primary" />
+                    Workspace Profile & Identity
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="orgName" className="text-xs font-medium">Organization / Company Name</Label>
+                      <Input
+                        id="orgName"
+                        value={orgName}
+                        onChange={(e) => setOrgName(e.target.value)}
+                        placeholder="e.g. Zool Technologies or Commit Inc."
+                        className="h-9"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="orgSlug" className="text-xs font-medium">Careers Portal URL Slug</Label>
+                      <div className="flex items-center">
+                        <span className="bg-muted px-2.5 py-1.5 text-xs text-muted-foreground border border-r-0 border-border rounded-l-md font-mono">
+                          /careers/
+                        </span>
+                        <Input
+                          id="orgSlug"
+                          value={orgSlug}
+                          onChange={(e) => setOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
+                          placeholder="company-slug"
+                          className="rounded-l-none font-mono text-xs h-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="orgTier" className="text-xs font-medium">Subscription Tier</Label>
+                      <Select value={orgTier} onValueChange={(val: any) => setOrgTier(val)}>
+                        <SelectTrigger id="orgTier" className="h-9">
+                          <SelectValue placeholder="Select plan tier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="free">Free Starter Plan</SelectItem>
+                          <SelectItem value="pro">Pro Plan (Standard ATS & GenAI)</SelectItem>
+                          <SelectItem value="enterprise">Enterprise VIP (Dedicated)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="orgThemeColor" className="text-xs font-medium">Brand Theme Accent Color</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          id="orgColorPicker"
+                          value={orgThemeColor}
+                          onChange={(e) => setOrgThemeColor(e.target.value)}
+                          className="w-9 h-9 rounded-lg border border-border cursor-pointer p-0.5 bg-background"
+                        />
+                        <Input
+                          id="orgThemeColor"
+                          value={orgThemeColor}
+                          onChange={(e) => setOrgThemeColor(e.target.value)}
+                          placeholder="#2563eb"
+                          className="font-mono text-xs h-9 flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Logo Customizer & Selector */}
+                  <div className="pt-2">
+                    <TenantLogoUploader
+                      value={orgLogoUrl}
+                      onChange={(newUrl) => setOrgLogoUrl(newUrl)}
+                      companyName={orgName}
+                      themeColor={orgThemeColor}
+                      label="Client Workspace Brand Logo"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Only emails from this domain can sign up.
-                    </p>
                   </div>
                 </div>
 
                 <Separator />
 
+                {/* Corporate Domain & Access Security */}
                 <div className="space-y-4">
-                  <h4 className="font-medium">Security Settings</h4>
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    Corporate Domain & Access Policies
+                  </h4>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Require Two-Factor Auth</p>
-                      <p className="text-sm text-muted-foreground">
-                        All users must enable 2FA
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="domain" className="text-xs font-medium">Allowed Corporate Email Domain</Label>
+                      <Input
+                        id="domain"
+                        value={emailDomain}
+                        onChange={(e) => setEmailDomain(e.target.value.toLowerCase())}
+                        placeholder="e.g. zool.in or comm-it.in"
+                        className="h-9 font-mono text-xs"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Primary domain for authorized company recruiters and team members.
                       </p>
                     </div>
-                    <Switch />
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sessionHours" className="text-xs font-medium">Inactivity Session Timeout</Label>
+                      <Select value={sessionHours} onValueChange={(val) => setSessionHours(val)}>
+                        <SelectTrigger id="sessionHours" className="h-9">
+                          <SelectValue placeholder="Select timeout" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="2">2 Hours of Inactivity</SelectItem>
+                          <SelectItem value="4">4 Hours of Inactivity</SelectItem>
+                          <SelectItem value="8">8 Hours (Standard Work Shift)</SelectItem>
+                          <SelectItem value="12">12 Hours</SelectItem>
+                          <SelectItem value="24">24 Hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-muted-foreground">
+                        Automatically signs out inactive team sessions to prevent unauthorized access.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Session Timeout</p>
-                      <p className="text-sm text-muted-foreground">
-                        Auto logout after 8 hours of inactivity
-                      </p>
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/60">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium text-foreground">Restrict Signups to Corporate Domain</p>
+                        <p className="text-xs text-muted-foreground">
+                          Block public signups from personal domains (e.g. @gmail.com) and enforce @{emailDomain || 'company.com'}.
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={restrictDomain} 
+                        onCheckedChange={setRestrictDomain} 
+                      />
                     </div>
-                    <Switch defaultChecked />
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/60">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium text-foreground">Enforce Two-Factor Authentication (2FA)</p>
+                        <p className="text-xs text-muted-foreground">
+                          Require all client workspace admins and recruiters to use TOTP / authenticator 2FA.
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={require2FA} 
+                        onCheckedChange={setRequire2FA} 
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/60">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium text-foreground">Session Inactivity Lock</p>
+                        <p className="text-xs text-muted-foreground">
+                          Enable automatic session termination after {sessionHours} hours of idle time.
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={sessionTimeout} 
+                        onCheckedChange={setSessionTimeout} 
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <Button onClick={() => toast({ title: 'Organization Settings Saved' })}>
-                    <Check className="w-4 h-4" />
-                    Save Settings
+                {/* Workspace Libraries & Advanced Config Link */}
+                <div className="p-4 rounded-xl border border-primary/25 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Layers className="w-4 h-4 text-primary" />
+                      <span>Workspace Libraries & Enterprise Configuration</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Need custom screening questions, department list, SSO (Okta/Azure AD), or webhook keys for {orgName}?
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={() => window.location.href = '/settings/tenant'}
+                    className="text-xs shrink-0 gap-1.5 cursor-pointer"
+                  >
+                    <span>Manage Workspace Libraries</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+
+                {/* Action Footer */}
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs text-muted-foreground">
+                    Active Client ID: <code className="font-mono text-foreground">{client?.id || DEFAULT_ZOOL_CLIENT.id}</code>
+                  </span>
+                  <Button 
+                    onClick={handleSaveOrganization} 
+                    disabled={savingOrg}
+                    className="gap-2 cursor-pointer"
+                  >
+                    {savingOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    <span>{savingOrg ? 'Saving Changes...' : 'Save Settings'}</span>
                   </Button>
                 </div>
               </CardContent>
