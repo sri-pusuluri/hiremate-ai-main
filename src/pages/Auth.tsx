@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Check, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 import { isMockMode, enableMockMode, disableMockMode } from '@/integrations/supabase/client';
+import { markInvitationAccepted } from '@/lib/invitations';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -91,6 +92,7 @@ export default function Auth() {
         setError(error.message);
       }
     } else {
+      markInvitationAccepted(loginEmail);
       const searchParams = new URLSearchParams(window.location.search);
       const redirect = searchParams.get('redirect') || '/';
       navigate(redirect);
@@ -158,6 +160,7 @@ export default function Auth() {
         setError(error.message);
       }
     } else {
+      markInvitationAccepted(signupEmail);
       const msg = 'Account created successfully! Please check your email for a verification link to log in.';
       setSuccess(msg);
       toast({

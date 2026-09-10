@@ -40,7 +40,10 @@ import {
   Globe,
   Copy,
   Link2,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
+import { isInvitationPending, markInvitationPending } from '@/lib/invitations';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
@@ -312,6 +315,7 @@ export default function UserManagement() {
         throw new Error(errorMessage);
       }
 
+      markInvitationPending(inviteEmail);
       const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(inviteEmail)}&mode=signup`;
       if (navigator.clipboard) {
         try {
@@ -463,6 +467,7 @@ export default function UserManagement() {
 
   const platformUsers = users.filter(u => u.clientId === null || u.email === 'admin@hiremate.ai' || u.role === 'super_admin');
   const clientUsers = users.filter(u => u.clientId !== null && u.email !== 'admin@hiremate.ai' && u.role !== 'super_admin');
+  const pendingUsers = users.filter(u => isInvitationPending(u.email));
 
   const filteredUsers = users.filter((u) => {
     // Top-level division: Platform vs Client
@@ -695,7 +700,10 @@ export default function UserManagement() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className={cn(
+        "grid gap-4 mb-6",
+        pendingUsers.length > 0 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-3"
+      )}>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -741,6 +749,21 @@ export default function UserManagement() {
             </div>
           </CardContent>
         </Card>
+        {pendingUsers.length > 0 && (
+          <Card className="border-amber-500/40 bg-amber-500/5">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{pendingUsers.length}</p>
+                  <p className="text-sm text-muted-foreground">Pending Invitations</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Search & Workspace Filters */}
@@ -924,15 +947,33 @@ export default function UserManagement() {
                       {u.role === 'client_admin' ? 'Client Admin' : u.role}
                     </Badge>
                     
-                    {u.email === 'admin@hiremate.ai' ? (
+                    {/* Status Badge: Invitation Pending vs Active Account */}
+                    {isInvitationPending(u.email) ? (
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 font-medium flex items-center gap-1.5 py-0.5 px-2.5"
+                        title="Invitation sent. Waiting for user to accept and set password."
+                      >
+                        <Clock className="w-3 h-3 text-amber-500 animate-pulse" />
+                        <span>Invitation Pending</span>
+                      </Badge>
+                    ) : (
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 font-medium flex items-center gap-1.5 py-0.5 px-2.5"
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        <span>Active Account</span>
+                      </Badge>
+                    )}
+
+                    {u.email === 'admin@hiremate.ai' && (
                       <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
                         Platform Owner
                       </Badge>
-                    ) : u.id === user?.id ? (
-                      <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
-                        Active Account
-                      </Badge>
-                    ) : (
+                    )}
+
+                    {u.email !== 'admin@hiremate.ai' && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">

@@ -15,11 +15,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Lock } from 'lucide-react';
 import { z } from 'zod';
+import { markInvitationAccepted } from '@/lib/invitations';
 
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
 export function SetPasswordDialog() {
-  const { needsPasswordReset, updatePassword, signOut } = useAuth();
+  const { needsPasswordReset, updatePassword, signOut, user } = useAuth();
   const { toast } = useToast();
   
   const [password, setPassword] = useState('');
@@ -52,6 +53,9 @@ export function SetPasswordDialog() {
     if (updateError) {
       setError(updateError.message);
     } else {
+      if (user?.email) {
+        markInvitationAccepted(user.email);
+      }
       toast({
         title: "Password Set",
         description: "Your password has been successfully set. You can now use it to log in.",
