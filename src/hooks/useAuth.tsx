@@ -136,6 +136,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [client, setClientState] = useState<ClientTenant | null>(() => {
     try {
       const saved = localStorage.getItem('hiresort_active_tenant');
+      const cachedUser = localStorage.getItem('hiresort_cached_user');
+      if (saved && cachedUser) {
+        try {
+          const userObj = JSON.parse(cachedUser);
+          if (userObj?.email === 'srini@zool.in') {
+            const parsed = JSON.parse(saved);
+            if (parsed?.id === DEFAULT_ZOOL_CLIENT.id) {
+              localStorage.removeItem('hiresort_active_tenant');
+              return HIRESORT_PLATFORM_CLIENT;
+            }
+          }
+        } catch (e) {}
+      }
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return HIRESORT_PLATFORM_CLIENT;
@@ -386,7 +399,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const saved = localStorage.getItem('hiresort_active_tenant');
           if (saved) {
             try {
-              setClientState(JSON.parse(saved));
+              const parsed = JSON.parse(saved);
+              if (emailLower === 'srini@zool.in' && parsed?.id === DEFAULT_ZOOL_CLIENT.id) {
+                localStorage.removeItem('hiresort_active_tenant');
+                setClientState(HIRESORT_PLATFORM_CLIENT);
+              } else {
+                setClientState(parsed);
+              }
             } catch (e) {
               setClientState(HIRESORT_PLATFORM_CLIENT);
             }

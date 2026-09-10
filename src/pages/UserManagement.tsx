@@ -111,6 +111,28 @@ export default function UserManagement() {
     }
   }, [activeClient?.id]);
 
+  const handleTabChange = (newTab: 'all' | 'platform' | 'clients') => {
+    setMemberTypeTab(newTab);
+    if (newTab === 'all') {
+      setSelectedTenantFilter('all');
+    } else if (newTab === 'platform') {
+      setSelectedTenantFilter('platform');
+    } else if (newTab === 'clients' && selectedTenantFilter === 'platform') {
+      setSelectedTenantFilter('all');
+    }
+  };
+
+  const handleTenantFilterChange = (val: string) => {
+    setSelectedTenantFilter(val);
+    if (val === 'all') {
+      setMemberTypeTab('all');
+    } else if (val === 'platform') {
+      setMemberTypeTab('platform');
+    } else {
+      setMemberTypeTab('clients');
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       // Fetch clients list
@@ -797,7 +819,7 @@ export default function UserManagement() {
             {/* Tenant Filter for Platform Super Admins */}
             {isSuperAdmin && clients.length > 0 && memberTypeTab !== 'platform' && (
               <div className="w-full sm:w-64 shrink-0">
-                <Select value={selectedTenantFilter} onValueChange={setSelectedTenantFilter}>
+                <Select value={selectedTenantFilter} onValueChange={handleTenantFilterChange}>
                   <SelectTrigger className="h-9 text-xs">
                     <Building2 className="w-3.5 h-3.5 mr-1.5 text-primary" />
                     <SelectValue placeholder="All Workspaces" />
@@ -861,7 +883,7 @@ export default function UserManagement() {
             </CardDescription>
           </div>
           {isSuperAdmin && (
-            <Tabs value={memberTypeTab} onValueChange={(val: any) => setMemberTypeTab(val)} className="w-full sm:w-auto">
+            <Tabs value={memberTypeTab} onValueChange={(val: any) => handleTabChange(val)} className="w-full sm:w-auto">
               <TabsList className="grid grid-cols-3 h-9 p-1 w-full sm:w-80">
                 <TabsTrigger value="all" className="text-xs">
                   All ({users.length})
@@ -1076,8 +1098,47 @@ export default function UserManagement() {
               ))}
 
               {filteredUsers.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  No users found
+                <div className="text-center py-12 px-4">
+                  <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-3 text-muted-foreground">
+                    <Users className="w-6 h-6 opacity-40" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    {selectedTenantFilter !== 'all'
+                      ? `No users assigned to this workspace`
+                      : 'No users found'}
+                  </p>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
+                    {selectedTenantFilter !== 'all'
+                      ? `There are currently no team members assigned to ${
+                          clients.find(c => c.id === selectedTenantFilter)?.name || 'this workspace'
+                        }.`
+                      : searchQuery
+                      ? `No team members match "${searchQuery}". Try adjusting your search query.`
+                      : 'No team members found for this filter.'}
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    {selectedTenantFilter !== 'all' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTenantFilterChange('all')}
+                        className="text-xs"
+                      >
+                        View All Users ({users.length})
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setInviteClientId(selectedTenantFilter !== 'all' && selectedTenantFilter !== 'platform' ? selectedTenantFilter : DEFAULT_ZOOL_CLIENT.id);
+                        setInviteDialogOpen(true);
+                      }}
+                      className="text-xs"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+                      Invite User
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
