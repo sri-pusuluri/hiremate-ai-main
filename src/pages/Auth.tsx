@@ -205,9 +205,9 @@ export default function Auth() {
         )}
 
         <img 
-          src="/images/falcon-hero.jpg" 
+          src="/images/falcon-sky-cinematic.jpg?v=3" 
           alt="HireSort Falcon Soaring" 
-          className={`absolute inset-0 w-full h-full object-cover object-center animate-falcon-glide scale-105 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-95'}`}
+          className={`absolute inset-0 w-full h-full object-cover object-left-top sm:object-center animate-falcon-glide scale-105 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-95'}`}
         />
 
         {/* Ambient atmospheric lighting & wind streaks */}
@@ -217,9 +217,9 @@ export default function Auth() {
           <div className="absolute top-[72%] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-falcon-streak-slow" />
         </div>
 
-        {/* Natural gradient vignette so sky feels deep and texts pop */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/40 to-slate-950/70 lg:to-slate-950/40" />
-        <div className="absolute inset-0 bg-radial-at-t from-transparent via-transparent to-slate-950/40" />
+        {/* Natural gradient vignette so sky feels deep, bright and texts pop */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-slate-950/30" />
+        <div className="absolute inset-0 bg-radial-at-t from-transparent via-transparent to-slate-950/30" />
       </div>
 
       {/* 2. Foreground Grid: Left Branding & Value Prop, Right Floating Frosted Glass Panel */}
