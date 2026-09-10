@@ -339,16 +339,6 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
           </div>
         )}
 
-        {/* HireSort AI Badge */}
-        <div className="mt-4 p-2.5 rounded-lg bg-sidebar-accent/30 border border-sidebar-border">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-sidebar-primary" />
-            <span className="text-xs font-semibold text-sidebar-primary">HireSortAi</span>
-          </div>
-          <p className="text-[11px] text-sidebar-foreground/60 leading-tight">
-            AI-assisted resume ranking active.
-          </p>
-        </div>
       </nav>
 
       {/* Bottom Navigation & User Profile */}
