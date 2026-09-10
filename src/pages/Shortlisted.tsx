@@ -247,50 +247,47 @@ export default function Shortlisted() {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Actions Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-muted-foreground">
-          {filteredCandidates.length} {filteredCandidates.length === 1 ? 'candidate' : 'candidates'} ready for next stage
-        </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
-          <Button size="sm">
-            <Send className="w-4 h-4" />
-            Share with Hiring Manager
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters Bar */}
-      <Card className="p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
+      {/* Unified Toolbar: Search & Job Filter on Left, Count & Actions on Right */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3 flex-1 w-full sm:w-auto max-w-xl">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search shortlisted candidates..."
-              className="pl-10"
+              className="pl-9 h-9 text-xs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
           <Select value={filterJob} onValueChange={setFilterJob}>
-            <SelectTrigger className="w-[200px]">
-              <Filter className="w-4 h-4 mr-2" />
+            <SelectTrigger className="w-[180px] sm:w-[200px] h-9 text-xs">
+              <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
               <SelectValue placeholder="Filter by Job" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Jobs</SelectItem>
+              <SelectItem value="all" className="text-xs">All Jobs</SelectItem>
               {jobs.map(job => (
-                <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
+                <SelectItem key={job.id} value={job.id} className="text-xs">{job.title}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </Card>
+
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+          <p className="text-xs text-muted-foreground hidden md:block mr-1">
+            {filteredCandidates.length} {filteredCandidates.length === 1 ? 'candidate' : 'candidates'} ready
+          </p>
+          <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5">
+            <Download className="w-3.5 h-3.5" />
+            Export
+          </Button>
+          <Button size="sm" className="h-9 text-xs gap-1.5 shadow-sm">
+            <Send className="w-3.5 h-3.5" />
+            Share with Hiring Manager
+          </Button>
+        </div>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">

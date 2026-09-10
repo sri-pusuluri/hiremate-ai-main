@@ -542,9 +542,57 @@ export default function TenantSettings() {
   const webhookUrl = `${getAppBaseUrl()}/api/v1/webhooks/ats/${slug}`;
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl animate-fade-in">
+    <div className="p-6 space-y-5 max-w-6xl animate-fade-in">
+      {/* Public Careers Portal Quick Bar at Top */}
+      <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-card/60 shadow-xs flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Globe className="w-4.5 h-4.5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-foreground">Careers Portal URL:</span>
+              <span className="text-xs font-mono bg-muted/80 text-primary px-2.5 py-0.5 rounded border border-border/80 select-all font-semibold">
+                {careersUrl}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Live candidate career portal for {name}. Share this link with applicants or embed on your website.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(careersUrl);
+              toast({
+                title: 'Portal Link Copied',
+                description: `Copied ${careersUrl} to clipboard.`,
+              });
+            }}
+            className="h-8 text-xs gap-1.5"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            Copy Portal Link
+          </Button>
+
+          <a
+            href={careersUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Open Careers Portal
+          </a>
+        </div>
+      </div>
+
       {/* Workspace Actions Bar */}
-      <div className="flex items-center justify-between pb-3 border-b border-border">
+      <div className="flex items-center justify-between pb-1">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Workspace Settings & Enterprise Config
@@ -553,21 +601,10 @@ export default function TenantSettings() {
             {name}
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportAuditCSV} className="h-8 text-xs gap-1.5">
-            <Download className="w-3.5 h-3.5" />
-            Export Audit Log
-          </Button>
-          <a
-            href={careersUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Live Careers Site
-          </a>
-        </div>
+        <Button variant="outline" size="sm" onClick={handleExportAuditCSV} className="h-8 text-xs gap-1.5">
+          <Download className="w-3.5 h-3.5" />
+          Export Audit Log
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">

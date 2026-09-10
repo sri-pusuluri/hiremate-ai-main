@@ -501,46 +501,11 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Actions Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-muted-foreground">
-          {jobs.length} {jobs.length === 1 ? 'position' : 'positions'} • {jobs.reduce((acc, j) => acc + (j.candidateCount || 0), 0)} candidates in pipeline
-        </p>
-        <div className="flex items-center gap-2.5">
-          <Button 
-            variant="outline" 
-            onClick={handleImportSample} 
-            disabled={importingSample}
-            className="flex items-center gap-2"
-          >
-            {importingSample ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Syncing ATS...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4" />
-                Sync with ATS
-              </>
-            )}
-          </Button>
-
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="gap-2 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Post New Job
-          </Button>
-        </div>
-      </div>
-
-      {/* Public Careers Portal Quick Bar */}
-      <div className="mb-6 p-4 rounded-xl border border-border bg-card shadow-xs flex items-center justify-between flex-wrap gap-3">
+      {/* Public Careers Portal Quick Bar at Top */}
+      <div className="mb-5 p-3.5 sm:p-4 rounded-xl border border-border bg-card/60 shadow-xs flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <Globe className="w-5 h-5" />
+            <Globe className="w-4.5 h-4.5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -584,34 +549,72 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         </div>
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="flex items-center gap-2 mb-4 bg-muted/40 p-1 rounded-lg w-fit border border-border">
-        <Button
-          variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setStatusFilter('all')}
-          className="text-xs h-7 px-3"
-        >
-          All Postings ({jobs.length})
-        </Button>
-        <Button
-          variant={statusFilter === 'active' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setStatusFilter('active')}
-          className="text-xs h-7 px-3 text-emerald-600 dark:text-emerald-400"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
-          Active ({jobs.filter(j => (j.status === 'active' || j.status === 'published' || !j.status) && !(j.expiresAt && new Date(j.expiresAt) < new Date())).length})
-        </Button>
-        <Button
-          variant={statusFilter === 'inactive' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setStatusFilter('inactive')}
-          className="text-xs h-7 px-3 text-rose-600 dark:text-rose-400"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5" />
-          Inactive / Expired ({jobs.filter(j => j.status === 'inactive' || j.status === 'closed' || (j.expiresAt && new Date(j.expiresAt) < new Date())).length})
-        </Button>
+      {/* Toolbar: Filter Tabs on the left, Sync & Post buttons on the right */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/60">
+          <Button
+            variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setStatusFilter('all')}
+            className="text-xs h-7 px-3 font-medium"
+          >
+            All Postings ({jobs.length})
+          </Button>
+          <Button
+            variant={statusFilter === 'active' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setStatusFilter('active')}
+            className="text-xs h-7 px-3 font-medium text-emerald-600 dark:text-emerald-400"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
+            Active ({jobs.filter(j => (j.status === 'active' || j.status === 'published' || !j.status) && !(j.expiresAt && new Date(j.expiresAt) < new Date())).length})
+          </Button>
+          <Button
+            variant={statusFilter === 'inactive' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setStatusFilter('inactive')}
+            className="text-xs h-7 px-3 font-medium text-rose-600 dark:text-rose-400"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5" />
+            Inactive / Expired ({jobs.filter(j => j.status === 'inactive' || j.status === 'closed' || (j.expiresAt && new Date(j.expiresAt) < new Date())).length})
+          </Button>
+        </div>
+
+        {/* Actions & Metrics on the right */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+          <p className="text-xs text-muted-foreground hidden md:block mr-1">
+            {jobs.length} {jobs.length === 1 ? 'position' : 'positions'} • {jobs.reduce((acc, j) => acc + (j.candidateCount || 0), 0)} candidates in pipeline
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleImportSample} 
+            disabled={importingSample}
+            className="h-8 text-xs gap-1.5"
+          >
+            {importingSample ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Syncing ATS...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-3.5 h-3.5" />
+                Sync with ATS
+              </>
+            )}
+          </Button>
+
+          <Button 
+            size="sm"
+            onClick={() => setShowCreateModal(true)}
+            className="h-8 text-xs gap-1.5 shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Post New Job
+          </Button>
+        </div>
       </div>
 
       {/* Jobs Grid / Empty State */}
