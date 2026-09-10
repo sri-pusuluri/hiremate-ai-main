@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Search, Building2, Globe, ShieldCheck, HelpCircle, LifeBuoy } from 'lucide-react';
+import { Bell, Search, Building2, Globe, ShieldCheck, HelpCircle, LifeBuoy, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
@@ -78,6 +78,18 @@ export function TopBar({ title, subtitle }: TopBarProps) {
             className="h-9 w-60 pl-9 pr-4 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+
+        {/* System Workflow & Blueprint */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => navigate('/workflow')}
+          className="h-8 px-2.5 text-xs gap-1.5 border-purple-500/30 bg-purple-500/5 text-purple-700 dark:text-purple-300 hover:bg-purple-500/10 cursor-pointer"
+          title="System Workflow & Blueprint"
+        >
+          <Compass className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+          <span className="hidden sm:inline">Workflow</span>
+        </Button>
 
         {/* Quick Help & Docs Drawer */}
         <Button 

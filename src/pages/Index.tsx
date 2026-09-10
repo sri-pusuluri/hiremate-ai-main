@@ -12,6 +12,7 @@ import TenantSettings from './TenantSettings';
 import Reports from './Reports';
 import Interviews from './Interviews';
 import Support from './Support';
+import Workflow from './Workflow';
 import { HireSortApp } from '@/components/HireSortApp';
 import { Loader2 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ const Index = ({ initialView }: IndexProps) => {
     if (path.includes('/jobs')) return 'jobs';
     if (path.includes('/interviews')) return 'interviews';
     if (path.includes('/support')) return 'support';
+    if (path.includes('/workflow')) return 'workflow';
     if (path.includes('/candidates')) return 'candidates';
     if (path.includes('/shortlisted')) return 'shortlisted';
     if (path.includes('/reports')) return 'reports';
@@ -86,6 +88,9 @@ const Index = ({ initialView }: IndexProps) => {
         break;
       case 'support':
         navigate('/support');
+        break;
+      case 'workflow':
+        navigate('/workflow');
         break;
       case 'users':
         navigate('/users');
@@ -151,6 +156,12 @@ const Index = ({ initialView }: IndexProps) => {
           title: 'Help, Docs & Support Center', 
           subtitle: 'Search knowledge base documentation or open support tickets', 
           component: <Support /> 
+        };
+      case 'workflow':
+        return { 
+          title: 'System Workflow & Operations', 
+          subtitle: 'Comprehensive architectural blueprint, hiring lifecycle, and operations guide', 
+          component: <Workflow onNavigate={handleNavigate} /> 
         };
       case 'users':
         return { 

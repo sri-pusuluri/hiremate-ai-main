@@ -16,7 +16,8 @@ import {
   Plus,
   BarChart3,
   CalendarDays,
-  LifeBuoy
+  LifeBuoy,
+  Compass
 } from 'lucide-react';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT, HIRESORT_PLATFORM_CLIENT } from '@/hooks/useAuth';
 import { ClientTenant } from '@/types/hiresort';
@@ -45,6 +46,7 @@ const navItems = [
   { id: 'interviews', label: 'Interviews & Evaluations', icon: CalendarDays },
   { id: 'shortlisted', label: 'Shortlisted', icon: Star },
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
+  { id: 'workflow', label: 'System Workflow', icon: Compass },
 ];
 
 const bottomItems = [
