@@ -286,11 +286,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let assignedClientId = (roleData as any).client_id;
 
         const emailLower = (profileData?.email || user?.email || '').toLowerCase();
-        const isCommitUser = emailLower.includes('commit') || emailLower.includes('comm-it');
-        const isZoolUser = emailLower.includes('zool');
+        const isPlatformSuperAdmin = emailLower === 'admin@hiremate.ai' || emailLower === 'srini@zool.in';
+        const isCommitUser = !isPlatformSuperAdmin && (emailLower.includes('commit') || emailLower.includes('comm-it'));
+        const isZoolUser = !isPlatformSuperAdmin && emailLower.includes('zool');
 
-        // Self-heal: If user has a comm-it email and was mistakenly assigned to Zool or null, reassign to Commit
-        if (isCommitUser && assignedClientId !== DEFAULT_COMMIT_CLIENT.id) {
+        if (isPlatformSuperAdmin) {
+          assignedClientId = null;
+          // Clean up historical locked client_id in DB if present
+          if ((roleData as any)?.client_id !== null || (roleData as any)?.role !== 'super_admin') {
+            supabase
+              .from('user_roles')
+              .update({ client_id: null, role: 'super_admin' } as any)
+              .eq('user_id', userId)
+              .then(() => {});
+          }
+        } else if (isCommitUser && assignedClientId !== DEFAULT_COMMIT_CLIENT.id) {
           assignedClientId = DEFAULT_COMMIT_CLIENT.id;
           supabase
             .from('user_roles')
@@ -438,7 +448,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const isSuperAdmin = role === 'super_admin' || user?.email === 'admin@hiremate.ai';
+  const isSuperAdmin = role === 'super_admin' || user?.email === 'admin@hiremate.ai' || user?.email === 'srini@zool.in';
   const isClientAdmin = isSuperAdmin || role === 'client_admin' || role === 'admin';
   const isAdmin = isSuperAdmin || isClientAdmin;
 

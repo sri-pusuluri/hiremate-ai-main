@@ -557,8 +557,8 @@ function clearMockSession() {
 }
 
 function createMockUser(email: string, fullName: string, forcedRole?: string, forcedClientId?: string | null) {
-  const isRootAdmin = email === 'admin@hiremate.ai';
-  const id = isRootAdmin ? 'mock-admin-platform-id' : ('mock-user-id-' + Math.random().toString(36).substring(2, 11));
+  const isRootAdmin = email === 'admin@hiremate.ai' || email === 'srini@zool.in';
+  const id = isRootAdmin ? (email === 'srini@zool.in' ? 'mock-srini-superadmin-id' : 'mock-admin-platform-id') : ('mock-user-id-' + Math.random().toString(36).substring(2, 11));
   const user = {
     id,
     aud: 'authenticated',
@@ -643,6 +643,18 @@ if (!existingUsers.some((u: any) => u.email === 'admin@hiremate.ai')) {
   } else if (existingRole.role !== 'super_admin' || existingRole.client_id !== null) {
     existingRole.role = 'super_admin';
     existingRole.client_id = null;
+    saveMockRoles(roles);
+  }
+}
+
+// Ensure srini@zool.in is always super_admin and client_id is null
+const sriniExistingUser = existingUsers.find((u: any) => u.email === 'srini@zool.in');
+if (sriniExistingUser) {
+  const roles = getMockRoles();
+  const sriniRole = roles.find((r: any) => r.user_id === sriniExistingUser.id);
+  if (sriniRole) {
+    sriniRole.role = 'super_admin';
+    sriniRole.client_id = null;
     saveMockRoles(roles);
   }
 }
@@ -838,8 +850,10 @@ class MockQueryBuilder {
         let roles = getMockRoles();
         if (this.filters.length > 0) {
           const adminUser = getMockUsers().find((u: any) => u.email === 'admin@hiremate.ai');
+          const sriniUser = getMockUsers().find((u: any) => u.email === 'srini@zool.in');
           roles = roles.filter(r => {
             if (adminUser && r.user_id === adminUser.id) return true; // Protect root platform admin role
+            if (sriniUser && r.user_id === sriniUser.id) return true; // Protect srini platform super admin role
             let matches = true;
             for (const filter of this.filters) {
               if (!filter(r)) matches = false;
@@ -852,7 +866,7 @@ class MockQueryBuilder {
         let profiles = getMockProfiles();
         if (this.filters.length > 0) {
           profiles = profiles.filter(p => {
-            if (p.email === 'admin@hiremate.ai') return true; // Protect root platform admin profile
+            if (p.email === 'admin@hiremate.ai' || p.email === 'srini@zool.in') return true; // Protect platform super admin profiles
             let matches = true;
             for (const filter of this.filters) {
               if (!filter(p)) matches = false;
@@ -1169,6 +1183,8 @@ const mockSupabase = {
         // If email matches one of the seeded users but isn't registered, create it
         if (email === 'admin@hiremate.ai') {
           user = createMockUser('admin@hiremate.ai', 'HireSort SuperAdmin', 'super_admin', null);
+        } else if (email === 'srini@zool.in') {
+          user = createMockUser('srini@zool.in', 'Srini', 'super_admin', null);
         } else if (email === 'admin@commit.com') {
           user = createMockUser('admin@commit.com', 'Commit Workspace Admin', 'client_admin', DEFAULT_COMMIT_ID);
         } else if (/comm-?it/i.test(email)) {

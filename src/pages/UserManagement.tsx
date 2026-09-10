@@ -148,13 +148,26 @@ export default function UserManagement() {
         const userRole = roles?.find((r) => r.user_id === profile.id);
         let userClientId = (userRole as any)?.client_id;
 
-        const isRootAdmin = profile.email === 'admin@hiremate.ai' || userRole?.role === 'super_admin';
+        const isRootAdmin = profile.email === 'admin@hiremate.ai' || profile.email === 'srini@zool.in' || userRole?.role === 'super_admin';
         const role = ((userRole?.role as any) || (isRootAdmin ? 'super_admin' : 'recruiter'));
+
+        if (isRootAdmin) {
+          userClientId = null;
+          // Heal DB if required
+          if (userRole && (userRole.client_id !== null || userRole.role !== 'super_admin')) {
+            supabase
+              .from('user_roles')
+              .update({ client_id: null, role: 'super_admin' } as any)
+              .eq('user_id', profile.id)
+              .then(() => {});
+          }
+        }
+
         const isPlatformLevel = isRootAdmin || (role === 'admin' && !userClientId);
 
         const emailLower = (profile.email || '').toLowerCase();
-        const isCommitUser = emailLower.includes('commit') || emailLower.includes('comm-it');
-        const isZoolUser = emailLower.includes('zool');
+        const isCommitUser = !isRootAdmin && (emailLower.includes('commit') || emailLower.includes('comm-it'));
+        const isZoolUser = !isRootAdmin && emailLower.includes('zool');
 
         // Self-heal: If comm-it / commit user was erroneously assigned to Zool or null, assign to Commit
         if (!isPlatformLevel) {
@@ -411,10 +424,10 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = async (userId: string, email: string) => {
-    if (email === 'admin@hiremate.ai') {
+    if (email === 'admin@hiremate.ai' || email === 'srini@zool.in') {
       toast({
         title: 'Action Prohibited',
-        description: 'The root HireSort platform administrator account cannot be removed.',
+        description: 'Platform Super Administrator accounts cannot be removed.',
         variant: 'destructive',
       });
       return;
@@ -465,17 +478,17 @@ export default function UserManagement() {
     }
   };
 
-  const platformUsers = users.filter(u => u.clientId === null || u.email === 'admin@hiremate.ai' || u.role === 'super_admin');
-  const clientUsers = users.filter(u => u.clientId !== null && u.email !== 'admin@hiremate.ai' && u.role !== 'super_admin');
+  const platformUsers = users.filter(u => u.clientId === null || u.email === 'admin@hiremate.ai' || u.email === 'srini@zool.in' || u.role === 'super_admin');
+  const clientUsers = users.filter(u => u.clientId !== null && u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in' && u.role !== 'super_admin');
   const pendingUsers = users.filter(u => isInvitationPending(u.email));
 
   const filteredUsers = users.filter((u) => {
     // Top-level division: Platform vs Client
     if (isSuperAdmin) {
       if (memberTypeTab === 'platform') {
-        if (u.clientId !== null && u.email !== 'admin@hiremate.ai' && u.role !== 'super_admin') return false;
+        if (u.clientId !== null && u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in' && u.role !== 'super_admin') return false;
       } else if (memberTypeTab === 'clients') {
-        if (u.clientId === null || u.email === 'admin@hiremate.ai' || u.role === 'super_admin') return false;
+        if (u.clientId === null || u.email === 'admin@hiremate.ai' || u.email === 'srini@zool.in' || u.role === 'super_admin') return false;
       }
 
       if (selectedTenantFilter === 'platform') {
@@ -905,13 +918,13 @@ export default function UserManagement() {
                     <Badge 
                       variant="outline" 
                       onClick={() => {
-                        if (isSuperAdmin && u.email !== 'admin@hiremate.ai') {
+                        if (isSuperAdmin && u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in') {
                           setReassignModalUser(u);
                           setReassignTargetClientId(u.clientId || 'platform');
                         }
                       }}
                       className={`text-xs font-normal border-border flex items-center gap-1 ${
-                        isSuperAdmin && u.email !== 'admin@hiremate.ai' ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''
+                        isSuperAdmin && u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in' ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''
                       } ${
                         u.clientName === 'Commit'
                           ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
@@ -921,7 +934,7 @@ export default function UserManagement() {
                           ? 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400'
                           : ''
                       }`}
-                      title={isSuperAdmin && u.email !== 'admin@hiremate.ai' ? 'Click to assign or change client workspace' : undefined}
+                      title={isSuperAdmin && u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in' ? 'Click to assign or change client workspace' : undefined}
                     >
                       <Building2 className={`w-3 h-3 ${
                         u.clientName === 'Commit' 
@@ -933,7 +946,7 @@ export default function UserManagement() {
                           : 'text-primary'
                       }`} />
                       {u.clientName || 'Unassigned'}
-                      {isSuperAdmin && u.email !== 'admin@hiremate.ai' && (
+                      {isSuperAdmin && u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in' && (
                         <span className="ml-1 text-[10px] text-muted-foreground hover:text-foreground">✎</span>
                       )}
                     </Badge>
@@ -967,13 +980,13 @@ export default function UserManagement() {
                       </Badge>
                     )}
 
-                    {u.email === 'admin@hiremate.ai' && (
-                      <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
-                        Platform Owner
+                    {(u.email === 'admin@hiremate.ai' || u.email === 'srini@zool.in') && (
+                      <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400 font-medium">
+                        Platform Super Admin
                       </Badge>
                     )}
 
-                    {u.email !== 'admin@hiremate.ai' && (
+                    {u.email !== 'admin@hiremate.ai' && u.email !== 'srini@zool.in' && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">

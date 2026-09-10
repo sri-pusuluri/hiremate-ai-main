@@ -21,7 +21,7 @@ describe('Multi-Tenant Persona Architecture', () => {
 
   it('correctly calculates role boundaries', () => {
     const isSuperAdminCheck = (role: string, email: string) => {
-      return role === 'super_admin' || email === 'admin@hiremate.ai';
+      return role === 'super_admin' || email === 'admin@hiremate.ai' || email === 'srini@zool.in';
     };
 
     const isClientAdminCheck = (isSuper: boolean, role: string) => {
@@ -32,6 +32,11 @@ describe('Multi-Tenant Persona Architecture', () => {
     const superAdminRole = isSuperAdminCheck('super_admin', 'admin@hiremate.ai');
     expect(superAdminRole).toBe(true);
     expect(isClientAdminCheck(superAdminRole, 'super_admin')).toBe(true);
+
+    // 1b. Srini Platform Super Admin
+    const sriniSuperRole = isSuperAdminCheck('super_admin', 'srini@zool.in');
+    expect(sriniSuperRole).toBe(true);
+    expect(isClientAdminCheck(sriniSuperRole, 'super_admin')).toBe(true);
 
     // 2. Commit Client Admin (Should NOT be SuperAdmin, but IS ClientAdmin)
     const commitAdminSuper = isSuperAdminCheck('client_admin', 'admin@commit.com');
