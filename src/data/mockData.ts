@@ -10,6 +10,7 @@ export const mockJobs: Job[] = [
     postedDate: '2024-01-08',
     screeningEndDate: '2024-02-15',
     status: 'active',
+    isPublic: true,
     candidateCount: 847,
     hireSortEnabled: false,
     description: `We are looking for a Senior Frontend Engineer to join our core product engineering team at a pivotal stage of growth. In this role, you will own the architecture and delivery of mission-critical, customer-facing web applications used by thousands of recruiters and hiring managers globally.

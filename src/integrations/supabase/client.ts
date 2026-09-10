@@ -55,6 +55,8 @@ const INITIAL_MOCK_JOBS = [
     type: 'full-time',
     postedDate: '2024-01-08',
     status: 'active',
+    is_public: true,
+    isPublic: true,
     candidateCount: 5,
     hireSortEnabled: true,
     hire_sort_enabled: true,

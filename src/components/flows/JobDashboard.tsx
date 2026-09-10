@@ -26,6 +26,7 @@ import {
   Code2,
   Plus,
   Globe,
+  EyeOff,
   Trash2,
   Building2,
   Pencil,
@@ -271,7 +272,9 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 aiProcessingStatus: j.ai_processing_status || j.aiProcessingStatus,
                 lastRankedAt: j.last_ranked_at || j.lastRankedAt,
                 candidateCount: count,
-                isPublic: j.is_public ?? j.isPublic,
+                isPublic: j.is_public !== undefined && j.is_public !== null 
+                  ? Boolean(j.is_public) 
+                  : (j.isPublic !== undefined && j.isPublic !== null ? Boolean(j.isPublic) : true),
                 slug: j.slug,
                 status: resolvedStatus,
                 expiresAt: j.expires_at || undefined,
@@ -343,6 +346,55 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       toast({
         title: 'Status Update Failed',
         description: err.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleTogglePublishStatus = async (job: Job) => {
+    const nextPublish = !job.isPublic;
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({
+          is_public: nextPublish,
+        } as any)
+        .eq('id', job.id);
+
+      if (error) {
+        console.warn('Supabase publish status update error:', error);
+      }
+
+      setJobs(prev => prev.map(j => {
+        if (j.id === job.id) {
+          return {
+            ...j,
+            isPublic: nextPublish,
+          };
+        }
+        return j;
+      }));
+
+      // Also update mock cache if present
+      try {
+        const rawMock = localStorage.getItem('hiremate_mock_jobs');
+        if (rawMock) {
+          const parsed = JSON.parse(rawMock);
+          const updated = parsed.map((m: any) => m.id === job.id ? { ...m, is_public: nextPublish, isPublic: nextPublish } : m);
+          localStorage.setItem('hiremate_mock_jobs', JSON.stringify(updated));
+        }
+      } catch (e) {}
+
+      toast({
+        title: nextPublish ? '🌐 Job Published' : '🔒 Job Unpublished',
+        description: nextPublish
+          ? `"${job.title}" is now published on the public careers portal.`
+          : `"${job.title}" is now unpublished (internal only).`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Publish Status Update Failed',
+        description: err.message || 'Could not update job publish status.',
         variant: 'destructive',
       });
     }
@@ -660,6 +712,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 onEnableHireSort={() => onEnableHireSort(job)}
                 onViewJD={() => handleViewJD(job)}
                 onToggleStatus={() => handleToggleJobStatus(job)}
+                onTogglePublish={() => handleTogglePublishStatus(job)}
                 onEmbed={() => {
                   setSelectedJobForEmbed(job);
                   setShowEmbedModal(true);
@@ -742,10 +795,11 @@ interface JobCardProps {
   onEmbed: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
+  onTogglePublish: () => void;
   onEdit: () => void;
 }
 
-function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete, onToggleStatus, onEdit }: JobCardProps) {
+function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete, onToggleStatus, onTogglePublish, onEdit }: JobCardProps) {
   const isExpired = job.expiresAt ? new Date(job.expiresAt) < new Date() : false;
   const isActive = (job.status === 'active' || job.status === 'published' || !job.status) && !isExpired;
 
@@ -858,11 +912,33 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
 
             {job.hireSortEnabled && <AIBadge size="sm" />}
 
-            {job.isPublic && (
-              <Badge variant="outline" className="text-[11px] text-blue-600 border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/40 flex items-center gap-1 font-medium">
-                <Globe className="w-3 h-3" /> Public Careers
-              </Badge>
-            )}
+            {/* Interactive Publish Status Pill (Published vs Unpublished) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePublish();
+              }}
+              className={cn(
+                "px-2.5 py-0.5 text-xs font-medium rounded-full border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs",
+                job.isPublic
+                  ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 hover:border-blue-400 hover:bg-blue-100/70"
+                  : "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 hover:border-amber-400 hover:bg-amber-100/70"
+              )}
+              title={job.isPublic ? "Job is published on Careers Portal. Click to set Unpublished (Internal Only)." : "Job is Unpublished (Internal Only). Click to publish to Careers Portal."}
+            >
+              {job.isPublic ? (
+                <>
+                  <Globe className="w-3 h-3 text-blue-500 shrink-0" />
+                  <span>Public Careers</span>
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Unpublished</span>
+                </>
+              )}
+            </button>
 
             {job.salary && (
               <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted/60 rounded border border-border/40">
