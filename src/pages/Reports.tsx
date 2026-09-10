@@ -419,18 +419,15 @@ export default function Reports() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in print:p-0">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Reports & Analytics</h1>
-            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
-              Live AI ATS
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Candidate selection, AI match scoring distributions, and pipeline conversion analytics for {client?.name || 'your workspace'}.
-          </p>
+      {/* Top Actions Bar */}
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 font-medium">
+            Live AI Pipeline Analytics
+          </Badge>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            Candidate selection, AI match scoring distributions, and pipeline conversion metrics
+          </span>
         </div>
 
         {/* Action Buttons */}

@@ -97,28 +97,76 @@ const Index = ({ initialView }: IndexProps) => {
   const getPageConfig = () => {
     switch (currentView) {
       case 'dashboard':
-        return { title: 'Dashboard', subtitle: 'Overview of your hiring pipeline', component: <Dashboard onNavigate={handleNavigate} /> };
+        return { 
+          title: isSuperAdmin && (!client || client.id === 'hiresort-platform-hq')
+            ? 'Platform HQ Dashboard'
+            : `${client?.name || 'Workspace'} Dashboard`,
+          subtitle: isSuperAdmin && (!client || client.id === 'hiresort-platform-hq')
+            ? 'Global multi-tenant overview, AI screening engine, and customer accounts'
+            : 'Overview of your hiring pipeline and candidate metrics',
+          component: <Dashboard onNavigate={handleNavigate} /> 
+        };
       case 'jobs':
-        return { title: 'Jobs & ATS', subtitle: 'Manage job postings, publishing, and screening questions', component: <HireSortApp /> };
+        return { 
+          title: 'Jobs & ATS', 
+          subtitle: 'Manage job postings, publishing, and screening questions', 
+          component: <HireSortApp /> 
+        };
       case 'candidates':
-        return { title: undefined, subtitle: undefined, component: <Candidates /> };
+        return { 
+          title: 'Candidates Directory', 
+          subtitle: 'Search, filter, and review candidates across all jobs', 
+          component: <Candidates /> 
+        };
       case 'shortlisted':
-        return { title: undefined, subtitle: undefined, component: <Shortlisted /> };
+        return { 
+          title: 'Shortlisted Candidates', 
+          subtitle: 'Review top candidates and export or share with hiring managers', 
+          component: <Shortlisted /> 
+        };
       case 'reports':
-        return { title: 'Reports & Analytics', subtitle: 'Candidate selection, AI match analysis, and pipeline reports', component: <Reports /> };
+        return { 
+          title: 'Reports & Analytics', 
+          subtitle: 'Candidate selection, AI match analysis, and pipeline reports', 
+          component: <Reports /> 
+        };
       case 'users':
-        return { title: 'User Management', subtitle: 'Manage team members and client roles', component: <UserManagement /> };
+        return { 
+          title: 'User Management', 
+          subtitle: 'Manage team members, roles, and workspace permissions', 
+          component: <UserManagement /> 
+        };
       case 'tenant-settings':
-        return { title: 'Workspace Settings & Libraries', subtitle: 'Branding, Enterprise REST API, AI strategy, SSO, and compliance', component: <TenantSettings /> };
+        return { 
+          title: 'Workspace Settings & Enterprise Config', 
+          subtitle: 'Branding, Enterprise REST API, AI strategy, SSO, and compliance', 
+          component: <TenantSettings /> 
+        };
       case 'clients':
         if (!isSuperAdmin) {
-          return { title: 'Dashboard', subtitle: 'Overview of your hiring pipeline', component: <Dashboard onNavigate={handleNavigate} /> };
+          return { 
+            title: `${client?.name || 'Workspace'} Dashboard`, 
+            subtitle: 'Overview of your hiring pipeline and candidate metrics', 
+            component: <Dashboard onNavigate={handleNavigate} /> 
+          };
         }
-        return { title: 'Client Tenants', subtitle: 'Manage multi-tenant client accounts and subscriptions', component: <ClientManagement /> };
+        return { 
+          title: 'Client Tenants', 
+          subtitle: 'Manage multi-tenant client accounts and subscriptions', 
+          component: <ClientManagement /> 
+        };
       case 'settings':
-        return { title: 'Settings', subtitle: 'Account preferences and AI keys', component: <Settings /> };
+        return { 
+          title: 'Settings', 
+          subtitle: 'Account preferences and AI keys', 
+          component: <Settings /> 
+        };
       default:
-        return { title: 'Dashboard', subtitle: '', component: <Dashboard onNavigate={handleNavigate} /> };
+        return { 
+          title: 'Dashboard', 
+          subtitle: '', 
+          component: <Dashboard onNavigate={handleNavigate} /> 
+        };
     }
   };
 

@@ -140,20 +140,15 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      {/* Client Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {client?.name || 'Client'} Hiring Dashboard
-            </h1>
-            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
-              Workspace Overview
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Real-time candidate pipelines, job openings, and AI screening metrics for your company.
-          </p>
+      {/* Client Actions & Context Bar */}
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 font-medium">
+            Live Workspace Overview
+          </Badge>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            Real-time candidate pipelines, job openings, and AI screening metrics
+          </span>
         </div>
 
         {/* Quick Actions */}

@@ -543,18 +543,15 @@ export default function TenantSettings() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl animate-fade-in">
-      {/* Workspace Header Overview */}
-      <div className="flex items-center justify-between pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Workspace Settings & Enterprise Config</h1>
-            <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/5">
-              {name}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Configure tenant branding, enterprise REST API keys, AI model strategies, login SSO, and compliance audit logs.
-          </p>
+      {/* Workspace Actions Bar */}
+      <div className="flex items-center justify-between pb-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Workspace Settings & Enterprise Config
+          </span>
+          <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/5">
+            {name}
+          </Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExportAuditCSV} className="h-8 text-xs gap-1.5">

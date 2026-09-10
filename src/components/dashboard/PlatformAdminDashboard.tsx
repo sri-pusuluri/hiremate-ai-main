@@ -137,21 +137,16 @@ export function PlatformAdminDashboard({ onNavigate, onSwitchToClientPreview }: 
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
-      {/* Platform Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              HireSortAi Platform HQ
-            </h1>
-            <Badge variant="default" className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium">
-              <ShieldCheck className="w-3 h-3 mr-1" />
-              Platform Super Admin
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Global multi-tenant overview, AI screening engine analytics, and customer client accounts.
-          </p>
+      {/* Platform Quick Actions Bar */}
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="default" className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium">
+            <ShieldCheck className="w-3 h-3 mr-1" />
+            Platform Super Admin
+          </Badge>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            Global multi-tenant overview, AI screening engine analytics, and customer accounts
+          </span>
         </div>
 
         {/* Quick Platform Actions */}

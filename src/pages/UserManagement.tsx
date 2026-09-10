@@ -612,28 +612,11 @@ export default function UserManagement() {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
+      {/* Actions Toolbar */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <h1 className="text-2xl font-semibold text-foreground">User Management</h1>
-            {activeClient && (
-              <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/30 text-primary bg-primary/5 font-medium">
-                <Building2 className="w-3 h-3 mr-1" />
-                {isSuperAdmin && activeClient.id === HIRESORT_PLATFORM_CLIENT.id 
-                  ? 'Platform SuperAdmin (All Tenants)' 
-                  : `${activeClient.name} Workspace`}
-              </Badge>
-            )}
-          </div>
-          <p className="text-muted-foreground">
-            {isSuperAdmin && activeClient && activeClient.id !== HIRESORT_PLATFORM_CLIENT.id
-              ? `Viewing and managing team members assigned to ${activeClient.name}`
-              : isSuperAdmin 
-              ? 'Manage platform-wide team members across all enterprise client tenants'
-              : `Manage team members, roles, and recruiting permissions for ${activeClient?.name || 'this workspace'}`}
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {filteredUsers.length} team {filteredUsers.length === 1 ? 'member' : 'members'} with workspace access
+        </p>
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
           <DialogTrigger asChild>
             <Button>

@@ -286,17 +286,14 @@ export default function Candidates() {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
+      {/* Actions & Filters Toolbar */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">All Candidates</h1>
-          <p className="text-muted-foreground">
-            {selectedJob 
-              ? `${filteredCandidates.length} candidates matching "${selectedJob.title}"`
-              : `${filteredCandidates.length} candidates across all jobs`
-            }
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {selectedJob 
+            ? `${filteredCandidates.length} candidates matching "${selectedJob.title}"`
+            : `${filteredCandidates.length} candidates across all positions`
+          }
+        </p>
         <div className="flex items-center gap-2">
           {selectedJob && (
             <Badge variant="secondary" className="px-3 py-1">

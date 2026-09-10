@@ -247,17 +247,11 @@ export default function Shortlisted() {
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Header */}
+      {/* Actions Toolbar */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Star className="w-6 h-6 text-warning fill-warning" />
-            <h1 className="text-2xl font-semibold text-foreground">Shortlisted Candidates</h1>
-          </div>
-          <p className="text-muted-foreground">
-            {filteredCandidates.length} candidates ready for next stage
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {filteredCandidates.length} {filteredCandidates.length === 1 ? 'candidate' : 'candidates'} ready for next stage
+        </p>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Download className="w-4 h-4" />

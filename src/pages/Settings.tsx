@@ -440,15 +440,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-6 animate-fade-in max-w-4xl">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account and application preferences
-        </p>
-      </div>
-
+    <div className="p-6 animate-fade-in max-w-4xl space-y-6">
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile" className="flex items-center gap-2">

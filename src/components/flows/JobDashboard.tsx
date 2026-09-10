@@ -501,22 +501,11 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
 
   return (
     <div className="p-6 animate-fade-in">
-      {/* Page Header */}
+      {/* Actions Toolbar */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <h2 className="text-2xl font-semibold text-foreground">Active Jobs & ATS</h2>
-            {client && (
-              <Badge variant="outline" className="text-xs px-2.5 py-0.5 border-primary/30 text-primary bg-primary/5 font-medium">
-                <Building2 className="w-3 h-3 mr-1" />
-                {client.name}
-              </Badge>
-            )}
-          </div>
-          <p className="text-muted-foreground">
-            Manage your job postings, candidate pipelines, and public web embed listings for {client?.name || 'this workspace'}
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {jobs.length} {jobs.length === 1 ? 'position' : 'positions'} • {jobs.reduce((acc, j) => acc + (j.candidateCount || 0), 0)} candidates in pipeline
+        </p>
         <div className="flex items-center gap-2.5">
           <Button 
             variant="outline" 
