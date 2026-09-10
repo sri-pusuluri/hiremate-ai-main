@@ -74,7 +74,7 @@ interface UserWithRole {
 }
 
 export default function UserManagement() {
-  const { isAdmin, isSuperAdmin, isClientAdmin, user, client: activeClient } = useAuth();
+  const { isAdmin, isSuperAdmin, isClientAdmin, user, client: activeClient, role } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [clients, setClients] = useState<ClientTenant[]>([]);
