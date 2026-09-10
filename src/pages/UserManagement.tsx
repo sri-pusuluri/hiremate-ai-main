@@ -60,6 +60,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { ClientTenant } from '@/types/hiresort';
+import { logAuditEvent } from '@/lib/audit-logger';
 
 interface UserWithRole {
   id: string;
@@ -281,6 +282,19 @@ export default function UserManagement() {
         } : u
       ));
 
+      // Audit log user tenant assignment
+      logAuditEvent({
+        clientId: finalClientId || 'hiresort-platform-hq',
+        clientName: isPlatform ? 'HireSort Platform' : (targetClient?.name || 'Workspace'),
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: role || 'admin',
+        action: 'REASSIGN_USER_TENANT',
+        resourceType: 'user',
+        resourceId: userId,
+        details: { target_client_id: finalClientId, workspace: isPlatform ? 'HireSort Platform' : targetClient?.name }
+      }).catch(() => {});
+
       toast({
         title: 'Workspace Assigned',
         description: `Assigned user to ${isPlatform ? 'HireSort Platform' : (targetClient?.name || 'client')} workspace`,
@@ -313,9 +327,27 @@ export default function UserManagement() {
 
       if (error) throw error;
 
+      const targetUser = users.find((u) => u.id === userId);
       setUsers(users.map((u) => 
         u.id === userId ? { ...u, role: newRole } : u
       ));
+
+      // Audit log user role change
+      logAuditEvent({
+        clientId: activeClient?.id || 'hiresort-platform-hq',
+        clientName: activeClient?.name || 'Workspace',
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: role || 'admin',
+        action: 'UPDATE_USER_ROLE',
+        resourceType: 'user',
+        resourceId: userId,
+        details: { 
+          target_user_email: targetUser?.email,
+          previous_role: targetUser?.role,
+          new_role: newRole 
+        }
+      }).catch(() => {});
 
       toast({
         title: 'Role Updated',
@@ -369,6 +401,19 @@ export default function UserManagement() {
           await navigator.clipboard.writeText(directLink);
         } catch (e) {}
       }
+
+      // Audit log invitation
+      logAuditEvent({
+        clientId: targetClientId || activeClient?.id || 'hiresort-platform-hq',
+        clientName: activeClient?.name || 'Workspace',
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: role || 'admin',
+        action: 'INVITE_USER',
+        resourceType: 'user',
+        resourceId: inviteEmail,
+        details: { invited_email: inviteEmail, role: dbRole, inviteType }
+      }).catch(() => {});
 
       toast({
         title: 'Invitation Created! 🎉',
@@ -541,6 +586,24 @@ export default function UserManagement() {
       }
 
       const targetUser = reassignToUserId ? users.find(u => u.id === reassignToUserId) : null;
+
+      // Audit log user removal
+      logAuditEvent({
+        clientId: activeClient?.id || 'hiresort-platform-hq',
+        clientName: activeClient?.name || 'Workspace',
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: role || 'admin',
+        action: reassignToUserId ? 'DELETE_USER_AND_REALLOT_JOBS' : 'DELETE_USER',
+        resourceType: 'user',
+        resourceId: userId,
+        details: { 
+          deleted_email: email, 
+          reallotted_to: targetUser?.email || null, 
+          job_count: jobCount 
+        }
+      }).catch(() => {});
+
       toast({
         title: reassignToUserId ? 'User Removed & Jobs Re-allotted' : 'User Removed',
         description: reassignToUserId 

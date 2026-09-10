@@ -31,6 +31,8 @@ import { PredictiveInsightsPanel } from '@/components/predictive/PredictiveInsig
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { logAuditEvent } from '@/lib/audit-logger';
 
 interface CandidateDetailProps {
   candidate: Candidate;
@@ -54,6 +56,7 @@ export function CandidateDetail({
   onDemote,
   onToggleShortlist
 }: CandidateDetailProps) {
+  const { user, client, role } = useAuth();
   const [feedback, setFeedback] = useState<'good' | 'poor' | null>(candidate.recruiterFeedback || null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const { toast } = useToast();
@@ -111,6 +114,25 @@ export function CandidateDetail({
 
       onToggleShortlist?.(candidate.id, nextState);
       onTogglePin?.(candidate.id);
+
+      // Audit log candidate shortlist status
+      logAuditEvent({
+        clientId: (candidate as any).client_id || client?.id || 'hiresort-platform-hq',
+        clientName: client?.name || 'Workspace',
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: role || 'recruiter',
+        action: nextState ? 'SHORTLIST_CANDIDATE' : 'REMOVE_SHORTLIST_CANDIDATE',
+        resourceType: 'candidate',
+        resourceId: candidate.id,
+        details: {
+          candidate_name: candidate.name,
+          job_id: job?.id,
+          job_title: job?.title,
+          stage: nextStatus,
+          ai_score: candidate.aiScore
+        }
+      }).catch(() => {});
 
       toast({
         title: nextState ? "Added to Shortlist ⭐" : "Removed from Shortlist",

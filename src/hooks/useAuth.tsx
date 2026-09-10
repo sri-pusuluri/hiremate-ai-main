@@ -5,6 +5,7 @@ import { getAppBaseUrl } from '@/lib/app-url';
 
 import { ClientTenant } from '@/types/hiresort';
 import { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
+import { logAuditEvent } from '@/lib/audit-logger';
 
 export type AppRole = 'super_admin' | 'admin' | 'client_admin' | 'recruiter';
 
@@ -456,6 +457,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (activeSession.user) {
         await fetchUserData(activeSession.user.id);
       }
+
+      // Track successful user login in audit trail
+      logAuditEvent({
+        clientId: client?.id || 'hiresort-platform-hq',
+        clientName: client?.name || 'HireSort Platform',
+        userId: activeSession.user.id,
+        userEmail: activeSession.user.email || email,
+        userRole: role || 'recruiter',
+        action: 'USER_LOGIN',
+        resourceType: 'auth',
+        resourceId: activeSession.user.id,
+        details: { method: 'password', email: cleanEmail, timestamp: new Date().toISOString() }
+      }).catch(() => {});
+    } else if (authRes.error) {
+      // Track failed login attempt in audit trail
+      logAuditEvent({
+        clientId: 'hiresort-platform-hq',
+        clientName: 'Security Perimeter',
+        userEmail: cleanEmail,
+        userRole: 'unknown',
+        action: 'USER_LOGIN_FAILED',
+        resourceType: 'auth',
+        details: { reason: authRes.error.message, timestamp: new Date().toISOString() }
+      }).catch(() => {});
     }
 
     return { error: authRes.error as Error | null };
@@ -474,15 +499,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
+
+    if (!error) {
+      logAuditEvent({
+        clientId: 'hiresort-platform-hq',
+        clientName: 'HireSort Platform',
+        userEmail: email,
+        userRole: 'recruiter',
+        action: 'USER_SIGNUP',
+        resourceType: 'auth',
+        details: { full_name: fullName, timestamp: new Date().toISOString() }
+      }).catch(() => {});
+    }
+
     return { error: error as Error | null };
   };
 
   const signOut = async () => {
+    const currentUser = user;
+    const currentClient = client;
+    const currentRole = role;
+
     try {
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {
+      if (currentUser) {
+        logAuditEvent({
+          clientId: currentClient?.id || 'hiresort-platform-hq',
+          clientName: currentClient?.name || 'HireSort Platform',
+          userId: currentUser.id,
+          userEmail: currentUser.email || 'user',
+          userRole: currentRole || 'recruiter',
+          action: 'USER_LOGOUT',
+          resourceType: 'auth',
+          resourceId: currentUser.id,
+          details: { timestamp: new Date().toISOString() }
+        }).catch(() => {});
+      }
+
       setUser(null);
       setSession(null);
       setRole(null);
@@ -512,6 +568,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.updateUser({ password });
     if (!error) {
       setNeedsPasswordReset(false);
+      if (user) {
+        logAuditEvent({
+          clientId: client?.id || 'hiresort-platform-hq',
+          clientName: client?.name || 'HireSort Platform',
+          userId: user.id,
+          userEmail: user.email || 'user',
+          userRole: role || 'recruiter',
+          action: 'USER_PASSWORD_UPDATED',
+          resourceType: 'auth',
+          resourceId: user.id,
+          details: { timestamp: new Date().toISOString() }
+        }).catch(() => {});
+      }
     }
     return { error: error as Error | null };
   };

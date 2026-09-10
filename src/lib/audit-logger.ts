@@ -8,7 +8,7 @@ export interface AuditLogEntry {
   userEmail: string;
   userRole: string;
   action: string;
-  resourceType: 'job' | 'candidate' | 'user' | 'settings' | 'security' | 'api';
+  resourceType: 'job' | 'candidate' | 'user' | 'settings' | 'security' | 'api' | 'auth';
   resourceId?: string;
   details: Record<string, any>;
   ipAddress?: string;
@@ -34,7 +34,7 @@ export const logAuditEvent = async ({
   userEmail: string;
   userRole: string;
   action: string;
-  resourceType: 'job' | 'candidate' | 'user' | 'settings' | 'security' | 'api';
+  resourceType: 'job' | 'candidate' | 'user' | 'settings' | 'security' | 'api' | 'auth';
   resourceId?: string;
   details?: Record<string, any>;
 }) => {

@@ -11,6 +11,7 @@ import { JobEmbedModal } from '@/components/ats/JobEmbedModal';
 import { CreateJobModal } from '@/components/ats/CreateJobModal';
 import { useToast } from '@/components/ui/use-toast';
 import samplePayload from '../../../samples/ats_import_payload.json';
+import { logAuditEvent } from '@/lib/audit-logger';
 import { 
   Briefcase, 
   MapPin, 
@@ -53,7 +54,7 @@ interface JobDashboardProps {
 }
 
 export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProps) {
-  const { client, clientId } = useAuth();
+  const { client, clientId, user, role } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJobForJD, setSelectedJobForJD] = useState<Job | null>(null);
@@ -91,6 +92,19 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
 
       // 4. Update state
       setJobs(prev => prev.filter(j => j.id !== jobToDelete.id));
+
+      // Audit log job deletion
+      logAuditEvent({
+        clientId: (jobToDelete as any).client_id || client?.id || 'hiresort-platform-hq',
+        clientName: client?.name || 'Workspace',
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: role || 'admin',
+        action: 'DELETE_JOB',
+        resourceType: 'job',
+        resourceId: jobToDelete.id,
+        details: { title: jobToDelete.title, department: jobToDelete.department }
+      }).catch(() => {});
 
       toast({
         title: 'Job Deleted',
@@ -384,6 +398,19 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
           localStorage.setItem('hiremate_mock_jobs', JSON.stringify(updated));
         }
       } catch (e) {}
+
+      // Audit log publish status change
+      logAuditEvent({
+        clientId: (job as any).client_id || client?.id || 'hiresort-platform-hq',
+        clientName: client?.name || 'Workspace',
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: role || 'admin',
+        action: nextPublish ? 'PUBLISH_JOB' : 'UNPUBLISH_JOB',
+        resourceType: 'job',
+        resourceId: job.id,
+        details: { title: job.title, is_public: nextPublish }
+      }).catch(() => {});
 
       toast({
         title: nextPublish ? '🌐 Job Published' : '🔒 Job Unpublished',

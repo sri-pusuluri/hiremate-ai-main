@@ -43,6 +43,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScreeningQuestion, SYSTEM_QUESTION_LIBRARY } from '@/lib/question-library';
 import { QuestionLibraryModal } from './QuestionLibraryModal';
 import { assembleJobDescription, parseJobMarkdown, normalizeJobType } from '@/lib/job-parser';
+import { logAuditEvent } from '@/lib/audit-logger';
 
 interface CreateJobModalProps {
   open: boolean;
@@ -312,6 +313,24 @@ export function CreateJobModal({
           onJobUpdated(updatedJob);
         }
 
+        // Audit log job update
+        logAuditEvent({
+          clientId: (jobToEdit as any).client_id || client?.id || DEFAULT_ZOOL_CLIENT.id,
+          clientName: client?.name || 'Workspace',
+          userId: user?.id,
+          userEmail: user?.email || 'admin@hiresort.ai',
+          userRole: isSuperAdmin ? 'super_admin' : (isClientAdmin ? 'client_admin' : 'recruiter'),
+          action: 'UPDATE_JOB',
+          resourceType: 'job',
+          resourceId: jobToEdit.id,
+          details: {
+            title: formData.title,
+            department: formData.department,
+            is_public: formData.isPublic,
+            salary: formData.salary
+          }
+        }).catch(() => {});
+
         toast({
           title: 'Job Updated Successfully',
           description: `Changes to "${formData.title}" have been saved.`,
@@ -393,6 +412,24 @@ export function CreateJobModal({
         if (onJobCreated) {
           onJobCreated(createdJob);
         }
+
+        // Audit log new job creation
+        logAuditEvent({
+          clientId: (clientId && clientId !== 'hiresort-platform-hq') ? clientId : DEFAULT_ZOOL_CLIENT.id,
+          clientName: client?.name || 'Workspace',
+          userId: user?.id,
+          userEmail: user?.email || 'admin@hiresort.ai',
+          userRole: isSuperAdmin ? 'super_admin' : (isClientAdmin ? 'client_admin' : 'recruiter'),
+          action: 'CREATE_JOB',
+          resourceType: 'job',
+          resourceId: (data as any).id,
+          details: {
+            title: formData.title,
+            department: formData.department,
+            is_public: formData.isPublic,
+            salary: formData.salary
+          }
+        }).catch(() => {});
 
         toast({
           title: 'Job Created',
