@@ -213,10 +213,7 @@ export default function PublicCareers() {
           <div className="max-w-5xl mx-auto flex items-center justify-between">
             <Link to={`/careers/${slug}`} className="flex items-center gap-3 group">
               <TenantBrandLogo
-                name={client.name}
-                slug={client.slug}
-                logoUrl={client.logoUrl}
-                themeColor={client.themeColor}
+                client={client}
                 size="sm"
                 className="group-hover:scale-105 transition-transform"
               />
@@ -243,10 +240,7 @@ export default function PublicCareers() {
         <header className="pb-4 mb-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <TenantBrandLogo
-              name={client.name}
-              slug={client.slug}
-              logoUrl={client.logoUrl}
-              themeColor={client.themeColor}
+              client={client}
               size="md"
             />
             <div>
@@ -276,14 +270,13 @@ export default function PublicCareers() {
           }}
         >
           <div className="max-w-4xl mx-auto text-center space-y-5 flex flex-col items-center">
-            {/* Prominent Client Brand Logo Emblem */}
-            <div className="p-2 rounded-3xl bg-card/90 border border-border shadow-lg backdrop-blur hover:scale-105 transition-transform duration-200">
+            {/* Prominent Client Brand Logo */}
+            <div className="py-2 flex justify-center hover:scale-105 transition-transform duration-200">
               <TenantBrandLogo
-                name={client.name}
-                slug={client.slug}
-                logoUrl={client.logoUrl}
-                themeColor={client.themeColor}
+                client={client}
+                variant="full"
                 size="hero"
+                showBorder={false}
               />
             </div>
 
