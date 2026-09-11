@@ -48,7 +48,7 @@ const navItems = [
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
 ];
 
-const bottomItems = [
+const systemItems = [
   { id: 'support', label: 'Help & Support', icon: LifeBuoy },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'workflow', label: 'System Workflow', icon: Compass },
@@ -332,68 +332,69 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
           </div>
         )}
 
+        {/* System & Support Navigation (Scrollable, not sticky) */}
+        <div className="mt-4 pt-4 border-t border-sidebar-border">
+          <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase mb-2">System</p>
+          <ul className="space-y-1">
+            {systemItems.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => onNavigate(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
+                    currentView === item.id
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  )}
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
       </nav>
 
-      {/* Bottom Navigation & User Profile */}
+      {/* User Profile & Logout (Bottom Bar) */}
       <div className="p-3 border-t border-sidebar-border shrink-0 bg-sidebar z-10">
-        <ul className="space-y-1">
-          {bottomItems.map((item) => (
-            <li key={item.id}>
-              <button
-                onClick={() => onNavigate(item.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  currentView === item.id
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-        
-        {/* User Info & Logout */}
-        <div className="mt-2 pt-2 border-t border-sidebar-border">
-          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-sidebar-accent/30">
-            <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center shrink-0">
-              <span className="text-xs font-semibold text-sidebar-primary">
-                {profile?.full_name?.split(' ').map(n => n[0]).join('') || (user?.email ? user.email.substring(0, 2).toUpperCase() : 'SR')}
+        <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-sidebar-accent/30">
+          <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center shrink-0">
+            <span className="text-xs font-semibold text-sidebar-primary">
+              {profile?.full_name?.split(' ').map(n => n[0]).join('') || (user?.email ? user.email.substring(0, 2).toUpperCase() : 'SR')}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold truncate text-sidebar-foreground leading-tight">
+              {profile?.full_name || user?.email?.split('@')[0] || 'User'}
+            </p>
+            <p className="text-[11px] text-sidebar-foreground/60 truncate leading-tight">
+              {profile?.email || user?.email}
+            </p>
+            <div className="mt-1">
+              <span className={cn(
+                "inline-block px-1.5 py-0.2 text-[9px] font-semibold rounded uppercase tracking-wider",
+                isSuperAdmin 
+                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" 
+                  : isAdmin 
+                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                    : "bg-slate-500/20 text-slate-300 border border-slate-500/30"
+              )}>
+                {isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin' : 'Recruiter'}
               </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate text-sidebar-foreground leading-tight">
-                {profile?.full_name || user?.email?.split('@')[0] || 'User'}
-              </p>
-              <p className="text-[11px] text-sidebar-foreground/60 truncate leading-tight">
-                {profile?.email || user?.email}
-              </p>
-              <div className="mt-1">
-                <span className={cn(
-                  "inline-block px-1.5 py-0.2 text-[9px] font-semibold rounded uppercase tracking-wider",
-                  isSuperAdmin 
-                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" 
-                    : isAdmin 
-                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                      : "bg-slate-500/20 text-slate-300 border border-slate-500/30"
-                )}>
-                  {isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin' : 'Recruiter'}
-                </span>
-              </div>
-            </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full mt-2 h-8 text-xs text-sidebar-foreground/70 hover:bg-white/10 hover:text-white cursor-pointer"
-            onClick={() => signOut()}
-          >
-            <LogOut className="w-3.5 h-3.5 mr-2" />
-            Sign Out
-          </Button>
         </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="w-full mt-2 h-8 text-xs text-sidebar-foreground/70 hover:bg-white/10 hover:text-white cursor-pointer"
+          onClick={() => signOut()}
+        >
+          <LogOut className="w-3.5 h-3.5 mr-2" />
+          Sign Out
+        </Button>
       </div>
     </aside>
   );
