@@ -46,12 +46,12 @@ const navItems = [
   { id: 'interviews', label: 'Interviews & Evaluations', icon: CalendarDays },
   { id: 'shortlisted', label: 'Shortlisted', icon: Star },
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
-  { id: 'workflow', label: 'System Workflow', icon: Compass },
 ];
 
 const bottomItems = [
   { id: 'support', label: 'Help & Support', icon: LifeBuoy },
   { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'workflow', label: 'System Workflow', icon: Compass },
 ];
 
 export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
