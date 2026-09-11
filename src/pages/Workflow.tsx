@@ -33,7 +33,9 @@ import {
   KeyRound,
   Shield,
   Search,
-  Code
+  Code,
+  Download,
+  ZoomIn
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,8 +46,104 @@ import { useNavigate } from 'react-router-dom';
 
 interface WorkflowProps {
   onNavigate?: (view: string) => void;
-  defaultTab?: 'lifecycle' | 'architecture' | 'roles' | 'simulator' | 'dictionary';
+  defaultTab?: 'diagram' | 'lifecycle' | 'architecture' | 'roles' | 'simulator' | 'dictionary';
 }
+
+// 6 Core Architectural Stages in the Visual Workflow Diagram
+interface DiagramStep {
+  id: number;
+  title: string;
+  category: string;
+  badgeColor: string;
+  icon: any;
+  description: string;
+  databaseTables: string[];
+  dataFlow: string;
+  security: string;
+  route: string;
+  routeLabel: string;
+}
+
+const DIAGRAM_STEPS: DiagramStep[] = [
+  {
+    id: 1,
+    title: 'Job Requisition & Careers Portal',
+    category: 'Requisition & Public ATS',
+    badgeColor: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+    icon: Briefcase,
+    description: 'Client Admins configure role requirements, custom screening questionnaires, and publish live to `/apply/:slug` with Cloudflare Turnstile anti-bot verification and embeddable iframe widgets.',
+    databaseTables: ['public.jobs', 'public.clients', 'public.client_integrations'],
+    dataFlow: 'Admin Form → Slug Generator → Public Careers Portal & Embed Widget',
+    security: 'Postgres RLS tenant isolation + Cloudflare Turnstile anti-bot verification handshake',
+    route: 'jobs',
+    routeLabel: 'Open Job Manager'
+  },
+  {
+    id: 2,
+    title: 'Applicant Ingestion & Storage',
+    category: 'Storage & Intake',
+    badgeColor: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+    icon: Users,
+    description: 'Job seekers submit PDF/DOCX resumes and respond to custom screening questions. Files are validated for MIME type, uploaded to Supabase Storage, and recorded in tenant-isolated database tables.',
+    databaseTables: ['public.candidates', 'public.candidate_answers', 'storage.objects (`resumes/`)'],
+    dataFlow: 'Applicant Submission → MIME Verification → Supabase Storage → Candidate Row Creation',
+    security: 'Strict client_id scoping; anonymous public upload strictly constrained to applicant row',
+    route: 'candidates',
+    routeLabel: 'View Candidates'
+  },
+  {
+    id: 3,
+    title: 'AI Vectorization & Semantic Match',
+    category: 'AI Processing Engine',
+    badgeColor: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
+    icon: Sparkles,
+    description: 'The AI engine parses resume text into high-dimensional TF-IDF vectors, computes cosine similarity (0–100%) against job competencies, highlights matched vs. missing skills, and generates executive summaries via BYOK OpenAI/Anthropic.',
+    databaseTables: ['public.candidates (match_score, skills, missing_skills, ai_summary)'],
+    dataFlow: 'Parsed Text → TF-IDF Vectorizer → Cosine Angle Calculation → LLM Executive Summary',
+    security: 'BYOK (Bring Your Own Key) encrypted storage; zero candidate PII shared with third parties',
+    route: 'candidates',
+    routeLabel: 'Inspect AI Scores'
+  },
+  {
+    id: 4,
+    title: 'Recruiter Triage & Shortlisting',
+    category: 'Talent Management',
+    badgeColor: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
+    icon: Star,
+    description: 'Recruiters filter candidates by AI match percentage, experience tiers, and department. They preview resumes side-by-side, star top talent into the `/shortlisted` board, and advance stages in real time.',
+    databaseTables: ['public.candidates (is_shortlisted, stage, notes)'],
+    dataFlow: 'Recruiter Filter Bar → Real-time State Update → Starred Shortlist Board',
+    security: 'Recruiter role authorization; immutable stage transition audit timestamping',
+    route: 'shortlisted',
+    routeLabel: 'Open Shortlist Board'
+  },
+  {
+    id: 5,
+    title: 'Interview Orchestration & Rubric Scoring',
+    category: 'Evaluations & Sync',
+    badgeColor: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30',
+    icon: CalendarDays,
+    description: 'Schedule multi-round interviews with automated Google Meet or Zoom video links. Interviewers score candidates across 4 standardized pillars (Technical, Problem Solving, Communication, Culture) with 5-star rubric evaluations.',
+    databaseTables: ['public.interviews', 'public.interview_scorecards'],
+    dataFlow: 'Calendar Dispatch → Meeting URL Generation → Multi-pillar Rubric Submission → Aggregated Score',
+    security: 'Interviewer-restricted scorecard visibility; prevents hiring bias and data leakage',
+    route: 'interviews',
+    routeLabel: 'Launch Interview Suite'
+  },
+  {
+    id: 6,
+    title: 'Pipeline Analytics, Reports & Audit Ledger',
+    category: 'Governance & Insights',
+    badgeColor: 'bg-rose-500/10 text-rose-600 border-rose-500/30',
+    icon: BarChart3,
+    description: 'Super Admins and Client Admins review recruitment funnels, AI match distributions, and stage velocity. Export RFC 4180 CSV candidate reports, inspect tamper-proof audit trails, and access the 24/7 SLA help desk.',
+    databaseTables: ['public.audit_logs', 'public.support_tickets', 'public.clients'],
+    dataFlow: 'Pipeline Telemetry → Aggregation Engine → CSV / PDF Export + SOC 2 Audit Ledger',
+    security: 'Immutable append-only audit trail; encrypted support ticketing with SLA tracking',
+    route: 'reports',
+    routeLabel: 'Open Reports & Analytics'
+  }
+];
 
 // 8 Stages of the Complete Hiring Lifecycle
 interface LifecycleStage {
@@ -458,7 +556,9 @@ export default function Workflow({ onNavigate, defaultTab }: WorkflowProps) {
   const { isSuperAdmin, isAdmin, role, client } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'lifecycle' | 'architecture' | 'roles' | 'simulator' | 'dictionary'>(defaultTab || 'lifecycle');
+  const [activeTab, setActiveTab] = useState<'diagram' | 'lifecycle' | 'architecture' | 'roles' | 'simulator' | 'dictionary'>(defaultTab || 'diagram');
+  const [selectedDiagramStepId, setSelectedDiagramStepId] = useState<number>(1);
+  const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
   const [selectedStageId, setSelectedStageId] = useState<number>(1);
   const [selectedRoleView, setSelectedRoleView] = useState<'super_admin' | 'client_admin' | 'recruiter' | 'public'>('client_admin');
 
@@ -582,31 +682,295 @@ export default function Workflow({ onNavigate, defaultTab }: WorkflowProps) {
 
       {/* Navigation Mode Tabs */}
       <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
-        <TabsList className="bg-muted p-1 grid grid-cols-2 sm:grid-cols-5 w-full h-auto">
+        <TabsList className="bg-muted p-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 w-full h-auto">
+          <TabsTrigger value="diagram" className="text-xs font-semibold py-2 gap-1.5">
+            <WorkflowIcon className="w-3.5 h-3.5 text-primary" />
+            <span>1. Diagram</span>
+          </TabsTrigger>
           <TabsTrigger value="lifecycle" className="text-xs font-semibold py-2 gap-1.5">
             <Compass className="w-3.5 h-3.5" />
-            <span>1. Hiring Lifecycle</span>
+            <span>2. Hiring Lifecycle</span>
           </TabsTrigger>
           <TabsTrigger value="architecture" className="text-xs font-semibold py-2 gap-1.5">
             <Layers className="w-3.5 h-3.5" />
-            <span>2. Architecture & Data</span>
+            <span>3. Architecture & Data</span>
           </TabsTrigger>
           <TabsTrigger value="roles" className="text-xs font-semibold py-2 gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>3. Role Matrix</span>
+            <span>4. Role Matrix</span>
           </TabsTrigger>
           <TabsTrigger value="simulator" className="text-xs font-semibold py-2 gap-1.5">
             <Play className="w-3.5 h-3.5 text-purple-500" />
-            <span>4. Live Simulator</span>
+            <span>5. Live Simulator</span>
           </TabsTrigger>
           <TabsTrigger value="dictionary" className="text-xs font-semibold py-2 gap-1.5">
             <Database className="w-3.5 h-3.5 text-blue-500" />
-            <span>5. Data Dictionary</span>
+            <span>6. Data Dictionary</span>
           </TabsTrigger>
         </TabsList>
 
         {/* ------------------------------------------------------------- */}
-        {/* TAB 1: 8-STAGE HIRING LIFECYCLE                                */}
+        {/* TAB 1: VISUAL WORKFLOW & ARCHITECTURE DIAGRAM                   */}
+        {/* ------------------------------------------------------------- */}
+        <TabsContent value="diagram" className="space-y-6">
+          {/* Header Card */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-card border border-border">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono uppercase tracking-wider">
+                  Interactive Architectural Map
+                </Badge>
+                <span className="text-xs text-muted-foreground font-mono">
+                  HireSort AI Core Processing Pipeline
+                </span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
+                <WorkflowIcon className="w-5 h-5 text-primary" />
+                End-to-End Visual Workflow Blueprint
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+                High-resolution enterprise architectural diagram illustrating candidate ingestion, Supabase storage, TF-IDF vectorization, cosine matching, multi-round interview scoring, and SOC 2 audit telemetry.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsImageModalOpen(true)}
+                className="gap-1.5 text-xs border-border bg-card hover:bg-muted"
+              >
+                <ZoomIn className="w-3.5 h-3.5 text-primary" />
+                <span>Fullscreen View</span>
+              </Button>
+              <a
+                href="/images/hiresort_workflow_diagram.jpg"
+                download="HireSort_AI_Workflow_Architecture.jpg"
+                className="inline-flex items-center justify-center gap-1.5 text-xs font-medium h-8 px-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Diagram</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Blueprint Poster Frame */}
+          <div className="relative group rounded-2xl border border-border overflow-hidden bg-slate-950 shadow-xl">
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+              <Badge className="bg-black/70 backdrop-blur-md border border-white/20 text-white text-[11px] font-mono">
+                System Diagram v2.4 • 4K Blueprint
+              </Badge>
+            </div>
+            <div className="absolute top-4 right-4 z-10">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setIsImageModalOpen(true)}
+                className="bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 text-white text-xs gap-1.5 shadow-lg"
+              >
+                <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
+                Expand Diagram
+              </Button>
+            </div>
+            
+            <div 
+              className="cursor-zoom-in overflow-hidden relative flex items-center justify-center"
+              onClick={() => setIsImageModalOpen(true)}
+            >
+              <img
+                src="/images/hiresort_workflow_diagram.jpg"
+                alt="HireSort AI End-to-End Workflow Architecture Diagram"
+                className="w-full h-auto object-contain max-h-[580px] transition-transform duration-300 group-hover:scale-[1.01]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-6">
+                <span className="text-xs text-white/90 font-medium bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                  Click image to expand full-screen high-resolution lightbox
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Step Navigator */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider font-mono">
+                  Interactive Pipeline Stage Inspector
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Select any of the 6 core architectural stages below to inspect its data contract, database tables, and security controls.
+                </p>
+              </div>
+              <Badge variant="outline" className="text-xs font-mono">
+                Step {selectedDiagramStepId} of {DIAGRAM_STEPS.length} Selected
+              </Badge>
+            </div>
+
+            {/* 6 Step Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {DIAGRAM_STEPS.map((step) => {
+                const isSelected = step.id === selectedDiagramStepId;
+                const StepIcon = step.icon;
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => setSelectedDiagramStepId(step.id)}
+                    className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
+                        : 'border-border bg-card hover:bg-muted/60 hover:border-primary/40'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline" className={`text-[10px] font-mono ${step.badgeColor}`}>
+                          Step 0{step.id}
+                        </Badge>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                        }`}>
+                          <StepIcon className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="text-[11px] font-mono text-muted-foreground uppercase">{step.category}</div>
+                      <div className="text-sm font-bold text-foreground mt-0.5">{step.title}</div>
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                        {step.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 mt-3 border-t border-border/50 flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground font-mono">{step.databaseTables[0]}</span>
+                      <span className={`font-semibold flex items-center gap-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {isSelected ? 'Inspecting' : 'Click to inspect'}
+                        <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Stage Detailed Breakdown Inspector */}
+            {(() => {
+              const activeStep = DIAGRAM_STEPS.find(s => s.id === selectedDiagramStepId) || DIAGRAM_STEPS[0];
+              const ActiveIcon = activeStep.icon;
+              return (
+                <Card className="border-border bg-gradient-to-br from-card via-card to-muted/30 shadow-sm mt-4">
+                  <CardHeader className="pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={`text-xs font-mono ${activeStep.badgeColor}`}>
+                            Stage 0{activeStep.id} Technical Specification
+                          </Badge>
+                          <span className="text-xs font-mono text-muted-foreground">{activeStep.category}</span>
+                        </div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <ActiveIcon className="w-5 h-5 text-primary" />
+                          {activeStep.title}
+                        </CardTitle>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        onClick={() => handleNavigateTo(activeStep.route)}
+                        className="gap-1.5 text-xs bg-primary hover:bg-primary/90 shadow-2xs shrink-0"
+                      >
+                        <span>{activeStep.routeLabel}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <CardDescription className="text-xs sm:text-sm mt-1">
+                      {activeStep.description}
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4 pt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-muted/40 border border-border text-xs">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground block font-mono">
+                          Live Data Pipeline Flow
+                        </span>
+                        <p className="font-mono text-foreground mt-1 text-[11px] leading-relaxed">
+                          {activeStep.dataFlow}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground block font-mono">
+                          Database Storage Layer
+                        </span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {activeStep.databaseTables.map((tbl, i) => (
+                            <Badge key={i} variant="secondary" className="font-mono text-[10px]">
+                              {tbl}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground block font-mono">
+                          Security & Multi-Tenant Perimeter
+                        </span>
+                        <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed">
+                          {activeStep.security}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+          </div>
+
+          {/* Fullscreen Lightbox Modal */}
+          {isImageModalOpen && (
+            <div
+              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in"
+              onClick={() => setIsImageModalOpen(false)}
+            >
+              <div className="w-full max-w-7xl flex items-center justify-between text-white mb-3 px-2" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2">
+                  <WorkflowIcon className="w-5 h-5 text-blue-400" />
+                  <span className="text-sm font-bold font-mono">HireSort AI Architecture Blueprint (High-Resolution)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href="/images/hiresort_workflow_diagram.jpg"
+                    download="HireSort_AI_Workflow_Architecture.jpg"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 border border-white/20 rounded-md text-white transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download File
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setIsImageModalOpen(false)}
+                    className="text-white hover:bg-white/20 text-xs px-3"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Close (Esc)
+                  </Button>
+                </div>
+              </div>
+
+              <div
+                className="max-w-7xl max-h-[85vh] overflow-auto rounded-xl border border-white/20 bg-slate-950 p-2 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src="/images/hiresort_workflow_diagram.jpg"
+                  alt="HireSort AI Architecture Fullscreen"
+                  className="w-full h-auto object-contain rounded-lg"
+                />
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ------------------------------------------------------------- */}
+        {/* TAB 2: 8-STAGE HIRING LIFECYCLE                                */}
         {/* ------------------------------------------------------------- */}
         <TabsContent value="lifecycle" className="space-y-6">
           {/* Horizontal Stage Stepper */}
