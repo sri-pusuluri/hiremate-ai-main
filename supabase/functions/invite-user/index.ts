@@ -86,6 +86,37 @@ serve(async (req) => {
     })
     
     if (inviteError) {
+      // If user is already registered in auth.users, send a password setup / recovery email instead of failing!
+      if (inviteError.message && (inviteError.message.includes('already been registered') || inviteError.message.includes('already exists'))) {
+        const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+          redirectTo: `${reqOrigin}/?reset=true`
+        })
+        if (resetError) {
+          throw resetError
+        }
+
+        // Also ensure user_roles and client_id are up-to-date
+        const { data: existingProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle()
+
+        if (existingProfile?.id) {
+          const updatePayload: Record<string, any> = { role: dbRole }
+          if (targetClientId) updatePayload.client_id = targetClientId
+          await supabaseAdmin.from('user_roles').update(updatePayload).eq('user_id', existingProfile.id)
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          alreadyRegistered: true,
+          message: 'User is already registered. A password reset and account setup email was sent.' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        })
+      }
       throw inviteError
     }
 

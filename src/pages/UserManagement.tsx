@@ -46,7 +46,7 @@ import {
   UserCheck,
   Trash2,
 } from 'lucide-react';
-import { isInvitationPending, markInvitationPending } from '@/lib/invitations';
+import { isInvitationPending, markInvitationPending, markInvitationAccepted } from '@/lib/invitations';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
@@ -391,6 +391,28 @@ export default function UserManagement() {
             if (errBody.error) errorMessage = errBody.error;
           }
         } catch (e) {}
+
+        // If user already exists in auth.users, send setup email gracefully
+        if (errorMessage.includes('already been registered') || errorMessage.includes('already exists')) {
+          try {
+            await supabase.auth.resetPasswordForEmail(inviteEmail, {
+              redirectTo: `${getAppBaseUrl()}/?reset=true`,
+            });
+          } catch (e) {}
+          const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(inviteEmail)}&mode=signup`;
+          if (navigator.clipboard) {
+            try { await navigator.clipboard.writeText(directLink); } catch (e) {}
+          }
+          toast({
+            title: 'User Already Registered - Setup Email Sent! ✉️',
+            description: `${inviteEmail} is already registered. A login & password setup email was sent, and direct setup link copied to clipboard.`,
+          });
+          setInviteDialogOpen(false);
+          setInviteEmail('');
+          fetchUsers();
+          return;
+        }
+
         throw new Error(errorMessage);
       }
 
@@ -456,6 +478,8 @@ export default function UserManagement() {
         body: { email, role: dbRole }
       });
       
+      let isAlreadyRegistered = Boolean((data as any)?.alreadyRegistered);
+
       if (error) {
         let errorMessage = error.message;
         try {
@@ -464,20 +488,66 @@ export default function UserManagement() {
             if (errBody.error) errorMessage = errBody.error;
           }
         } catch (e) {}
-        throw new Error(errorMessage);
+        
+        // If already registered in auth.users, trigger password reset/setup link
+        if (errorMessage.includes('already been registered') || errorMessage.includes('already exists')) {
+          isAlreadyRegistered = true;
+          await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${getAppBaseUrl()}/?reset=true`,
+          });
+        } else {
+          throw new Error(errorMessage);
+        }
       }
-      toast({
-        title: 'Invitation Resent',
-        description: `A new invitation email was sent to ${email}`,
-      });
+
+      const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(email)}&mode=signup`;
+      if (navigator.clipboard) {
+        try { await navigator.clipboard.writeText(directLink); } catch (e) {}
+      }
+
+      if (isAlreadyRegistered) {
+        toast({
+          title: 'Account Setup Email Sent! ✉️',
+          description: `${email} is already registered in authentication. A login & password setup email was sent, and direct setup link was copied to clipboard.`,
+        });
+      } else {
+        toast({
+          title: 'Invitation Resent! 🎉',
+          description: `A new invitation email was sent to ${email}. Direct setup link copied to clipboard.`,
+        });
+      }
     } catch (error: any) {
       console.error('Error resending invite:', error);
-      toast({
-        title: 'Resend Failed',
-        description: error.message || 'Could not resend invitation. The user may have already completed signup.',
-        variant: 'destructive',
-      });
+      // Fallback: try direct password reset email
+      try {
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${getAppBaseUrl()}/?reset=true`,
+        });
+        const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(email)}&mode=signup`;
+        if (navigator.clipboard) {
+          try { await navigator.clipboard.writeText(directLink); } catch (e) {}
+        }
+        toast({
+          title: 'Account Setup Email Sent! ✉️',
+          description: `A password setup email has been sent to ${email}, and direct link copied to clipboard.`,
+        });
+      } catch (fallbackError: any) {
+        toast({
+          title: 'Resend Failed',
+          description: error.message || 'Could not resend invitation.',
+          variant: 'destructive',
+        });
+      }
     }
+  };
+
+  const handleMarkActive = (email: string) => {
+    markInvitationAccepted(email);
+    setUsers(prev => [...prev]);
+    toast({
+      title: 'Account Marked Active ✅',
+      description: `${email} is now marked as an active account.`,
+    });
   };
 
   const handleSendPasswordReset = async (email: string) => {
@@ -1192,8 +1262,17 @@ export default function UserManagement() {
                             className="cursor-pointer gap-2"
                           >
                             <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span>Resend Invitation Email</span>
+                            <span>Resend Invitation / Setup Email</span>
                           </DropdownMenuItem>
+                          {isInvitationPending(u.email) && (
+                            <DropdownMenuItem 
+                              onClick={() => handleMarkActive(u.email || '')}
+                              className="cursor-pointer gap-2 text-emerald-600 dark:text-emerald-400 focus:text-emerald-600"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>Mark as Active Account</span>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem 
                             onClick={() => handleSendPasswordReset(u.email || '')}
                             className="cursor-pointer gap-2"
