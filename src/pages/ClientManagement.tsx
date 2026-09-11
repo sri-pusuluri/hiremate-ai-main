@@ -369,8 +369,14 @@ export default function ClientManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold text-foreground flex items-center gap-2">
-              <TenantBrandLogo client={activeClient} size="xs" />
-              {activeClient?.name || 'Zool'}
+              {activeClient?.slug === 'zool' || activeClient?.name?.toLowerCase() === 'zool' ? (
+                <TenantBrandLogo client={activeClient} variant="full" size="sm" showBorder={false} />
+              ) : (
+                <>
+                  <TenantBrandLogo client={activeClient} size="xs" />
+                  {activeClient?.name || 'Zool'}
+                </>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Slug: /{activeClient?.slug || 'zool'}

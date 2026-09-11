@@ -155,10 +155,16 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
                 ) : (
                   <>
                     <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                      <TenantBrandLogo client={client} size="xs" />
-                      <span className="truncate text-xs font-semibold text-sidebar-foreground group-hover:text-primary transition-colors">
-                        {client?.name || 'Zool'}
-                      </span>
+                      {client?.slug === 'zool' || client?.name?.toLowerCase() === 'zool' ? (
+                        <TenantBrandLogo client={client} variant="full" size="xs" showBorder={false} className="h-5 max-w-[120px]" />
+                      ) : (
+                        <>
+                          <TenantBrandLogo client={client} size="xs" />
+                          <span className="truncate text-xs font-semibold text-sidebar-foreground group-hover:text-primary transition-colors">
+                            {client?.name || 'Zool'}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase border-sidebar-border">
@@ -233,10 +239,16 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
         ) : (
           <div className="mt-3 p-2 rounded-lg bg-sidebar-accent/50 border border-sidebar-border flex items-center justify-between">
             <div className="flex items-center gap-2 overflow-hidden">
-              <TenantBrandLogo client={client} size="xs" />
-              <span className="truncate text-xs font-semibold text-sidebar-foreground">
-                {client?.name || 'Zool'}
-              </span>
+              {client?.slug === 'zool' || client?.name?.toLowerCase() === 'zool' ? (
+                <TenantBrandLogo client={client} variant="full" size="xs" showBorder={false} className="h-5 max-w-[120px]" />
+              ) : (
+                <>
+                  <TenantBrandLogo client={client} size="xs" />
+                  <span className="truncate text-xs font-semibold text-sidebar-foreground">
+                    {client?.name || 'Zool'}
+                  </span>
+                </>
+              )}
             </div>
             <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase border-sidebar-border">
               {client?.subscriptionTier || 'Pro'}

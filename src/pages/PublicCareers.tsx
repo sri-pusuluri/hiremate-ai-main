@@ -35,6 +35,7 @@ export default function PublicCareers() {
   const { pathname } = useLocation();
   const slug = clientSlug || 'zool';
   const isEmbedMode = pathname.startsWith('/embed');
+  const isZool = (client?.slug || slug || '').toLowerCase().includes('zool') || client?.name?.toLowerCase().includes('zool');
 
   const [client, setClient] = useState<ClientTenant>(DEFAULT_ZOOL_CLIENT);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -212,18 +213,28 @@ export default function PublicCareers() {
       {!isEmbedMode && (
         <nav className="border-b border-border/70 bg-card/80 backdrop-blur-md sticky top-0 z-30 px-6 py-3 shadow-xs">
           <div className="max-w-5xl mx-auto flex items-center justify-between">
-            <Link to={`/careers/${slug}`} className="flex items-center gap-3 group">
-              <TenantBrandLogo
-                client={client}
-                size="sm"
-                className="group-hover:scale-105 transition-transform"
-              />
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-base tracking-tight text-foreground">{client.name}</span>
-                <Badge variant="outline" className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                  Careers
-                </Badge>
-              </div>
+            <Link to={`/careers/${slug}`} className="flex items-center gap-2.5 group">
+              {isZool ? (
+                <TenantBrandLogo
+                  client={client}
+                  variant="full"
+                  size="md"
+                  showBorder={false}
+                  className="group-hover:scale-105 transition-transform"
+                />
+              ) : (
+                <>
+                  <TenantBrandLogo
+                    client={client}
+                    size="sm"
+                    className="group-hover:scale-105 transition-transform"
+                  />
+                  <span className="font-bold text-base tracking-tight text-foreground">{client.name}</span>
+                </>
+              )}
+              <Badge variant="outline" className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase ml-1">
+                Careers
+              </Badge>
             </Link>
 
             <div className="flex items-center gap-3">
@@ -240,18 +251,37 @@ export default function PublicCareers() {
       {isEmbedMode ? (
         <header className="pb-4 mb-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <TenantBrandLogo
-              client={client}
-              size="md"
-            />
-            <div>
-              <h2 className="text-lg font-bold tracking-tight text-foreground leading-none">
-                Careers at {client.name}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {jobs.length} open position{jobs.length === 1 ? '' : 's'} available
-              </p>
-            </div>
+            {isZool ? (
+              <TenantBrandLogo
+                client={client}
+                variant="full"
+                size="md"
+                showBorder={false}
+              />
+            ) : (
+              <>
+                <TenantBrandLogo
+                  client={client}
+                  size="md"
+                />
+                <div>
+                  <h2 className="text-lg font-bold tracking-tight text-foreground leading-none">
+                    Careers at {client.name}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {jobs.length} open position{jobs.length === 1 ? '' : 's'} available
+                  </p>
+                </div>
+              </>
+            )}
+            {isZool && (
+              <div className="pl-3 border-l border-border/60">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Careers Portal</span>
+                <p className="text-xs text-muted-foreground">
+                  {jobs.length} open position{jobs.length === 1 ? '' : 's'} available
+                </p>
+              </div>
+            )}
           </div>
           <a 
             href={`/careers/${slug}`} 
@@ -500,8 +530,17 @@ export default function PublicCareers() {
         <footer className="border-t border-border py-8 px-6 text-center text-xs text-muted-foreground mt-auto bg-muted/20">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
-              <TenantBrandLogo client={client} size="sm" showBorder={false} />
-              <span className="font-semibold text-foreground text-sm">{client.name}</span>
+              {isZool ? (
+                <div className="flex items-center gap-2">
+                  <TenantBrandLogo client={client} variant="full" size="sm" showBorder={false} />
+                  <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider pl-2 border-l border-border/60">Careers</span>
+                </div>
+              ) : (
+                <>
+                  <TenantBrandLogo client={client} size="sm" showBorder={false} />
+                  <span className="font-semibold text-foreground text-sm">{client.name}</span>
+                </>
+              )}
             </div>
             <p>© {new Date().getFullYear()} {client.name}. Multi-Tenant ATS powered by HireSort AI.</p>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

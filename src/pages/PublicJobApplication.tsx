@@ -213,6 +213,7 @@ export default function PublicJobApplication() {
   const [client, setClient] = useState<ClientTenant>(DEFAULT_ZOOL_CLIENT);
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const isZool = (client?.slug || slug || '').toLowerCase().includes('zool') || client?.name?.toLowerCase().includes('zool');
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -523,7 +524,7 @@ export default function PublicJobApplication() {
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
           
           <div className="flex justify-center mb-1">
-            <TenantBrandLogo client={client} size="xl" />
+            <TenantBrandLogo client={client} variant={isZool ? "full" : "auto"} size="lg" showBorder={false} />
           </div>
 
           <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
@@ -598,8 +599,14 @@ export default function PublicJobApplication() {
             </Button>
 
             <div className="hidden sm:flex items-center gap-2.5 pl-2 border-l border-border/60">
-              <TenantBrandLogo client={client} size="sm" />
-              <span className="font-semibold text-xs text-foreground/90">{client.name}</span>
+              {isZool ? (
+                <TenantBrandLogo client={client} variant="full" size="sm" showBorder={false} />
+              ) : (
+                <>
+                  <TenantBrandLogo client={client} size="sm" />
+                  <span className="font-semibold text-xs text-foreground/90">{client.name}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -804,7 +811,7 @@ export default function PublicJobApplication() {
             {/* 6. Company Culture / Tenant Card */}
             <div className="p-6 rounded-2xl bg-muted/25 border border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
-                <TenantBrandLogo client={client} size="md" />
+                <TenantBrandLogo client={client} variant={isZool ? "full" : "auto"} size="md" showBorder={false} />
                 <div>
                   <h3 className="font-bold text-foreground text-sm">Working at {client.name}</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -1155,8 +1162,17 @@ export default function PublicJobApplication() {
       <footer className="border-t border-border/80 py-8 px-4 sm:px-8 text-xs text-muted-foreground mt-auto bg-muted/20">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <TenantBrandLogo client={client} size="sm" showBorder={false} />
-            <span className="font-semibold text-foreground text-sm">{client.name} Careers</span>
+            {isZool ? (
+              <div className="flex items-center gap-2">
+                <TenantBrandLogo client={client} variant="full" size="sm" showBorder={false} />
+                <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider pl-2 border-l border-border/60">Careers</span>
+              </div>
+            ) : (
+              <>
+                <TenantBrandLogo client={client} size="sm" showBorder={false} />
+                <span className="font-semibold text-foreground text-sm">{client.name} Careers</span>
+              </>
+            )}
           </div>
           <p>© {new Date().getFullYear()} {client.name}. Powered by HireSort AI Enterprise ATS.</p>
           <div className="flex items-center gap-4 text-xs">

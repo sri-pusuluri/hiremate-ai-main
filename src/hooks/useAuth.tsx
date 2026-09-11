@@ -21,7 +21,7 @@ export const DEFAULT_ZOOL_CLIENT: ClientTenant = {
   id: '00000000-0000-0000-0000-000000000001',
   name: 'Zool',
   slug: 'zool',
-  logoUrl: '/logos/zool-icon.png',
+  logoUrl: '/logos/zool-logo-dark.png',
   themeColor: '#2563eb',
   subscriptionTier: 'pro',
 };

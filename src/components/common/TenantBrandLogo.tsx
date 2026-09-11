@@ -31,8 +31,8 @@ export const getResolvedTenantLogo = (
   const isCommit = s.includes('commit') || s.includes('comm-it');
 
   if (isZool) {
-    if (variant === 'full') return '/logos/zool-logo-dark.png';
-    return '/logos/zool-icon.png';
+    if (variant === 'icon') return '/logos/zool-icon.png';
+    return '/logos/zool-logo-dark.png';
   }
 
   if (isCommit) {
@@ -85,8 +85,8 @@ export default function TenantBrandLogo({
   const isZool = s.includes('zool');
   const isCommit = s.includes('commit') || s.includes('comm-it');
 
-  // If full wordmark variant is requested or auto on hero size
-  const useFullVariant = variant === 'full' || (variant === 'auto' && size === 'hero');
+  // If full wordmark variant is requested or auto on larger display sizes
+  const useFullVariant = variant === 'full' || (variant === 'auto' && (size === 'hero' || size === 'xl' || size === 'lg'));
 
   // If there's an explicit custom logo url that isn't one of our internal paths
   const hasCustomLogo = effectiveLogoUrl && 

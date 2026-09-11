@@ -181,7 +181,7 @@ export default function EmbedJobWidget() {
     return (
       <div className="p-8 text-center bg-card rounded-xl border border-border max-w-lg mx-auto shadow-sm my-6 space-y-4">
         <div className="flex justify-center mb-1">
-          <TenantBrandLogo client={client} size="lg" />
+          <TenantBrandLogo client={client} variant={client.slug === 'zool' ? 'full' : 'auto'} size="lg" showBorder={false} />
         </div>
         <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-8 h-8" />

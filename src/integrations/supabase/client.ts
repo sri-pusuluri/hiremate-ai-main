@@ -404,8 +404,8 @@ const SEED_MOCK_CLIENTS = [
     id: '00000000-0000-0000-0000-000000000001',
     name: 'Zool',
     slug: 'zool',
-    logo_url: '/logos/zool-icon.png',
-    logoUrl: '/logos/zool-icon.png',
+    logo_url: '/logos/zool-logo-dark.png',
+    logoUrl: '/logos/zool-logo-dark.png',
     theme_color: '#2563eb',
     themeColor: '#2563eb',
     subscription_tier: 'pro',
@@ -459,7 +459,7 @@ export function getMockClients() {
       parsed = parsed.map((c: any) => {
         if (!c.logo_url || c.logo_url.includes('localhost') || !c.logoUrl) {
           if (c.slug === 'zool') {
-            return { ...c, logo_url: '/logos/zool-icon.png', logoUrl: '/logos/zool-icon.png' };
+            return { ...c, logo_url: '/logos/zool-logo-dark.png', logoUrl: '/logos/zool-logo-dark.png' };
           }
           if (c.slug === 'commit') {
             return { ...c, logo_url: '/logos/commit-logo.png', logoUrl: '/logos/commit-logo.png' };
