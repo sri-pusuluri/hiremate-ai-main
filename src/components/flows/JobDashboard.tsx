@@ -34,7 +34,8 @@ import {
   Copy,
   ExternalLink,
   User,
-  UserCheck
+  UserCheck,
+  GraduationCap
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -277,6 +278,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
                 department: j.department || 'Engineering',
                 location: j.location || 'Remote',
                 type: j.type || 'full-time',
+                experienceLevel: j.experience_level || undefined,
                 salary: j.salary,
                 description: j.description || '',
                 responsibilities: j.responsibilities || [],
@@ -1010,12 +1012,21 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
           {job.location}
         </span>
         <span className="text-border/80">•</span>
-        <span className="flex items-center gap-1.5 capitalize">
+        <span className="flex items-center gap-1.5 capitalize whitespace-nowrap shrink-0">
           <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-          {job.type}
+          {job.type ? job.type.replace('-', ' ') : 'Full-Time'}
         </span>
+        {job.experienceLevel && (
+          <>
+            <span className="text-border/80">•</span>
+            <span className="flex items-center gap-1.5 whitespace-nowrap font-medium text-primary">
+              <GraduationCap className="w-3.5 h-3.5 text-primary" />
+              {job.experienceLevel}
+            </span>
+          </>
+        )}
         <span className="text-border/80">•</span>
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
           <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
           Posted {job.postedDate}
         </span>

@@ -145,6 +145,7 @@ export default function PublicCareers() {
                 candidateCount: jobCands.length,
                 isPublic: true,
                 slug: j.slug || j.id,
+                experienceLevel: j.experience_level || undefined,
               };
             });
           setJobs(mapped);
@@ -372,14 +373,21 @@ export default function PublicCareers() {
             >
               <Card className="border-border hover:border-primary/50 hover:shadow-md transition-all duration-200 bg-card">
                 <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2.5">
-                      <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                  <div className="space-y-2 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary transition-colors">
                         {job.title}
                       </h3>
-                      <Badge variant="secondary" className="text-xs capitalize font-medium">
-                        {job.type}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                        <Badge variant="secondary" className="text-xs font-medium whitespace-nowrap shrink-0 capitalize">
+                          {job.type ? job.type.replace('-', ' ') : 'Full-Time'}
+                        </Badge>
+                        {job.experienceLevel && (
+                          <Badge variant="outline" className="text-xs font-medium whitespace-nowrap shrink-0 text-primary border-primary/30 bg-primary/5">
+                            {job.experienceLevel}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
                     <p className="text-sm text-muted-foreground line-clamp-2">
@@ -387,21 +395,27 @@ export default function PublicCareers() {
                     </p>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-1">
-                      <span className="flex items-center gap-1">
-                        <Briefcase className="w-3.5 h-3.5" />
+                      <span className="flex items-center gap-1 whitespace-nowrap">
+                        <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
                         {job.department}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" />
+                      <span className="flex items-center gap-1 whitespace-nowrap">
+                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                         {job.location}
                       </span>
+                      {job.experienceLevel && (
+                        <span className="flex items-center gap-1 text-primary font-medium whitespace-nowrap">
+                          <Clock className="w-3.5 h-3.5 text-primary" />
+                          {job.experienceLevel}
+                        </span>
+                      )}
                       {job.salary && (
-                        <span className="font-semibold text-foreground">
+                        <span className="font-semibold text-foreground whitespace-nowrap">
                           {job.salary}
                         </span>
                       )}
-                      <span className="flex items-center gap-1 text-muted-foreground/80">
-                        <Calendar className="w-3.5 h-3.5" />
+                      <span className="flex items-center gap-1 text-muted-foreground/80 whitespace-nowrap">
+                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                         Posted {job.postedDate}
                       </span>
 

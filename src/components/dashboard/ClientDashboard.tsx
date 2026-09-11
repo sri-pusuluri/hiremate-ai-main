@@ -373,9 +373,14 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-semibold text-foreground truncate">{job.title}</h4>
                       {job.hire_sort_enabled && <AIBadge />}
-                      <Badge variant="outline" className="text-[10px] uppercase">
-                        {job.type || 'Full-Time'}
+                      <Badge variant="outline" className="text-[10px] uppercase whitespace-nowrap shrink-0">
+                        {job.type ? job.type.replace('-', ' ') : 'Full-Time'}
                       </Badge>
+                      {job.experience_level && (
+                        <Badge variant="secondary" className="text-[10px] whitespace-nowrap shrink-0 font-medium">
+                          {job.experience_level}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {job.department || 'General'} • {job.location || 'Remote'} • Posted {job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Recently'}

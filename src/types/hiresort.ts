@@ -72,6 +72,7 @@ export interface Job {
   requirements?: string[];
   niceToHave?: string[];
   salary?: string;
+  experienceLevel?: string;
 
   // HireSort AI
   hireSortEnabled?: boolean;

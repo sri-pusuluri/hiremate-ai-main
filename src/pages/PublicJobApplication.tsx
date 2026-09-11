@@ -279,6 +279,7 @@ export default function PublicJobApplication() {
             department: (jobData as any).department || 'Engineering',
             location: (jobData as any).location || 'Bangalore (Hybrid)',
             type: (jobData as any).type || 'full-time',
+            experienceLevel: (jobData as any).experience_level || undefined,
             salary: (jobData as any).salary,
             description: (jobData as any).description,
             responsibilities: (jobData as any).responsibilities || [
@@ -612,19 +613,25 @@ export default function PublicJobApplication() {
             <div className="space-y-3.5 max-w-3xl">
               {/* Badges Row */}
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="text-xs font-medium bg-primary/10 text-primary border-primary/20 px-2.5 py-0.5">
+                <Badge variant="secondary" className="text-xs font-medium bg-primary/10 text-primary border-primary/20 px-2.5 py-0.5 whitespace-nowrap shrink-0">
                   {job?.department || 'Engineering'}
                 </Badge>
-                <Badge variant="outline" className="text-xs font-medium capitalize border-border px-2.5 py-0.5 gap-1">
+                <Badge variant="outline" className="text-xs font-medium capitalize border-border px-2.5 py-0.5 gap-1 whitespace-nowrap shrink-0">
                   <Briefcase className="w-3 h-3 text-muted-foreground" />
-                  {job?.type || 'Full-time'}
+                  {job?.type ? job.type.replace('-', ' ') : 'Full-time'}
                 </Badge>
-                <Badge variant="outline" className="text-xs font-medium border-border px-2.5 py-0.5 gap-1">
+                {job?.experienceLevel && (
+                  <Badge variant="outline" className="text-xs font-medium text-primary border-primary/30 bg-primary/5 px-2.5 py-0.5 gap-1 whitespace-nowrap shrink-0">
+                    <Clock className="w-3 h-3 text-primary" />
+                    {job.experienceLevel}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="text-xs font-medium border-border px-2.5 py-0.5 gap-1 whitespace-nowrap shrink-0">
                   <MapPin className="w-3 h-3 text-muted-foreground" />
                   {job?.location || 'Bangalore (Hybrid)'}
                 </Badge>
                 {job?.salary && (
-                  <Badge variant="outline" className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 px-2.5 py-0.5 gap-1">
+                  <Badge variant="outline" className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 px-2.5 py-0.5 gap-1 whitespace-nowrap shrink-0">
                     <Zap className="w-3 h-3 text-emerald-500" />
                     {job.salary}
                   </Badge>

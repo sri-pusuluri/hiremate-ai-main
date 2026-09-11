@@ -71,6 +71,7 @@ export function CreateJobModal({
     department: 'Engineering',
     location: 'Bangalore, India (Hybrid)',
     type: 'full-time' as 'full-time' | 'part-time' | 'contract',
+    experienceLevel: '3-5 Years',
     salary: '₹25-40 LPA',
     description: '',
     isPublic: true,
@@ -165,6 +166,7 @@ export function CreateJobModal({
         department: jobToEdit.department || 'Engineering',
         location: jobToEdit.location || 'Remote',
         type: normalizeJobType(jobToEdit.type),
+        experienceLevel: jobToEdit.experienceLevel || (jobToEdit as any).experience_level || '3-5 Years',
         salary: jobToEdit.salary || '',
         description: fullDescription,
         isPublic: jobToEdit.isPublic ?? true,
@@ -204,6 +206,7 @@ export function CreateJobModal({
         department: 'Engineering',
         location: 'Bangalore, India (Hybrid)',
         type: 'full-time',
+        experienceLevel: '3-5 Years',
         salary: '₹25-40 LPA',
         description: '',
         isPublic: true,
@@ -267,6 +270,7 @@ export function CreateJobModal({
           department: formData.department,
           location: formData.location,
           type: formData.type,
+          experience_level: formData.experienceLevel || '3-5 Years',
           salary: formData.salary,
           description: formData.description,
           responsibilities: resolvedResponsibilities,
@@ -296,6 +300,7 @@ export function CreateJobModal({
           department: (data as any).department,
           location: (data as any).location,
           type: (data as any).type,
+          experienceLevel: (data as any).experience_level || formData.experienceLevel,
           salary: (data as any).salary,
           description: (data as any).description,
           responsibilities: (data as any).responsibilities || resolvedResponsibilities,
@@ -350,6 +355,7 @@ export function CreateJobModal({
           department: formData.department,
           location: formData.location,
           type: formData.type,
+          experience_level: formData.experienceLevel || '3-5 Years',
           salary: formData.salary,
           description: formData.description,
           is_public: formData.isPublic,
@@ -391,6 +397,7 @@ export function CreateJobModal({
           department: (data as any).department,
           location: (data as any).location,
           type: (data as any).type,
+          experienceLevel: (data as any).experience_level || formData.experienceLevel,
           salary: (data as any).salary,
           description: (data as any).description,
           responsibilities: (data as any).responsibilities || [],
@@ -575,7 +582,7 @@ export function CreateJobModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Location */}
               <div className="space-y-1.5">
                 <Label htmlFor="job-location">Location</Label>
@@ -585,6 +592,28 @@ export function CreateJobModal({
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                 />
+              </div>
+
+              {/* Experience Level */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="job-experience">Experience Level *</Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">e.g. 3-5 Years</span>
+                </div>
+                <Input 
+                  id="job-experience"
+                  list="experience-presets"
+                  placeholder="e.g. 3-5 Years"
+                  value={formData.experienceLevel}
+                  onChange={(e) => setFormData(prev => ({ ...prev, experienceLevel: e.target.value }))}
+                />
+                <datalist id="experience-presets">
+                  <option value="Fresher / Entry Level" />
+                  <option value="1-3 Years" />
+                  <option value="3-5 Years" />
+                  <option value="5-8 Years" />
+                  <option value="8+ Years (Lead / Staff)" />
+                </datalist>
               </div>
 
               {/* Salary */}
