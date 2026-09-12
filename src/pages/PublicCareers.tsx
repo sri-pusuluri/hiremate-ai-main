@@ -35,9 +35,8 @@ export default function PublicCareers() {
   const { pathname } = useLocation();
   const slug = clientSlug || 'zool';
   const isEmbedMode = pathname.startsWith('/embed');
-  const isZool = (client?.slug || slug || '').toLowerCase().includes('zool') || client?.name?.toLowerCase().includes('zool');
-
   const [client, setClient] = useState<ClientTenant>(DEFAULT_ZOOL_CLIENT);
+  const isZool = (client?.slug || slug || '').toLowerCase().includes('zool') || client?.name?.toLowerCase().includes('zool');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
