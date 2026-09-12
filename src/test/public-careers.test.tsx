@@ -66,6 +66,7 @@ vi.mock('@/integrations/supabase/client', () => ({
                   is_public: true,
                   slug: 'wordpress-developer-custom-themes-plugins-headless-unlz',
                   status: 'active',
+                  experience_level: '3-5 years',
                 }
               ],
               error: null

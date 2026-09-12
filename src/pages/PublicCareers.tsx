@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Users,
   Eye,
-  ArrowUpRight
+  ArrowUpRight,
+  Clock
 } from 'lucide-react';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 import {
