@@ -62,15 +62,8 @@ export function TopBar({ title, subtitle }: TopBarProps) {
             </>
           ) : (
             <>
-              {client?.slug === 'zool' || client?.name?.toLowerCase() === 'zool' ? (
-                <TenantBrandLogo client={client} variant="full" size="xs" showBorder={false} className="h-5 max-w-[100px]" />
-              ) : (
-                <>
-                  <TenantBrandLogo client={client} size="xs" />
-                  <span className="font-semibold">{client?.name}</span>
-                </>
-              )}
-              <span className="text-muted-foreground text-[11px]">({client?.slug})</span>
+              <span className="font-semibold text-foreground">{client?.name || 'Zool'}</span>
+              <span className="text-muted-foreground text-[11px]">({client?.slug || 'zool'})</span>
             </>
           )}
         </div>

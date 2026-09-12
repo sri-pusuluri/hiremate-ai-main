@@ -155,19 +155,12 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
                 ) : (
                   <>
                     <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                      {client?.slug === 'zool' || client?.name?.toLowerCase() === 'zool' ? (
-                        <TenantBrandLogo client={client} variant="full" size="xs" showBorder={false} className="h-5 max-w-[120px]" />
-                      ) : (
-                        <>
-                          <TenantBrandLogo client={client} size="xs" />
-                          <span className="truncate text-xs font-semibold text-sidebar-foreground group-hover:text-primary transition-colors">
-                            {client?.name || 'Zool'}
-                          </span>
-                        </>
-                      )}
+                      <span className="truncate text-xs font-bold text-sidebar-foreground group-hover:text-primary transition-colors">
+                        {client?.name || 'Zool'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase border-sidebar-border">
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 uppercase border-sidebar-border text-sidebar-foreground/80 bg-sidebar-accent/60">
                         {client?.subscriptionTier || 'Pro'}
                       </Badge>
                       <ChevronsUpDown className="w-3.5 h-3.5 text-sidebar-foreground/50 group-hover:text-sidebar-foreground" />
@@ -239,18 +232,11 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
         ) : (
           <div className="mt-3 p-2 rounded-lg bg-sidebar-accent/50 border border-sidebar-border flex items-center justify-between">
             <div className="flex items-center gap-2 overflow-hidden">
-              {client?.slug === 'zool' || client?.name?.toLowerCase() === 'zool' ? (
-                <TenantBrandLogo client={client} variant="full" size="xs" showBorder={false} className="h-5 max-w-[120px]" />
-              ) : (
-                <>
-                  <TenantBrandLogo client={client} size="xs" />
-                  <span className="truncate text-xs font-semibold text-sidebar-foreground">
-                    {client?.name || 'Zool'}
-                  </span>
-                </>
-              )}
+              <span className="truncate text-xs font-bold text-sidebar-foreground">
+                {client?.name || 'Zool'}
+              </span>
             </div>
-            <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase border-sidebar-border">
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 uppercase border-sidebar-border text-sidebar-foreground/80 bg-sidebar-accent/60">
               {client?.subscriptionTier || 'Pro'}
             </Badge>
           </div>
