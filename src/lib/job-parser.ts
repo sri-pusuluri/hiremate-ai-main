@@ -1,5 +1,18 @@
 import { Job } from '@/types/hiresort';
 
+export interface OrderedJobSection {
+  id: string;
+  title: string;
+  type: 'overview' | 'responsibilities' | 'requirements' | 'benefits' | 'niceToHave' | 'custom';
+  subsections: Array<{
+    title?: string;
+    paragraphs: string[];
+    bullets: string[];
+    numbered: string[];
+    table?: { headers: string[]; rows: string[][] };
+  }>;
+}
+
 export interface ParsedJobSections {
   overview: string[];
   responsibilities: string[];
@@ -7,6 +20,7 @@ export interface ParsedJobSections {
   benefits: string[];
   niceToHave: string[];
   otherSections: Array<{ title: string; items: string[] }>;
+  orderedSections: OrderedJobSection[];
 }
 
 /**
@@ -18,6 +32,19 @@ export function normalizeJobType(type?: string): 'full-time' | 'part-time' | 'co
   if (lower.includes('part')) return 'part-time';
   if (lower.includes('contract')) return 'contract';
   return 'full-time';
+}
+
+/**
+ * Detects section semantic type from header title.
+ */
+export function detectSectionType(title: string): 'overview' | 'responsibilities' | 'requirements' | 'benefits' | 'niceToHave' | 'custom' {
+  const lower = title.toLowerCase().trim();
+  if (/(about|overview|summary|role overview|who we are|company)/i.test(lower)) return 'overview';
+  if (/(responsibilit|what you('ll|\s+will)\s+do|the role|scope|duties)/i.test(lower)) return 'responsibilities';
+  if (/(requirement|qualification|what we('re|\s+are)\s+looking for|must-have|skills)/i.test(lower)) return 'requirements';
+  if (/(what we offer|benefit|perk|compensation|why join|rewards)/i.test(lower)) return 'benefits';
+  if (/(nice to have|bonus|preferred)/i.test(lower)) return 'niceToHave';
+  return 'custom';
 }
 
 /**
@@ -35,7 +62,7 @@ export function assembleJobDescription(job?: Partial<Job> | null): string {
   const niceToHave = job.niceToHave || [];
 
   // Check if description already contains markdown headers
-  const hasHeaders = /^#+\s+(responsibilit|requirement|qualification|what we offer|benefit|nice to have)/im.test(desc);
+  const hasHeaders = /^#+\s+(about|responsibilit|requirement|qualification|what we offer|benefit|nice to have|role overview)/im.test(desc);
 
   if (hasHeaders) {
     return desc;
@@ -48,25 +75,213 @@ export function assembleJobDescription(job?: Partial<Job> | null): string {
   }
 
   if (responsibilities.length > 0) {
-    sections.push(`### Key Responsibilities\n${responsibilities.map(r => `• ${r}`).join('\n')}`);
+    sections.push(`## Key Responsibilities\n${responsibilities.map(r => `• ${r}`).join('\n')}`);
   }
 
   if (requirements.length > 0) {
-    sections.push(`### Requirements & Qualifications\n${requirements.map(r => `• ${r}`).join('\n')}`);
+    sections.push(`## Requirements & Qualifications\n${requirements.map(r => `• ${r}`).join('\n')}`);
   }
 
   if (niceToHave.length > 0) {
-    sections.push(`### Nice to Have\n${niceToHave.map(n => `• ${n}`).join('\n')}`);
+    sections.push(`## Nice to Have\n${niceToHave.map(n => `• ${n}`).join('\n')}`);
   }
 
   return sections.join('\n\n');
 }
 
 /**
- * Parses full Markdown job description into structured sections.
+ * Parses a Markdown job description into an array of sections in the exact sequential order
+ * they appear in the author's document, preserving subsections, tables, and lists.
  */
-export function parseJobMarkdown(rawDescription: string = ''): ParsedJobSections {
+export function parseJobToOrderedSections(
+  rawDescription: string = '',
+  fallbackResponsibilities: string[] = [],
+  fallbackRequirements: string[] = [],
+  fallbackNiceToHave: string[] = []
+): OrderedJobSection[] {
   const lines = rawDescription.split('\n');
+  const sections: OrderedJobSection[] = [];
+  let currentSection: OrderedJobSection | null = null;
+  let currentSubsection: OrderedJobSection['subsections'][0] | null = null;
+  let inTable = false;
+  let currentTable: { headers: string[]; rows: string[][] } = { headers: [], rows: [] };
+
+  function ensureSection(title: string = 'Overview', type: OrderedJobSection['type'] = 'overview') {
+    if (!currentSection) {
+      currentSection = {
+        id: `sec-${sections.length + 1}`,
+        title,
+        type,
+        subsections: []
+      };
+      sections.push(currentSection);
+      currentSubsection = { title: undefined, paragraphs: [], bullets: [], numbered: [], table: undefined };
+      currentSection.subsections.push(currentSubsection);
+    }
+  }
+
+  function flushTable() {
+    if (inTable && currentTable.headers.length > 0) {
+      ensureSection('Details', 'custom');
+      if (currentSubsection) {
+        currentSubsection.table = { ...currentTable };
+      }
+      currentTable = { headers: [], rows: [] };
+      inTable = false;
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw.trim();
+
+    // Ignore horizontal rules and top level # Job Description heading
+    if (/^---+$/.test(line) || /^#\s+Job Description/i.test(line)) {
+      flushTable();
+      continue;
+    }
+
+    // Markdown Table Row: | col1 | col2 |
+    if (/^\|(.+)\|$/.test(line)) {
+      const cells = line.slice(1, -1).split('|').map(c => c.trim());
+      // Separator row: | :--- | :--- |
+      if (cells.every(c => /^:?-+:?$/.test(c))) {
+        inTable = true;
+        continue;
+      }
+      if (!inTable && currentTable.headers.length === 0) {
+        currentTable.headers = cells;
+        inTable = true;
+      } else {
+        currentTable.rows.push(cells);
+      }
+      continue;
+    } else if (inTable) {
+      flushTable();
+    }
+
+    if (!line) continue;
+
+    // Detect Level 2 Header: ## Title
+    const h2Match = line.match(/^##\s+(.+)/);
+    if (h2Match) {
+      flushTable();
+      const title = h2Match[1].trim();
+      const type = detectSectionType(title);
+      currentSection = {
+        id: `sec-${sections.length + 1}`,
+        title,
+        type,
+        subsections: []
+      };
+      sections.push(currentSection);
+      currentSubsection = { title: undefined, paragraphs: [], bullets: [], numbered: [], table: undefined };
+      currentSection.subsections.push(currentSubsection);
+      continue;
+    }
+
+    // Detect Level 3 Header: ### Subheading
+    const h3Match = line.match(/^###\s+(.+)/);
+    if (h3Match) {
+      flushTable();
+      ensureSection('Details', 'custom');
+      const subTitle = h3Match[1].trim();
+      if (currentSubsection && (currentSubsection.paragraphs.length > 0 || currentSubsection.bullets.length > 0 || currentSubsection.numbered.length > 0 || currentSubsection.title || currentSubsection.table)) {
+        currentSubsection = { title: subTitle, paragraphs: [], bullets: [], numbered: [], table: undefined };
+        currentSection?.subsections.push(currentSubsection);
+      } else if (currentSubsection) {
+        currentSubsection.title = subTitle;
+      }
+      continue;
+    }
+
+    // Bullet point: - or * or •
+    const bulletMatch = line.match(/^[-*•]\s+(.+)/);
+    if (bulletMatch) {
+      flushTable();
+      ensureSection('Key Responsibilities', 'responsibilities');
+      currentSubsection?.bullets.push(bulletMatch[1].trim());
+      continue;
+    }
+
+    // Numbered item: 1. or 2)
+    const numMatch = line.match(/^(\d+)[\.\)]\s+(.+)/);
+    if (numMatch) {
+      flushTable();
+      ensureSection('Details', 'custom');
+      currentSubsection?.numbered.push(numMatch[2].trim());
+      continue;
+    }
+
+    // Skip redundant top-level metadata lines before first header (e.g. **Company:** Zool Technologies)
+    if (!currentSection && /^\*\*[^:]+:\*\*/.test(line)) {
+      continue;
+    }
+
+    // Regular paragraph
+    flushTable();
+    ensureSection('Overview', 'overview');
+    currentSubsection?.paragraphs.push(line);
+  }
+
+  flushTable();
+
+  // If no sections were found (e.g. plain text or empty description), build from fallback props
+  if (sections.length === 0) {
+    if (rawDescription && rawDescription.trim().length > 0) {
+      sections.push({
+        id: 'sec-overview',
+        title: 'About the Opportunity',
+        type: 'overview',
+        subsections: [{ title: undefined, paragraphs: [rawDescription.trim()], bullets: [], numbered: [] }]
+      });
+    }
+    if (fallbackResponsibilities.length > 0) {
+      sections.push({
+        id: 'sec-resp',
+        title: 'Key Responsibilities',
+        type: 'responsibilities',
+        subsections: [{ title: undefined, paragraphs: [], bullets: fallbackResponsibilities, numbered: [] }]
+      });
+    }
+    if (fallbackRequirements.length > 0) {
+      sections.push({
+        id: 'sec-req',
+        title: 'Requirements & Qualifications',
+        type: 'requirements',
+        subsections: [{ title: undefined, paragraphs: [], bullets: fallbackRequirements, numbered: [] }]
+      });
+    }
+    if (fallbackNiceToHave.length > 0) {
+      sections.push({
+        id: 'sec-nice',
+        title: 'Nice to Have',
+        type: 'niceToHave',
+        subsections: [{ title: undefined, paragraphs: [], bullets: fallbackNiceToHave, numbered: [] }]
+      });
+    }
+  }
+
+  return sections;
+}
+
+/**
+ * Parses full Markdown job description into structured sections and provides
+ * both flat arrays and ordered sequential sections.
+ */
+export function parseJobMarkdown(
+  rawDescription: string = '',
+  fallbackResponsibilities: string[] = [],
+  fallbackRequirements: string[] = [],
+  fallbackNiceToHave: string[] = []
+): ParsedJobSections {
+  const orderedSections = parseJobToOrderedSections(
+    rawDescription,
+    fallbackResponsibilities,
+    fallbackRequirements,
+    fallbackNiceToHave
+  );
+
   const result: ParsedJobSections = {
     overview: [],
     responsibilities: [],
@@ -74,93 +289,51 @@ export function parseJobMarkdown(rawDescription: string = ''): ParsedJobSections
     benefits: [],
     niceToHave: [],
     otherSections: [],
+    orderedSections
   };
 
-  let currentSection: 'overview' | 'responsibilities' | 'requirements' | 'benefits' | 'niceToHave' | 'other' = 'overview';
-  let currentOtherTitle = '';
-  let currentOtherItems: string[] = [];
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    // Detect section headers
-    if (/^#+\s*(about(\s+the)?\s+(role|position|job)|overview|summary)/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'overview';
-      continue;
+  orderedSections.forEach(s => {
+    if (s.type === 'overview') {
+      s.subsections.forEach(sub => result.overview.push(...sub.paragraphs));
+    } else if (s.type === 'responsibilities') {
+      s.subsections.forEach(sub => {
+        sub.bullets.forEach(b => result.responsibilities.push(b));
+      });
+    } else if (s.type === 'requirements') {
+      s.subsections.forEach(sub => {
+        const isNice = sub.title && /(nice|bonus|preferred)/i.test(sub.title);
+        if (isNice) {
+          result.niceToHave.push(...sub.bullets);
+        } else {
+          result.requirements.push(...sub.bullets);
+        }
+      });
+    } else if (s.type === 'niceToHave') {
+      s.subsections.forEach(sub => result.niceToHave.push(...sub.bullets));
+    } else if (s.type === 'benefits') {
+      s.subsections.forEach(sub => result.benefits.push(...sub.bullets));
+    } else {
+      s.subsections.forEach(sub => {
+        const items = [...sub.bullets, ...sub.paragraphs, ...sub.numbered];
+        if (items.length > 0) {
+          result.otherSections.push({
+            title: sub.title || s.title,
+            items
+          });
+        }
+      });
     }
+  });
 
-    if (/^#+\s*(key\s+)?responsibilit(ies|y)|what\s+you('ll|\s+will)\s+do|the\s+role/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'responsibilities';
-      continue;
-    }
-
-    if (/^#+\s*(requirements(\s*&\s*qualifications)?|qualifications|what\s+we('re|\s+are)\s+looking\s+for|skills(\s*&\s*experience)?)/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'requirements';
-      continue;
-    }
-
-    if (/^#+\s*(what\s+we\s+offer|benefits|perks|compensation\s*&\s*benefits)/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'benefits';
-      continue;
-    }
-
-    if (/^#+\s*(nice\s+to\s+have|preferred|bonus\s+points?)/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'niceToHave';
-      continue;
-    }
-
-    if (/^#+\s+(.+)/.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-      }
-      const match = line.match(/^#+\s+(.+)/);
-      currentOtherTitle = match ? match[1] : 'Additional Details';
-      currentOtherItems = [];
-      currentSection = 'other';
-      continue;
-    }
-
-    // Process bullet point or normal text
-    const cleanContent = line.replace(/^[-*•]\s+/, '').replace(/^\d+\.\s+/, '').trim();
-
-    if (currentSection === 'overview') {
-      result.overview.push(cleanContent);
-    } else if (currentSection === 'responsibilities') {
-      result.responsibilities.push(cleanContent);
-    } else if (currentSection === 'requirements') {
-      result.requirements.push(cleanContent);
-    } else if (currentSection === 'benefits') {
-      result.benefits.push(cleanContent);
-    } else if (currentSection === 'niceToHave') {
-      result.niceToHave.push(cleanContent);
-    } else if (currentSection === 'other') {
-      currentOtherItems.push(cleanContent);
-    }
+  // Fallbacks if arrays are empty
+  if (result.responsibilities.length === 0 && fallbackResponsibilities.length > 0) {
+    result.responsibilities = fallbackResponsibilities;
   }
-
-  if (currentSection === 'other' && currentOtherTitle && currentOtherItems.length > 0) {
-    result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
+  if (result.requirements.length === 0 && fallbackRequirements.length > 0) {
+    result.requirements = fallbackRequirements;
+  }
+  if (result.niceToHave.length === 0 && fallbackNiceToHave.length > 0) {
+    result.niceToHave = fallbackNiceToHave;
   }
 
   return result;

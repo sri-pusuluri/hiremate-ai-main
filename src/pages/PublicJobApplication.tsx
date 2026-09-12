@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Job, ClientTenant } from '@/types/hiresort';
 import { DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
+import { parseJobToOrderedSections, OrderedJobSection } from '@/lib/job-parser';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,135 +54,40 @@ import { cn } from '@/lib/utils';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 import TurnstileWidget from '@/components/common/TurnstileWidget';
 
-interface ParsedJobContent {
-  overview: string[];
-  responsibilities: string[];
-  requirements: string[];
-  benefits: string[];
-  otherSections: Array<{ title: string; items: string[] }>;
-}
+function renderInlineFormatted(text: string): React.ReactNode {
+  if (!text) return text;
+  // Match `code`, **bold**, *italic*, [label](url)
+  const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g;
+  const parts = text.split(regex);
 
-function parseJobDescription(
-  rawDescription: string = '',
-  fallbackResponsibilities: string[] = [],
-  fallbackRequirements: string[] = [],
-  fallbackNiceToHave: string[] = []
-): ParsedJobContent {
-  const lines = rawDescription.split('\n');
-  const result: ParsedJobContent = {
-    overview: [],
-    responsibilities: [],
-    requirements: [],
-    benefits: [],
-    otherSections: [],
-  };
-
-  let currentSection: 'overview' | 'responsibilities' | 'requirements' | 'benefits' | 'other' = 'overview';
-  let currentOtherTitle = '';
-  let currentOtherItems: string[] = [];
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    // Detect section headers (e.g. ## About the Role, ### Key Responsibilities, etc.)
-    if (/^#+\s*(about(\s+the)?\s+(role|position|job)|overview|summary)/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'overview';
-      continue;
-    }
-
-    if (/^#+\s*(key\s+)?responsibilit(ies|y)|what\s+you('ll|\s+will)\s+do|the\s+role/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'responsibilities';
-      continue;
-    }
-
-    if (/^#+\s*(requirements(\s*&\s*qualifications)?|qualifications|what\s+we('re|\s+are)\s+looking\s+for|skills(\s*&\s*experience)?)/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'requirements';
-      continue;
-    }
-
-    if (/^#+\s*(what\s+we\s+offer|benefits|perks|compensation\s*&\s*benefits)/i.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-        currentOtherItems = [];
-      }
-      currentSection = 'benefits';
-      continue;
-    }
-
-    if (/^#+\s+(.+)/.test(line)) {
-      if (currentSection === 'other' && currentOtherTitle) {
-        result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-      }
-      const match = line.match(/^#+\s+(.+)/);
-      currentOtherTitle = match ? match[1] : 'Additional Details';
-      currentOtherItems = [];
-      currentSection = 'other';
-      continue;
-    }
-
-    // Process bullet point or normal text
-    const cleanContent = line.replace(/^[-*•]\s+/, '').replace(/^\d+\.\s+/, '').trim();
-
-    if (currentSection === 'overview') {
-      result.overview.push(cleanContent);
-    } else if (currentSection === 'responsibilities') {
-      result.responsibilities.push(cleanContent);
-    } else if (currentSection === 'requirements') {
-      result.requirements.push(cleanContent);
-    } else if (currentSection === 'benefits') {
-      result.benefits.push(cleanContent);
-    } else if (currentSection === 'other') {
-      currentOtherItems.push(cleanContent);
-    }
-  }
-
-  if (currentSection === 'other' && currentOtherTitle) {
-    result.otherSections.push({ title: currentOtherTitle, items: currentOtherItems });
-  }
-
-  // Gracefully fallback to structured props only if not already supplied inside markdown description
-  if (result.responsibilities.length === 0 && fallbackResponsibilities.length > 0) {
-    result.responsibilities = fallbackResponsibilities;
-  }
-  if (result.requirements.length === 0 && fallbackRequirements.length > 0) {
-    result.requirements = fallbackRequirements;
-  }
-  if (fallbackNiceToHave.length > 0 && !result.otherSections.some(s => s.title.toLowerCase().includes('nice'))) {
-    result.otherSections.push({ title: 'Nice to Have', items: fallbackNiceToHave });
-  }
-
-  return result;
-}
-
-function renderInlineFormatted(text: string) {
-  // Bold **text** or italic *text*
-  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
   return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return (
+        <code key={i} className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs text-primary border border-border/60">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
       return (
         <strong key={i} className="font-semibold text-foreground">
           {part.slice(2, -2)}
         </strong>
       );
     }
-    if (part.startsWith('*') && part.endsWith('*')) {
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
       return (
         <em key={i} className="italic text-foreground/90">
           {part.slice(1, -1)}
         </em>
+      );
+    }
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) {
+      return (
+        <a key={i} href={linkMatch[2]} target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">
+          {linkMatch[1]}
+        </a>
       );
     }
     return part;
@@ -558,13 +464,15 @@ export default function PublicJobApplication() {
     );
   }
 
-  // Parse markdown description into structured, clean sections
-  const parsedContent = parseJobDescription(
-    job?.description || '',
-    job?.responsibilities || [],
-    job?.requirements || [],
-    job?.niceToHave || []
-  );
+  // Parse markdown description into ordered sequential sections
+  const orderedSections = useMemo(() => {
+    return parseJobToOrderedSections(
+      job?.description || '',
+      job?.responsibilities || [],
+      job?.requirements || [],
+      job?.niceToHave || []
+    );
+  }, [job?.description, job?.responsibilities, job?.requirements, job?.niceToHave]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col antialiased selection:bg-primary/20 selection:text-primary">
@@ -690,123 +598,158 @@ export default function PublicJobApplication() {
           {/* Left Column: Job Description & Details (7 cols) */}
           <div className="lg:col-span-7 space-y-8">
 
-            {/* 1. About the Role Card */}
-            {parsedContent.overview.length > 0 && (
-              <section className="space-y-3.5 p-6 rounded-2xl bg-card/60 border border-border/70 shadow-xs">
-                <div className="flex items-center gap-2 text-foreground font-bold text-lg">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Compass className="w-4 h-4" />
-                  </div>
-                  <h2>About the Opportunity</h2>
-                </div>
-                <div className="space-y-3 text-sm text-foreground/90 leading-relaxed pt-1">
-                  {parsedContent.overview.map((paragraph, idx) => (
-                    <p key={idx}>{renderInlineFormatted(paragraph)}</p>
-                  ))}
-                </div>
-              </section>
-            )}
+            {/* Sequential Document Sections */}
+            {orderedSections.map((section, sIdx) => {
+              const iconMap = {
+                overview: { icon: Compass, color: 'text-primary bg-primary/10' },
+                responsibilities: { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' },
+                requirements: { icon: Award, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10' },
+                benefits: { icon: Gift, color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10' },
+                niceToHave: { icon: Sparkles, color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10' },
+                custom: { icon: Sparkles, color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10' },
+              };
+              const { icon: SectionIcon, color: iconColor } = iconMap[section.type] || iconMap.custom;
 
-            {/* 2. Key Responsibilities Card */}
-            {parsedContent.responsibilities.length > 0 && (
-              <section className="space-y-4 p-6 rounded-2xl bg-card/60 border border-border/70 shadow-xs">
-                <div className="flex items-center gap-2 text-foreground font-bold text-lg">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4" />
+              return (
+                <section key={section.id || sIdx} className="space-y-4 p-6 rounded-2xl bg-card/60 border border-border/70 shadow-xs">
+                  <div className="flex items-center gap-2 text-foreground font-bold text-lg">
+                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", iconColor)}>
+                      <SectionIcon className="w-4 h-4" />
+                    </div>
+                    <h2>{section.title}</h2>
                   </div>
-                  <h2>Key Responsibilities</h2>
-                </div>
-                <div className="space-y-2.5 pt-1">
-                  {parsedContent.responsibilities.map((resp, idx) => (
-                    <div 
-                      key={idx} 
-                      className="flex items-start gap-3 p-3 rounded-xl bg-background/60 hover:bg-background border border-border/50 transition-colors"
-                    >
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 stroke-[2.5]" />
+
+                  <div className="space-y-4 pt-1">
+                    {section.subsections.map((sub, subIdx) => (
+                      <div key={subIdx} className="space-y-3">
+                        {sub.title && (
+                          <h3 className="font-bold text-sm text-foreground pt-1 flex items-center gap-2">
+                            <span>{renderInlineFormatted(sub.title)}</span>
+                          </h3>
+                        )}
+
+                        {/* Paragraphs */}
+                        {sub.paragraphs.length > 0 && (
+                          <div className="space-y-2.5 text-sm text-foreground/90 leading-relaxed">
+                            {sub.paragraphs.map((p, pIdx) => (
+                              <p key={pIdx}>{renderInlineFormatted(p)}</p>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Table */}
+                        {sub.table && (
+                          <div className="overflow-x-auto rounded-xl border border-border/70 my-3 shadow-xs">
+                            <table className="w-full text-xs text-left">
+                              {sub.table.headers.length > 0 && (
+                                <thead className="bg-muted/60 text-foreground font-semibold border-b border-border/60">
+                                  <tr>
+                                    {sub.table.headers.map((h, hIdx) => (
+                                      <th key={hIdx} className="px-4 py-2.5">
+                                        {renderInlineFormatted(h)}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                              )}
+                              <tbody className="divide-y divide-border/40 bg-card/40">
+                                {sub.table.rows.map((row, rIdx) => (
+                                  <tr key={rIdx} className="hover:bg-muted/30 transition-colors">
+                                    {row.map((cell, cIdx) => (
+                                      <td key={cIdx} className="px-4 py-2.5 text-foreground/90">
+                                        {renderInlineFormatted(cell)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Bullets */}
+                        {sub.bullets.length > 0 && (
+                          section.type === 'benefits' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                              {sub.bullets.map((benefit, bIdx) => (
+                                <div 
+                                  key={bIdx} 
+                                  className="p-3.5 rounded-xl bg-background/60 hover:bg-background border border-border/60 transition-colors flex items-start gap-3"
+                                >
+                                  <div className="p-2 rounded-lg bg-muted/60 shrink-0 mt-0.5">
+                                    {getBenefitIcon(benefit)}
+                                  </div>
+                                  <span className="text-xs sm:text-sm font-medium text-foreground/90 leading-relaxed">
+                                    {renderInlineFormatted(benefit)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : section.type === 'responsibilities' ? (
+                            <div className="space-y-2.5 pt-1">
+                              {sub.bullets.map((resp, bIdx) => (
+                                <div 
+                                  key={bIdx} 
+                                  className="flex items-start gap-3 p-3 rounded-xl bg-background/60 hover:bg-background border border-border/50 transition-colors"
+                                >
+                                  <div className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                                    <Check className="w-3 h-3 stroke-[2.5]" />
+                                  </div>
+                                  <span className="text-sm text-foreground/90 leading-relaxed">
+                                    {renderInlineFormatted(resp)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : section.type === 'requirements' ? (
+                            <div className="space-y-2.5 pt-1">
+                              {sub.bullets.map((req, bIdx) => (
+                                <div 
+                                  key={bIdx} 
+                                  className="flex items-start gap-3 p-3 rounded-xl bg-background/60 hover:bg-background border border-border/50 transition-colors"
+                                >
+                                  <div className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                                    <Check className="w-3 h-3 stroke-[2.5]" />
+                                  </div>
+                                  <span className="text-sm text-foreground/90 leading-relaxed">
+                                    {renderInlineFormatted(req)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="space-y-2 pt-1">
+                              {sub.bullets.map((item, bIdx) => (
+                                <div key={bIdx} className="flex items-start gap-2.5 text-sm text-foreground/90 leading-relaxed">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
+                                  <span>{renderInlineFormatted(item)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {/* Numbered Items */}
+                        {sub.numbered.length > 0 && (
+                          <div className="space-y-2.5 pt-1">
+                            {sub.numbered.map((item, nIdx) => (
+                              <div key={nIdx} className="flex items-start gap-3 p-3 rounded-xl bg-background/60 hover:bg-background border border-border/50 transition-colors">
+                                <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                  {nIdx + 1}
+                                </span>
+                                <span className="text-sm text-foreground/90 leading-relaxed">
+                                  {renderInlineFormatted(item)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <span className="text-sm text-foreground/90 leading-relaxed">
-                        {renderInlineFormatted(resp)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 3. Requirements & Qualifications Card */}
-            {parsedContent.requirements.length > 0 && (
-              <section className="space-y-4 p-6 rounded-2xl bg-card/60 border border-border/70 shadow-xs">
-                <div className="flex items-center gap-2 text-foreground font-bold text-lg">
-                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <Award className="w-4 h-4" />
+                    ))}
                   </div>
-                  <h2>Requirements & Qualifications</h2>
-                </div>
-                <div className="space-y-2.5 pt-1">
-                  {parsedContent.requirements.map((req, idx) => (
-                    <div 
-                      key={idx} 
-                      className="flex items-start gap-3 p-3 rounded-xl bg-background/60 hover:bg-background border border-border/50 transition-colors"
-                    >
-                      <div className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 stroke-[2.5]" />
-                      </div>
-                      <span className="text-sm text-foreground/90 leading-relaxed">
-                        {renderInlineFormatted(req)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 4. What We Offer (Benefits Grid) */}
-            {parsedContent.benefits.length > 0 && (
-              <section className="space-y-4 p-6 rounded-2xl bg-card/60 border border-border/70 shadow-xs">
-                <div className="flex items-center gap-2 text-foreground font-bold text-lg">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                    <Gift className="w-4 h-4" />
-                  </div>
-                  <h2>What We Offer</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {parsedContent.benefits.map((benefit, idx) => (
-                    <div 
-                      key={idx} 
-                      className="p-3.5 rounded-xl bg-background/60 hover:bg-background border border-border/60 transition-colors flex items-start gap-3"
-                    >
-                      <div className="p-2 rounded-lg bg-muted/60 shrink-0 mt-0.5">
-                        {getBenefitIcon(benefit)}
-                      </div>
-                      <span className="text-xs sm:text-sm font-medium text-foreground/90 leading-relaxed">
-                        {renderInlineFormatted(benefit)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 5. Any other custom sections */}
-            {parsedContent.otherSections.map((sec, sIdx) => (
-              <section key={sIdx} className="space-y-4 p-6 rounded-2xl bg-card/60 border border-border/70 shadow-xs">
-                <div className="flex items-center gap-2 text-foreground font-bold text-lg">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <h2>{sec.title}</h2>
-                </div>
-                <div className="space-y-2 pt-1">
-                  {sec.items.map((item, iIdx) => (
-                    <div key={iIdx} className="flex items-start gap-2.5 text-sm text-foreground/90 leading-relaxed">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                      <span>{renderInlineFormatted(item)}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
+                </section>
+              );
+            })}
 
             {/* 6. Company Culture / Tenant Card */}
             <div className="p-6 rounded-2xl bg-muted/25 border border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

@@ -106,98 +106,53 @@ Applicants: ${job.candidateCount || 0}
               </section>
             )}
 
-            {/* Overview / About the Role */}
-            {parsed.overview.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-foreground mb-2">About the Role</h3>
+            {/* Sequential Document Sections */}
+            {parsed.orderedSections.map((sec, sIdx) => (
+              <section key={sec.id || sIdx} className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                  {sec.type === 'responsibilities' && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
+                  {sec.type === 'requirements' && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
+                  {sec.type === 'benefits' && <Gift className="w-4 h-4 text-amber-500 shrink-0" />}
+                  {sec.type === 'niceToHave' && <Sparkles className="w-4 h-4 text-purple-500 shrink-0" />}
+                  <span>{sec.title}</span>
+                </h3>
+
                 <div className="space-y-3">
-                  {parsed.overview.map((para, i) => (
-                    <p key={i} className="text-sm text-muted-foreground leading-relaxed">
-                      {para.trim()}
-                    </p>
+                  {sec.subsections.map((sub, subIdx) => (
+                    <div key={subIdx} className="space-y-2">
+                      {sub.title && (
+                        <h4 className="text-xs font-semibold text-foreground pt-1">
+                          {sub.title}
+                        </h4>
+                      )}
+                      {sub.paragraphs.map((p, pIdx) => (
+                        <p key={pIdx} className="text-sm text-muted-foreground leading-relaxed">
+                          {p}
+                        </p>
+                      ))}
+                      {sub.bullets.length > 0 && (
+                        <ul className="space-y-1.5">
+                          {sub.bullets.map((b, bIdx) => (
+                            <li key={bIdx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <span className="w-4 h-4 flex items-center justify-center shrink-0">•</span>
+                              <span>{b}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {sub.numbered.length > 0 && (
+                        <ol className="space-y-1.5">
+                          {sub.numbered.map((n, nIdx) => (
+                            <li key={nIdx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <span className="text-xs font-mono font-bold text-primary shrink-0">{nIdx + 1}.</span>
+                              <span>{n}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
                   ))}
                 </div>
-              </section>
-            )}
-
-            {/* Responsibilities */}
-            {parsed.responsibilities.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-foreground mb-2">Key Responsibilities</h3>
-                <ul className="space-y-2">
-                  {parsed.responsibilities.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* Requirements */}
-            {parsed.requirements.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-foreground mb-2">Requirements & Qualifications</h3>
-                <ul className="space-y-2">
-                  {parsed.requirements.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* What We Offer / Benefits */}
-            {parsed.benefits.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                  <Gift className="w-4 h-4 text-amber-500" />
-                  What We Offer
-                </h3>
-                <ul className="space-y-2">
-                  {parsed.benefits.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <span className="w-4 h-4 flex items-center justify-center shrink-0">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* Nice to Have */}
-            {parsed.niceToHave.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-purple-500" />
-                  Nice to Have
-                </h3>
-                <ul className="space-y-2">
-                  {parsed.niceToHave.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <span className="w-4 h-4 flex items-center justify-center shrink-0">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* Other Custom Sections */}
-            {parsed.otherSections.map((sec, idx) => (
-              <section key={idx}>
-                <h3 className="text-sm font-semibold text-foreground mb-2">{sec.title}</h3>
-                <ul className="space-y-2">
-                  {sec.items.map((item, iIdx) => (
-                    <li key={iIdx} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <span className="w-4 h-4 flex items-center justify-center shrink-0">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
               </section>
             ))}
 
