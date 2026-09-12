@@ -184,8 +184,31 @@ export function parseJobToOrderedSections(
     const h3Match = line.match(/^###\s+(.+)/);
     if (h3Match) {
       flushTable();
-      ensureSection('Details', 'custom');
       const subTitle = h3Match[1].trim();
+      const detected = detectSectionType(subTitle);
+
+      const shouldPromoteH3 =
+        !currentSection ||
+        (currentSection.type === 'overview' && detected !== 'custom' && detected !== 'overview') ||
+        (currentSection.type === 'responsibilities' && (detected === 'requirements' || detected === 'benefits')) ||
+        (currentSection.type === 'requirements' && detected === 'benefits') ||
+        (currentSection.type === 'benefits' && (detected === 'responsibilities' || detected === 'requirements')) ||
+        (currentSection.type === 'custom' && detected !== 'custom');
+
+      if (shouldPromoteH3) {
+        currentSection = {
+          id: `sec-${sections.length + 1}`,
+          title: subTitle,
+          type: detected,
+          subsections: []
+        };
+        sections.push(currentSection);
+        currentSubsection = { title: undefined, paragraphs: [], bullets: [], numbered: [], table: undefined };
+        currentSection.subsections.push(currentSubsection);
+        continue;
+      }
+
+      ensureSection('Details', 'custom');
       if (currentSubsection && (currentSubsection.paragraphs.length > 0 || currentSubsection.bullets.length > 0 || currentSubsection.numbered.length > 0 || currentSubsection.title || currentSubsection.table)) {
         currentSubsection = { title: subTitle, paragraphs: [], bullets: [], numbered: [], table: undefined };
         currentSection?.subsections.push(currentSubsection);
@@ -294,7 +317,16 @@ export function parseJobMarkdown(
 
   orderedSections.forEach(s => {
     if (s.type === 'overview') {
-      s.subsections.forEach(sub => result.overview.push(...sub.paragraphs));
+      s.subsections.forEach(sub => {
+        result.overview.push(...sub.paragraphs);
+        if (sub.bullets.length > 0) {
+          const subType = sub.title ? detectSectionType(sub.title) : 'custom';
+          if (subType === 'responsibilities') result.responsibilities.push(...sub.bullets);
+          else if (subType === 'requirements') result.requirements.push(...sub.bullets);
+          else if (subType === 'benefits') result.benefits.push(...sub.bullets);
+          else if (subType === 'niceToHave') result.niceToHave.push(...sub.bullets);
+        }
+      });
     } else if (s.type === 'responsibilities') {
       s.subsections.forEach(sub => {
         sub.bullets.forEach(b => result.responsibilities.push(b));
