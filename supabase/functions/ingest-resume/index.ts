@@ -18,16 +18,63 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { candidateId, resumeText, jobId } = await req.json();
+    const body = await req.json();
+    const { candidateId, resumeText, jobId, jobTitle, jobRequirements } = body;
 
     if (!candidateId || !resumeText || !jobId) {
       throw new Error("Missing candidateId, resumeText or jobId");
     }
 
+    // 1. Fetch Target Job Details if not provided in payload
+    let targetTitle = jobTitle;
+    let targetReqs = jobRequirements;
+    let targetDesc = "";
+
+    if (!targetTitle || !targetReqs) {
+      const { data: jobRow } = await supabaseClient
+        .from("jobs")
+        .select("title, description, requirements")
+        .eq("id", jobId)
+        .maybeSingle();
+
+      if (jobRow) {
+        targetTitle = targetTitle || jobRow.title;
+        targetReqs = targetReqs || jobRow.requirements;
+        targetDesc = jobRow.description || "";
+      }
+    }
+
+    const reqsString = Array.isArray(targetReqs) ? targetReqs.join(", ") : (targetReqs || "General engineering requirements");
+
     // Determine configured AI Provider
     const aiProvider = Deno.env.get("AI_PROVIDER") || "gemini";
     let embedding: number[] = [];
-    let predictiveInsights = {};
+    let predictiveInsights: any = {};
+
+    const evaluationPrompt = `You are HireSort AI, an expert ATS talent screening engine.
+Evaluate this candidate's resume strictly against the target Job Description requirements.
+
+Job Title: ${targetTitle || 'Software Engineer'}
+Requirements: ${reqsString}
+Job Description: ${targetDesc}
+
+Resume:
+${resumeText}
+
+Analyze the candidate thoroughly and return a valid JSON object matching this schema:
+{
+  "score": "high" | "medium" | "low",
+  "similarity": number (honest fit decimal between 0.15 and 0.96, e.g. 0.88 for strong match, 0.25 for poor/mismatched fit),
+  "matchedSkills": ["skill1", "skill2"],
+  "missingSkills": ["missingSkill1", "missingSkill2"],
+  "interviewPassProb": number (integer between 10 and 99),
+  "offerAcceptanceProb": number (integer between 40 and 95),
+  "onboardingSuccessProb": number (integer between 30 and 98),
+  "retentionRisk": "low" | "medium" | "high",
+  "retentionRiskFactor": "short text summarizing retention risk details",
+  "timeToJoinEstimate": "e.g. 15 days, 30 days, Immediate",
+  "assessment": "2-3 sentences concise recruiter evaluation detailing candidate alignment and key gaps"
+}`;
 
     if (aiProvider === "gemini") {
       const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -46,17 +93,12 @@ serve(async (req) => {
         }
       );
 
-      if (!embedResponse.ok) {
-        const errBody = await embedResponse.text();
-        console.error(`[Edge Function] Gemini embedding request failed: Status ${embedResponse.status}:`, errBody);
-        throw new Error(`Gemini Embeddings API failed: Status ${embedResponse.status}: ${errBody}`);
+      if (embedResponse.ok) {
+        const embedData = await embedResponse.json();
+        embedding = embedData.embedding?.values || [];
       }
 
-      const embedData = await embedResponse.json();
-      embedding = embedData.embedding?.values || [];
-      console.log(`[Edge Function] Cosine embedding computed successfully. Vector length: ${embedding.length}`);
-
-      // 2. Call Gemini for Structured Evaluation (Predictive Insights) - Upgraded to gemini-1.5-pro
+      // 2. Call Gemini for Structured Evaluation
       console.log("[Edge Function] Calling Gemini gemini-1.5-pro model API...");
       const modelResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
@@ -66,20 +108,7 @@ serve(async (req) => {
           body: JSON.stringify({
             contents: [
               {
-                parts: [
-                  {
-                    text: `Analyze this resume against the job description. Return a structured JSON containing:
-                    - interviewPassProb (percentage integer, e.g. 85)
-                    - offerAcceptanceProb (percentage integer)
-                    - onboardingSuccessProb (percentage integer)
-                    - retentionRisk ('low', 'medium', 'high')
-                    - retentionRiskFactor (short text summarizing retention risk details, e.g. 'Stable tenure')
-                    - timeToJoinEstimate (short string, e.g. '15 days', 'Immediate')
-                    - assessment (sentence summarizing the applicant fit)
-                    
-                    Resume: ${resumeText}`,
-                  },
-                ],
+                parts: [{ text: evaluationPrompt }],
               },
             ],
             generationConfig: {
@@ -104,7 +133,7 @@ serve(async (req) => {
       const apiKey = Deno.env.get("OPENAI_API_KEY");
       if (!apiKey) throw new Error("OPENAI_API_KEY secret is not set in Supabase Dashboard.");
 
-      // 1. OpenAI Embeddings API (Upgraded to text-embedding-3-small)
+      // 1. OpenAI Embeddings API
       console.log("[Edge Function] Calling OpenAI text-embedding-3-small API...");
       const embedResponse = await fetch(
         "https://api.openai.com/v1/embeddings",
@@ -121,16 +150,12 @@ serve(async (req) => {
         }
       );
 
-      if (!embedResponse.ok) {
-        const errBody = await embedResponse.text();
-        throw new Error(`OpenAI Embeddings API failed: Status ${embedResponse.status}: ${errBody}`);
+      if (embedResponse.ok) {
+        const embedData = await embedResponse.json();
+        embedding = embedData.data?.[0]?.embedding || [];
       }
 
-      const embedData = await embedResponse.json();
-      embedding = embedData.data?.[0]?.embedding || [];
-      console.log(`[Edge Function] OpenAI embedding generated. Vector length: ${embedding.length}`);
-
-      // 2. OpenAI Chat Completions API (Upgraded to gpt-4o flagship)
+      // 2. OpenAI Chat Completions API
       console.log("[Edge Function] Calling OpenAI gpt-4o API...");
       const chatResponse = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -145,16 +170,7 @@ serve(async (req) => {
             messages: [
               {
                 role: "user",
-                content: `Analyze this resume against the job description. Return a structured JSON containing:
-                - interviewPassProb (percentage integer, e.g. 85)
-                - offerAcceptanceProb (percentage integer)
-                - onboardingSuccessProb (percentage integer)
-                - retentionRisk ('low', 'medium', 'high')
-                - retentionRiskFactor (short text summarizing retention risk details, e.g. 'Stable tenure')
-                - timeToJoinEstimate (short string, e.g. '15 days', 'Immediate')
-                - assessment (sentence summarizing the applicant fit)
-                
-                Resume: ${resumeText}`
+                content: evaluationPrompt
               }
             ],
             response_format: { type: "json_object" }
@@ -172,69 +188,39 @@ serve(async (req) => {
       predictiveInsights = JSON.parse(textResponse);
       console.log("[Edge Function] OpenAI insights generated and parsed successfully.");
 
-    } else if (aiProvider === "claude" || aiProvider === "anthropic") {
-      const apiKey = Deno.env.get("CLAUDE_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY");
-      if (!apiKey) throw new Error("CLAUDE_API_KEY or ANTHROPIC_API_KEY secret is not set in Supabase.");
-
-      // 1. Claude Messages API (Upgraded to claude-3-5-sonnet-latest)
-      console.log("[Edge Function] Calling Anthropic Claude Messages API (claude-3-5-sonnet-latest)...");
-      const messageResponse = await fetch(
-        "https://api.anthropic.com/v1/messages",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01"
-          },
-          body: JSON.stringify({
-            model: "claude-3-5-sonnet-latest",
-            max_tokens: 1000,
-            system: "You are a recruiter. Output ONLY a valid JSON object matching this schema: {\"interviewPassProb\": integer, \"offerAcceptanceProb\": integer, \"onboardingSuccessProb\": integer, \"retentionRisk\": \"low\" | \"medium\" | \"high\", \"retentionRiskFactor\": \"text\", \"timeToJoinEstimate\": \"text\", \"assessment\": \"text\"}. Do not include markdown wraps or explanations.",
-            messages: [
-              {
-                role: "user",
-                content: `Analyze this resume: ${resumeText}`
-              }
-            ]
-          })
-        }
-      );
-
-      if (!messageResponse.ok) {
-        const errBody = await messageResponse.text();
-        throw new Error(`Claude Messages API failed: Status ${messageResponse.status}: ${errBody}`);
-      }
-
-      const messageData = await messageResponse.json();
-      const textResponse = messageData.content?.[0]?.text || "{}";
-      predictiveInsights = JSON.parse(textResponse);
-      console.log("[Edge Function] Claude insights parsed successfully.");
-
-      // 2. Generate 1536-dim mock embedding vector for pgvector storage
-      embedding = new Array(1536).fill(0).map(() => Math.random() * 0.1);
-      console.log("[Edge Function] Simulated pgvector generated for Claude compatibility.");
-
     } else {
       throw new Error(`Unsupported AI Provider: ${aiProvider}`);
     }
 
-    // 3. Update candidate entry in database
+    // 3. Update candidate entry in database with genuine results
+    const genuineSimilarity = predictiveInsights.similarity ?? 
+      (predictiveInsights.interviewPassProb ? Math.round(predictiveInsights.interviewPassProb) / 100 : 0.65);
+
+    const genuineScore = predictiveInsights.score || 
+      (genuineSimilarity >= 0.72 ? "high" : (genuineSimilarity >= 0.45 ? "medium" : "low"));
+
     const { error: dbError } = await supabaseClient
       .from("candidates")
       .update({
         resume_text: resumeText,
-        resume_embedding: embedding,
+        resume_embedding: embedding.length > 0 ? embedding : null,
         predictive_insights: predictiveInsights,
-        cosine_similarity: 0.85,
-        ai_score: (predictiveInsights as any).interviewPassProb >= 80 ? "high" : "medium"
+        cosine_similarity: genuineSimilarity,
+        ai_score: genuineScore,
+        matched_skills: predictiveInsights.matchedSkills || [],
+        missing_skills: predictiveInsights.missingSkills || []
       })
       .eq("id", candidateId);
 
     if (dbError) throw dbError;
 
     return new Response(
-      JSON.stringify({ success: true, message: "Resume parsed & synced successfully!" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Resume evaluated against target Job Description successfully!",
+        score: genuineScore,
+        similarity: genuineSimilarity
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

@@ -54,6 +54,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 import TurnstileWidget from '@/components/common/TurnstileWidget';
+import { evaluateResumeDeterministically } from '@/lib/ai-screening';
 
 function renderInlineFormatted(text: string): React.ReactNode {
   if (!text) return text;
@@ -346,7 +347,9 @@ export default function PublicJobApplication() {
       const generatedId = 'APP-' + Math.floor(100000 + Math.random() * 900000);
 
       // 1. Upload Resume file if provided
+      // 1. Upload Resume file if provided & extract text if readable
       let resumeUrl = '';
+      let extractedResumeText = '';
       if (resumeFile) {
         try {
           const fileExt = resumeFile.name.split('.').pop();
@@ -363,6 +366,15 @@ export default function PublicJobApplication() {
               .getPublicUrl(filePath);
             resumeUrl = publicUrl || filePath;
           }
+
+          // If text or markdown file, read raw content directly for ATS parsing
+          if (resumeFile.type.includes('text') || resumeFile.name.endsWith('.md') || resumeFile.name.endsWith('.txt')) {
+            try {
+              extractedResumeText = await resumeFile.text();
+            } catch (readErr) {
+              console.debug('Direct text extraction skipped:', readErr);
+            }
+          }
         } catch (uploadErr) {
           console.warn('Storage upload note:', uploadErr);
         }
@@ -371,7 +383,31 @@ export default function PublicJobApplication() {
       // 2. Resolve Target Client ID
       const targetClientId = (job as any)?.clientId || client?.id || DEFAULT_ZOOL_CLIENT.id;
 
-      // 3. Insert into Supabase candidates table
+      // 3. Assemble full candidate resume text for ATS evaluation
+      const screeningAnswersText = Object.entries(screeningAnswers)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('\n');
+
+      const combinedResumeText = [
+        extractedResumeText,
+        coverNote ? `Cover Note:\n${coverNote}` : '',
+        screeningAnswersText ? `Screening Questions & Answers:\n${screeningAnswersText}` : '',
+        `Contact & Profiles: Phone: ${phone} | Email: ${email} | LinkedIn: ${linkedIn} | Portfolio: ${portfolio}`
+      ].filter(Boolean).join('\n\n');
+
+      // 4. Run Genuine ATS Screening against this specific Job Description
+      const evalResult = evaluateResumeDeterministically({
+        candidateName: fullName,
+        resumeText: combinedResumeText,
+        job: {
+          title: job?.title || 'Software Engineer',
+          description: job?.description,
+          requirements: job?.requirements || [],
+          responsibilities: job?.responsibilities || []
+        }
+      });
+
+      // 5. Insert into Supabase candidates table with truthful scores
       const { error: insertError } = await supabase.from('candidates').insert([
         {
           full_name: fullName,
@@ -382,17 +418,35 @@ export default function PublicJobApplication() {
           source: 'applied',
           status: 'new',
           pipeline_stage: 'applied',
-          experience: 4,
+          experience: evalResult.experience || 3,
+          role_title: evalResult.currentRole,
+          company: evalResult.company,
           resume_url: resumeUrl,
-          resume_text: `${fullName} - Application for ${job?.title || 'Role'}.\nPhone: ${phone}\nEmail: ${email}\nLinkedIn: ${linkedIn}\nPortfolio: ${portfolio}\n${Object.entries(screeningAnswers).map(([k, v]) => `${k}: ${v}`).join('\n')}\nCover: ${coverNote}`,
+          resume_text: combinedResumeText,
           custom_answers: {
             ...screeningAnswers,
             linkedin: linkedIn,
             portfolio: portfolio,
             cover_note: coverNote,
           },
-          ai_score: 'high',
-          cosine_similarity: 0.89,
+          ai_score: evalResult.isUnprocessed ? null : evalResult.score,
+          cosine_similarity: evalResult.isUnprocessed ? null : evalResult.similarity,
+          matched_skills: evalResult.matchedSkills,
+          missing_skills: evalResult.missingSkills,
+          predictive_insights: {
+            currentRole: evalResult.currentRole,
+            company: evalResult.company,
+            interviewPassProb: evalResult.interviewPassProb,
+            offerAcceptanceProb: evalResult.offerAcceptanceProb,
+            onboardingSuccessProb: evalResult.onboardingSuccessProb,
+            retentionRisk: evalResult.retentionRisk,
+            retentionRiskFactor: evalResult.retentionRiskFactor,
+            timeToJoinEstimate: evalResult.timeToJoinEstimate,
+            assessment: evalResult.assessment,
+            evaluatedAt: new Date().toISOString(),
+            isUnprocessed: evalResult.isUnprocessed,
+            error: evalResult.error
+          },
           created_at: new Date().toISOString(),
         } as any
       ]);

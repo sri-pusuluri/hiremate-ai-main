@@ -134,6 +134,19 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
           </div>
         </div>
 
+        {/* Diagnostic Banner if candidate is unranked or has parsing error */}
+        {isUnranked && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3.5 text-left">
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold text-xs uppercase tracking-wider mb-1">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Screening Incomplete • Data Not Processed</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {candidate.evaluationError || (candidate.predictiveInsights as any)?.error || "This candidate has not yet been processed through the ATS screening engine. Click 'Re-analyze Profile' above to evaluate this candidate against the target job requirements."}
+            </p>
+          </div>
+        )}
+
         {/* Unified Difference Analysis Box */}
         {!isUnranked && overallScore !== null && (
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-center">
@@ -240,7 +253,7 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
       {/* Matched vs Missing Skills Visual */}
       <div className="space-y-4">
         {/* Matched Skills */}
-        {candidate.matchedSkills && candidate.matchedSkills.length > 0 && (
+        {candidate.matchedSkills && candidate.matchedSkills.length > 0 ? (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2 className="w-4 h-4 text-success" />
@@ -257,7 +270,12 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
               ))}
             </div>
           </div>
-        )}
+        ) : !isUnranked ? (
+          <div className="p-3 rounded-lg border border-border/60 bg-muted/20 text-xs text-muted-foreground flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-warning shrink-0" />
+            <span>No required core skills from this Job Description were detected in the candidate's resume text.</span>
+          </div>
+        ) : null}
 
         {/* Missing Skills */}
         {candidate.missingSkills && candidate.missingSkills.length > 0 && (

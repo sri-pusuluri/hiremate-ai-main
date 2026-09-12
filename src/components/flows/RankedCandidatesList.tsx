@@ -59,28 +59,22 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
 
   useEffect(() => {
     async function fetchCandidates() {
-      if (!selectedJob) {
+      const targetJobId = selectedJob?.id || passedJob?.id;
+      if (!targetJobId) {
         setCandidates([]);
         setLoading(false);
         return;
       }
 
-      // Only load mockCandidates for the demo template 'job-1' if mock mode is explicitly enabled
-      const isMockMode = localStorage.getItem('use_mock_supabase') === 'true';
-      if (selectedJob.id === 'job-1' && isMockMode) {
-        setCandidates(mockCandidates);
-        setLoading(false);
-        return;
-      }
-
       try {
-        const { data } = await supabase
+        setLoading(true);
+        const { data, error } = await supabase
           .from('candidates')
           .select('*')
-          .eq('job_id', selectedJob.id);
+          .eq('job_id', targetJobId);
 
-        if (data && data.length > 0) {
-          const mapped = data.map((c: any) => ({
+        if (!error && data && data.length > 0) {
+          const mapped: Candidate[] = data.map((c: any, index: number) => ({
             id: c.id,
             jobId: c.job_id,
             name: c.full_name,
@@ -96,13 +90,17 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
                 const match = c.resume_text.match(/Skills:\s*([^\n]+)/i);
                 if (match) return match[1].split(',').map((s: string) => s.trim().replace(/\.$/, ''));
               }
-              return ['React', 'TypeScript', 'Node.js', 'System Design'].slice(0, c.ai_score === 'high' ? 4 : 2);
+              return [];
             })(),
             missingSkills: (() => {
               const ms = c.missing_skills || c.missingSkills || [];
               if (ms.length > 0) return ms;
-              return ['AWS', 'GraphQL', 'Docker'].slice(0, c.ai_score === 'high' ? 0 : 2);
+              return [];
             })(),
+            evaluationStatus: (c.cosine_similarity === null && c.cosineSimilarity === null)
+              ? 'pending'
+              : ((c.predictive_insights as any)?.isUnprocessed ? 'failed' : 'completed'),
+            evaluationError: (c.predictive_insights as any)?.error,
             aiScore: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
               ? c.ai_score 
               : ((c.cosineSimilarity !== null && c.cosineSimilarity !== undefined) ? c.aiScore : 'pending'),
@@ -524,19 +522,26 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
             {/* Rank Badge - use displayRank for consistent numbering */}
             <RankBadge rank={displayRank} score={candidate.aiScore || 'low'} />
 
-            <div className="flex flex-col items-center min-w-[60px]">
-              <span className={cn(
-                "text-sm font-bold tabular-nums",
-                candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.8 && "text-success",
-                candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.5 && candidate.cosineSimilarity < 0.8 && "text-warning",
-                (candidate.cosineSimilarity === null || candidate.cosineSimilarity === undefined || candidate.cosineSimilarity < 0.5) && "text-muted-foreground"
-              )}>
-                {candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined 
-                  ? `${(candidate.cosineSimilarity * 100).toFixed(0)}%` 
-                  : "--%"}
-              </span>
-              <span className="text-[10px] text-muted-foreground">match</span>
-            </div>
+            {candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined ? (
+              <div className="flex flex-col items-center min-w-[60px]">
+                <span className={cn(
+                  "text-sm font-bold tabular-nums",
+                  candidate.cosineSimilarity >= 0.8 && "text-success",
+                  candidate.cosineSimilarity >= 0.5 && candidate.cosineSimilarity < 0.8 && "text-warning",
+                  candidate.cosineSimilarity < 0.5 && "text-muted-foreground"
+                )}>
+                  {(candidate.cosineSimilarity * 100).toFixed(0)}%
+                </span>
+                <span className="text-[10px] text-muted-foreground">match</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center min-w-[70px]">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 whitespace-nowrap">
+                  Unprocessed
+                </span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">Awaiting ATS</span>
+              </div>
+            )}
           </>
         )}
 
@@ -544,7 +549,15 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
         <div className="flex-1 min-w-0" onClick={onClick}>
           <div className="flex items-center gap-2 mb-1 cursor-pointer">
             <h3 className="font-medium text-foreground truncate">{candidate.name}</h3>
-            {isAIEnabled && <RelevanceLabel score={candidate.aiScore || 'low'} />}
+            {isAIEnabled && (
+              candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined ? (
+                <RelevanceLabel score={candidate.aiScore || 'low'} />
+              ) : (
+                <span className="px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground font-medium border border-border">
+                  {candidate.evaluationError ? 'Format Error' : 'Not Screened'}
+                </span>
+              )
+            )}
             {candidate.isPinned && <OverrideIndicator type="pinned" />}
             {candidate.isBoosted && <OverrideIndicator type="boosted" />}
             {/* Source Badge */}
@@ -562,10 +575,10 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
           </p>
           
           {/* Matched Skills Preview */}
-          {candidate.matchedSkills && candidate.matchedSkills.length > 0 && (
+          {candidate.matchedSkills && candidate.matchedSkills.length > 0 ? (
             <div className="flex items-center gap-1 mt-2">
               <span className="text-xs text-muted-foreground">Matched:</span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-wrap">
                 {candidate.matchedSkills.slice(0, 4).map((skill) => (
                   <span 
                     key={skill} 
@@ -580,6 +593,14 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
                   </span>
                 )}
               </div>
+            </div>
+          ) : (candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined) ? (
+            <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground/70 italic">
+              No direct required skill overlap found
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium">
+              {candidate.evaluationError || 'Data not processed: awaiting ATS screening'}
             </div>
           )}
         </div>

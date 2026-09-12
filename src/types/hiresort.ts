@@ -21,6 +21,8 @@ export interface Candidate {
   missingSkills?: string[];
   experienceAlignment?: string;
   aiExplanation?: string;
+  evaluationStatus?: 'completed' | 'pending' | 'failed';
+  evaluationError?: string;
 
   // Recruiter overrides
   isOverridden?: boolean;

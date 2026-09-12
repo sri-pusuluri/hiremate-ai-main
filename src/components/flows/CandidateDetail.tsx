@@ -202,7 +202,7 @@ export function CandidateDetail({
     try {
       const result = await analyzeCandidateWithAI(
         candidate, 
-        job || { id: candidate.jobId || '', title: 'UX UI Design and Front End Engineer', description: 'React, TypeScript, UI/UX design engineering' }
+        job || { id: candidate.jobId || '', title: 'Software Engineer', description: 'Technical software engineering position' }
       );
       if (result) {
         candidate.currentRole = result.currentRole;
@@ -212,6 +212,9 @@ export function CandidateDetail({
         candidate.cosineSimilarity = result.similarity;
         candidate.matchedSkills = result.matchedSkills;
         candidate.missingSkills = result.missingSkills;
+        candidate.evaluationStatus = result.isUnprocessed ? 'failed' : 'completed';
+        candidate.evaluationError = result.error;
+
         if (!candidate.predictiveInsights) candidate.predictiveInsights = {} as any;
         Object.assign(candidate.predictiveInsights, {
           interviewPassProb: result.interviewPassProb,
@@ -221,15 +224,30 @@ export function CandidateDetail({
           retentionRiskFactor: result.retentionRiskFactor,
           timeToJoinEstimate: result.timeToJoinEstimate,
           assessment: result.assessment,
+          isUnprocessed: result.isUnprocessed,
+          error: result.error
         });
 
-        toast({
-          title: "AI Analysis Complete ✨",
-          description: `Evaluated ${result.currentRole} at ${Math.round(result.similarity * 100)}% match score.`,
-        });
+        if (result.isUnprocessed) {
+          toast({
+            title: "Analysis Incomplete",
+            description: result.error || "Unable to extract parseable resume text.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "ATS Analysis Updated ✨",
+            description: `Evaluated against ${job?.title || 'Job Description'}: ${Math.round((result.similarity || 0) * 100)}% match score.`,
+          });
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Re-analyze error:", err);
+      toast({
+        title: "Analysis Failed",
+        description: err.message || "Could not complete candidate screening.",
+        variant: "destructive"
+      });
     } finally {
       setIsReanalyzing(false);
     }

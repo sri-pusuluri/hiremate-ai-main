@@ -131,12 +131,12 @@ export default function Shortlisted() {
                 const match = c.resume_text.match(/Skills:\s*([^\n]+)/i);
                 if (match) return match[1].split(',').map((s: string) => s.trim().replace(/\.$/, ''));
               }
-              return ['React', 'TypeScript', 'Node.js', 'System Design'].slice(0, c.ai_score === 'high' ? 4 : 2);
+              return [];
             })(),
             missingSkills: (() => {
               const ms = c.missing_skills || c.missingSkills || [];
               if (ms.length > 0) return ms;
-              return ['AWS', 'GraphQL', 'Docker'].slice(0, c.ai_score === 'high' ? 0 : 2);
+              return [];
             })(),
             aiScore: (c.cosine_similarity !== null && c.cosine_similarity !== undefined) 
               ? c.ai_score 
