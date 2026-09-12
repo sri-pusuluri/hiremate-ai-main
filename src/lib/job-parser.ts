@@ -62,7 +62,7 @@ export function assembleJobDescription(job?: Partial<Job> | null): string {
   const niceToHave = job.niceToHave || [];
 
   // Check if description already contains markdown headers
-  const hasHeaders = /^#+\s+(about|responsibilit|requirement|qualification|what we offer|benefit|nice to have|role overview)/im.test(desc);
+  const hasHeaders = /^#+\s+/m.test(desc);
 
   if (hasHeaders) {
     return desc;
