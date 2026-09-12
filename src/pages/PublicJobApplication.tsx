@@ -16,6 +16,7 @@ import {
   MapPin, 
   Briefcase, 
   ArrowLeft, 
+  ArrowRight,
   Sparkles, 
   UploadCloud, 
   FileText, 
@@ -751,21 +752,15 @@ export default function PublicJobApplication() {
               );
             })}
 
-            {/* 6. Company Culture / Tenant Card */}
-            <div className="p-6 rounded-2xl bg-muted/25 border border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <TenantBrandLogo client={client} variant={isZool ? "full" : "auto"} size="md" showBorder={false} />
-                <div>
-                  <h3 className="font-bold text-foreground text-sm">Working at {client.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Innovative teams shaping modern digital solutions.
-                  </p>
-                </div>
-              </div>
+            {/* Explore all positions button */}
+            <div className="pt-1 flex items-center justify-start">
               <Link to={`/careers/${client.slug}`}>
-                <Button variant="ghost" size="sm" className="text-xs text-primary gap-1 font-semibold hover:bg-primary/10">
+                <Button 
+                  variant="outline" 
+                  className="h-11 px-5 rounded-xl border-border/80 hover:border-primary/50 text-sm font-semibold text-foreground hover:text-primary gap-2 shadow-xs hover:shadow-sm transition-all"
+                >
                   <span>Explore all positions</span>
-                  <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                  <ArrowRight className="w-4 h-4 text-primary" />
                 </Button>
               </Link>
             </div>
