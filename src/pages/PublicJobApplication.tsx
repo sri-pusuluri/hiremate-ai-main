@@ -141,6 +141,16 @@ export default function PublicJobApplication() {
   const [jobQuestions, setJobQuestions] = useState<Array<{ id: string; text: string; type: string; options?: string[] }>>([]);
   const [screeningAnswers, setScreeningAnswers] = useState<Record<string, string>>({});
 
+  // Parse markdown description into ordered sequential sections (declared at top level before conditional returns)
+  const orderedSections = useMemo(() => {
+    return parseJobToOrderedSections(
+      job?.description || '',
+      job?.responsibilities || [],
+      job?.requirements || [],
+      job?.niceToHave || []
+    );
+  }, [job?.description, job?.responsibilities, job?.requirements, job?.niceToHave]);
+
   useEffect(() => {
     async function loadJobDetails() {
       try {
@@ -463,16 +473,6 @@ export default function PublicJobApplication() {
       </div>
     );
   }
-
-  // Parse markdown description into ordered sequential sections
-  const orderedSections = useMemo(() => {
-    return parseJobToOrderedSections(
-      job?.description || '',
-      job?.responsibilities || [],
-      job?.requirements || [],
-      job?.niceToHave || []
-    );
-  }, [job?.description, job?.responsibilities, job?.requirements, job?.niceToHave]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col antialiased selection:bg-primary/20 selection:text-primary">
