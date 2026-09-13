@@ -45,6 +45,9 @@ interface AIMatchAnalysisProps {
 }
 
 export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnalysisProps) {
+  const [showHowAnalyzed, setShowHowAnalyzed] = useState(false);
+  const [showCoverageDimensions, setShowCoverageDimensions] = useState(true);
+  const [showProviderDetails, setShowProviderDetails] = useState(true);
   const [showProviderCoverageDetails, setShowProviderCoverageDetails] = useState(false);
   const isUnranked = candidate.cosineSimilarity === null || candidate.cosineSimilarity === undefined;
 
@@ -191,38 +194,61 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
         )}
       </div>
 
-      {/* How AI Analyzed Section */}
-      <div className="bg-card rounded-lg p-4">
-        <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-          <Target className="w-4 h-4 text-ai-accent" />
-          How HireSort AI Analyzed This Candidate
-        </h4>
-        <div className="space-y-3 text-sm">
-          <AnalysisStep 
-            step={1} 
-            title="Semantic Vector Embedding" 
-            description="Generated high-dimensional vectors for both the Resume and the Job Description using the provider's embedding model."
-            status={isUnranked ? "pending" : "complete"}
-          />
-          <AnalysisStep 
-            step={2} 
-            title="Strict Cosine Similarity (Math)" 
-            description="Calculated the exact mathematical distance between the two semantic vectors to yield the Semantic Math Score."
-            status={isUnranked ? "pending" : "complete"}
-          />
-          <AnalysisStep 
-            step={3} 
-            title="LLM Cognitive Reasoning" 
-            description={`GPT/Claude/Gemini evaluated context, compared skills against ${totalRequiredSkills} requirements, and determined experience alignment.`}
-            status={isUnranked ? "pending" : "complete"}
-          />
-          <AnalysisStep 
-            step={4} 
-            title="Dual-Score Aggregation" 
-            description="Combined the strict mathematical vector distance with the LLM's qualitative assessment to generate a holistic fit profile."
-            status={isUnranked ? "pending" : "complete"}
-          />
-        </div>
+      {/* How AI Analyzed Section - Accordion */}
+      <div className="bg-card rounded-xl border border-border/80 overflow-hidden transition-all shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setShowHowAnalyzed(!showHowAnalyzed)}
+          className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/40 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-ai-accent" />
+            <h4 className="text-sm font-medium text-foreground">
+              How HireSort AI Analyzed This Candidate
+            </h4>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full font-medium border border-border/60">
+              4 Steps
+            </span>
+            {showHowAnalyzed ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+
+        {showHowAnalyzed && (
+          <div className="p-4 pt-0 space-y-3 text-sm border-t border-border/50 animate-in fade-in-50 duration-200">
+            <div className="pt-3 space-y-3">
+              <AnalysisStep 
+                step={1} 
+                title="Semantic Vector Embedding" 
+                description="Generated high-dimensional vectors for both the Resume and the Job Description using the provider's embedding model."
+                status={isUnranked ? "pending" : "complete"}
+              />
+              <AnalysisStep 
+                step={2} 
+                title="Strict Cosine Similarity (Math)" 
+                description="Calculated the exact mathematical distance between the two semantic vectors to yield the Semantic Math Score."
+                status={isUnranked ? "pending" : "complete"}
+              />
+              <AnalysisStep 
+                step={3} 
+                title="LLM Cognitive Reasoning" 
+                description={`GPT/Claude/Gemini evaluated context, compared skills against ${totalRequiredSkills} requirements, and determined experience alignment.`}
+                status={isUnranked ? "pending" : "complete"}
+              />
+              <AnalysisStep 
+                step={4} 
+                title="Dual-Score Aggregation" 
+                description="Combined the strict mathematical vector distance with the LLM's qualitative assessment to generate a holistic fit profile."
+                status={isUnranked ? "pending" : "complete"}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Match Breakdown */}
@@ -361,128 +387,147 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
         )}
       </div>
 
-      {/* Multi-Dimensional Screening Coverage Card */}
+      {/* Multi-Dimensional Screening Coverage Card - Accordion */}
       {!isUnranked && (
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3.5 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-border pb-2.5">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs transition-all">
+          <button
+            type="button"
+            onClick={() => setShowCoverageDimensions(!showCoverageDimensions)}
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/40 transition-colors cursor-pointer"
+          >
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-primary" />
               <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
                 Full Screening Coverage Dimensions
               </h4>
             </div>
-            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" />
-              5/5 Dimensions Evaluated
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-            {/* Dimension 1: Domain Specialization */}
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground flex items-center gap-1">
-                  <Zap className="w-3.5 h-3.5 text-amber-500" />
-                  1. Core Stack Alignment
-                </span>
-                <span className={cn(
-                  "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                  matchedCount >= 3 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-500"
-                )}>
-                  {matchedCount >= 3 ? "Verified Primary Stack" : "Stack Gaps Detected"}
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                {matchedCount >= 3 
-                  ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
-                  : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
-              </p>
-            </div>
-
-            {/* Dimension 2: Requirement Ratio */}
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground flex items-center gap-1">
-                  <Code className="w-3.5 h-3.5 text-blue-500" />
-                  2. Competency Coverage
-                </span>
-                <span className="text-[10px] font-mono font-bold text-foreground">
-                  {matchedCount} / {matchedCount + missingCount} ({skillMatchPercentage}%)
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                Matches {matchedCount} explicit skills requested in the job description across technical specifications.
-              </p>
-            </div>
-
-            {/* Dimension 3: Seniority Fit */}
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground flex items-center gap-1">
-                  <Briefcase className="w-3.5 h-3.5 text-purple-500" />
-                  3. Seniority Trajectory
-                </span>
-                <span className="text-[10px] font-bold text-foreground">
-                  {candidate.experience} yrs candidate
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                {expDiff >= 0 
-                  ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
-                  : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
-              </p>
-            </div>
-
-            {/* Dimension 4: Retention Stability */}
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground flex items-center gap-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                  4. Predictive Retention
-                </span>
-                <span className={cn(
-                  "text-[10px] font-bold uppercase",
-                  (candidate.predictiveInsights as any)?.retentionRisk === 'low' ? "text-emerald-500" : "text-amber-500"
-                )}>
-                  {(candidate.predictiveInsights as any)?.retentionRisk || 'Standard'} Risk
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                {(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
-              </p>
-            </div>
-          </div>
-
-          {/* Dimension 5: Recommended Technical Interview Probes */}
-          {candidate.missingSkills && candidate.missingSkills.length > 0 && (
-            <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-1.5">
-              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                <HelpCircle className="w-3.5 h-3.5" />
-                Suggested Interview Probe Questions (Skill Gaps):
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1 font-semibold">
+                <ShieldCheck className="w-3 h-3" />
+                5/5 Dimensions Evaluated
               </span>
-              <ul className="space-y-1 text-[11px] text-muted-foreground list-disc list-inside">
-                {candidate.missingSkills.slice(0, 3).map((gap, i) => (
-                  <li key={i}>
-                    <span className="text-foreground font-medium">Verify {gap}: </span>
-                    "Can you walk through your practical experience with {gap} in recent production workflows?"
-                  </li>
-                ))}
-              </ul>
+              {showCoverageDimensions ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+          </button>
+
+          {showCoverageDimensions && (
+            <div className="p-4 pt-0 space-y-3.5 border-t border-border/50 animate-in fade-in-50 duration-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs pt-3">
+                {/* Dimension 1: Domain Specialization */}
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground flex items-center gap-1">
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      1. Core Stack Alignment
+                    </span>
+                    <span className={cn(
+                      "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                      matchedCount >= 3 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-500"
+                    )}>
+                      {matchedCount >= 3 ? "Verified Primary Stack" : "Stack Gaps Detected"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {matchedCount >= 3 
+                      ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
+                      : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
+                  </p>
+                </div>
+
+                {/* Dimension 2: Requirement Ratio */}
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground flex items-center gap-1">
+                      <Code className="w-3.5 h-3.5 text-blue-500" />
+                      2. Competency Coverage
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-foreground">
+                      {matchedCount} / {matchedCount + missingCount} ({skillMatchPercentage}%)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Matches {matchedCount} explicit skills requested in the job description across technical specifications.
+                  </p>
+                </div>
+
+                {/* Dimension 3: Seniority Fit */}
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground flex items-center gap-1">
+                      <Briefcase className="w-3.5 h-3.5 text-purple-500" />
+                      3. Seniority Trajectory
+                    </span>
+                    <span className="text-[10px] font-bold text-foreground">
+                      {candidate.experience} yrs candidate
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {expDiff >= 0 
+                      ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
+                      : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
+                  </p>
+                </div>
+
+                {/* Dimension 4: Retention Stability */}
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground flex items-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                      4. Predictive Retention
+                    </span>
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase",
+                      (candidate.predictiveInsights as any)?.retentionRisk === 'low' ? "text-emerald-500" : "text-amber-500"
+                    )}>
+                      {(candidate.predictiveInsights as any)?.retentionRisk || 'Standard'} Risk
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Dimension 5: Recommended Technical Interview Probes */}
+              {candidate.missingSkills && candidate.missingSkills.length > 0 && (
+                <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-1.5">
+                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    Suggested Interview Probe Questions (Skill Gaps):
+                  </span>
+                  <ul className="space-y-1 text-[11px] text-muted-foreground list-disc list-inside">
+                    {candidate.missingSkills.slice(0, 3).map((gap, i) => (
+                      <li key={i}>
+                        <span className="text-foreground font-medium">Verify {gap}: </span>
+                        "Can you walk through your practical experience with {gap} in recent production workflows?"
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Engine Transparency Footer */}
+              <div className="pt-1 flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/60">
+                <span>Engine: Deterministic ATS + Vector Screening</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">100% Explainable • Zero Hardcoded Fallbacks</span>
+              </div>
             </div>
           )}
-
-          {/* Engine Transparency Footer */}
-          <div className="pt-1 flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/60">
-            <span>Engine: Deterministic ATS + Vector Screening</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-medium">100% Explainable • Zero Hardcoded Fallbacks</span>
-          </div>
         </div>
       )}
 
-      {/* External LLM & Screening Provider Details Panel */}
+      {/* External LLM & Screening Provider Details Panel - Accordion */}
       {!isUnranked && (
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3.5 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-border pb-2.5">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs transition-all">
+          <button
+            type="button"
+            onClick={() => setShowProviderDetails(!showProviderDetails)}
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/40 transition-colors cursor-pointer"
+          >
             <div className="flex items-center gap-2">
               <Cpu className="w-4 h-4 text-purple-500" />
               <div>
@@ -494,131 +539,142 @@ export function AIMatchAnalysis({ candidate, job, compact = false }: AIMatchAnal
                 </p>
               </div>
             </div>
-            <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 flex items-center gap-1 font-semibold">
-              <Activity className="w-3 h-3" />
-              Active Provider
-            </span>
-          </div>
-
-          {/* Provider & Model Telemetry Header */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">AI Provider</span>
-              <span className="font-bold text-foreground flex items-center gap-1">
-                <Server className="w-3.5 h-3.5 text-primary" />
-                {providerDisplay}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20 flex items-center gap-1 font-semibold">
+                <Activity className="w-3 h-3" />
+                Active Provider
               </span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Reasoning Model</span>
-              <span className="font-bold text-foreground font-mono text-[11px] truncate block" title={modelDisplay}>
-                {modelDisplay}
-              </span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Vector Embedding</span>
-              <span className="font-bold text-foreground font-mono text-[11px]">
-                1536-dim Cosine
-              </span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Fallback Policy</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px] flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" />
-                0% Hardcoded
-              </span>
-            </div>
-          </div>
-
-          {/* Detailed Screening Coverage Accordion/Breakdown */}
-          <div className="space-y-2">
-            <button 
-              type="button"
-              onClick={() => setShowProviderCoverageDetails(!showProviderCoverageDetails)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-colors border border-border/70"
-            >
-              <div className="flex items-center gap-1.5">
-                <FileSearch className="w-3.5 h-3.5 text-primary" />
-                <span>What & All Does the External Provider Cover? (Detailed Specification)</span>
-              </div>
-              {showProviderCoverageDetails ? (
+              {showProviderDetails ? (
                 <ChevronUp className="w-4 h-4 text-muted-foreground" />
               ) : (
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               )}
-            </button>
+            </div>
+          </button>
 
-            {showProviderCoverageDetails && (
-              <div className="p-3 rounded-lg bg-muted/20 border border-border/60 space-y-2.5 text-xs animate-in fade-in-50 duration-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                  <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                    <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                      1. Semantic Vector Similarity (Math)
-                    </span>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Converts both candidate resume and job description into 1536-dimensional dense embedding vectors, measuring geometric cosine distance to capture lexical context without keyword stuffing bias.
-                    </p>
-                  </div>
-
-                  <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                    <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                      2. Contextual Cognitive Reasoning
-                    </span>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Examines architectural scope, project impact, system complexity, and transferable engineering proficiencies beyond verbatim title matching.
-                    </p>
-                  </div>
-
-                  <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                    <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      3. Technical Competency & Gap Extraction
-                    </span>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Evaluates resume against complete skills catalog, separating verified proficiencies (matched_skills) from unsatisfied job criteria (missing_skills).
-                    </p>
-                  </div>
-
-                  <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                    <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      4. Seniority Trajectory & Experience Fit
-                    </span>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Analyzes career progression timeline, leadership indicators (Senior, Lead, Staff), and tenure delta relative to target requirements.
-                    </p>
-                  </div>
-
-                  <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                    <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                      5. Predictive Retention & Behavioral Risk
-                    </span>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Synthesizes interview pass likelihood, offer acceptance rate, onboarding probability, flight risk factors, and joining timeframe estimates.
-                    </p>
-                  </div>
-
-                  <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                    <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                      6. Targeted Recruiter Interview Probes
-                    </span>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Dynamically crafts tailored technical questions to investigate specific detected candidate skill gaps during technical and recruiter screens.
-                    </p>
-                  </div>
+          {showProviderDetails && (
+            <div className="p-4 pt-0 space-y-3.5 border-t border-border/50 animate-in fade-in-50 duration-200">
+              {/* Provider & Model Telemetry Header */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-3">
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">AI Provider</span>
+                  <span className="font-bold text-foreground flex items-center gap-1">
+                    <Server className="w-3.5 h-3.5 text-primary" />
+                    {providerDisplay}
+                  </span>
                 </div>
-
-                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>Architecture: Edge Vector Function + Multi-LLM BYOK Pipeline</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Deterministic Transparency Guaranteed</span>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Reasoning Model</span>
+                  <span className="font-bold text-foreground font-mono text-[11px] truncate block" title={modelDisplay}>
+                    {modelDisplay}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Vector Embedding</span>
+                  <span className="font-bold text-foreground font-mono text-[11px]">
+                    1536-dim Cosine
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 space-y-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Fallback Policy</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px] flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    0% Hardcoded
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Detailed Screening Coverage Accordion/Breakdown */}
+              <div className="space-y-2">
+                <button 
+                  type="button"
+                  onClick={() => setShowProviderCoverageDetails(!showProviderCoverageDetails)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-colors border border-border/70"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <FileSearch className="w-3.5 h-3.5 text-primary" />
+                    <span>What & All Does the External Provider Cover? (Detailed Specification)</span>
+                  </div>
+                  {showProviderCoverageDetails ? (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
+
+                {showProviderCoverageDetails && (
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border/60 space-y-2.5 text-xs animate-in fade-in-50 duration-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
+                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          1. Semantic Vector Similarity (Math)
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Converts both candidate resume and job description into 1536-dimensional dense embedding vectors, measuring geometric cosine distance to capture lexical context without keyword stuffing bias.
+                        </p>
+                      </div>
+
+                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
+                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                          2. Contextual Cognitive Reasoning
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Examines architectural scope, project impact, system complexity, and transferable engineering proficiencies beyond verbatim title matching.
+                        </p>
+                      </div>
+
+                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
+                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          3. Technical Competency & Gap Extraction
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Evaluates resume against complete skills catalog, separating verified proficiencies (matched_skills) from unsatisfied job criteria (missing_skills).
+                        </p>
+                      </div>
+
+                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
+                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          4. Seniority Trajectory & Experience Fit
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Analyzes career progression timeline, leadership indicators (Senior, Lead, Staff), and tenure delta relative to target requirements.
+                        </p>
+                      </div>
+
+                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
+                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                          5. Predictive Retention & Behavioral Risk
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Synthesizes interview pass likelihood, offer acceptance rate, onboarding probability, flight risk factors, and joining timeframe estimates.
+                        </p>
+                      </div>
+
+                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
+                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                          6. Targeted Recruiter Interview Probes
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Dynamically crafts tailored technical questions to investigate specific detected candidate skill gaps during technical and recruiter screens.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Architecture: Edge Vector Function + Multi-LLM BYOK Pipeline</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">Deterministic Transparency Guaranteed</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
