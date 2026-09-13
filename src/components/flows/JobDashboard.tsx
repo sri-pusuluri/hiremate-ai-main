@@ -9,9 +9,10 @@ import { AIBadge } from '@/components/ui/ai-badges';
 import { JobDescriptionModal } from './JobDescriptionModal';
 import { JobEmbedModal } from '@/components/ats/JobEmbedModal';
 import { CreateJobModal } from '@/components/ats/CreateJobModal';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import samplePayload from '../../../samples/ats_import_payload.json';
 import { logAuditEvent } from '@/lib/audit-logger';
+import { evaluateResumeDeterministically } from '@/lib/ai-screening';
 import { 
   Briefcase, 
   MapPin, 
@@ -155,15 +156,17 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       );
 
       for (const cand of firstThreeCandidates) {
-        let score = 'medium';
-        let similarity = 0.65;
-        if (cand.full_name.includes('Priya') || cand.full_name.includes('David') || cand.full_name.includes('Elena')) {
-          score = 'high';
-          similarity = 0.88;
-        } else if (cand.full_name.includes('Amit') || cand.full_name.includes('Sofia') || cand.full_name.includes('Hiroshi')) {
-          score = 'low';
-          similarity = 0.42;
-        }
+        const targetJobPayload = samplePayload.jobs.find(j => j.id === cand.job_id);
+        const evalResult = evaluateResumeDeterministically({
+          candidateName: cand.full_name,
+          resumeText: cand.resume_text || '',
+          job: {
+            title: targetJobPayload?.title || 'Software Engineer',
+            description: targetJobPayload?.description || '',
+            requirements: targetJobPayload?.requirements || [],
+            responsibilities: targetJobPayload?.responsibilities || []
+          }
+        });
 
         await supabase
           .from('candidates')
@@ -171,21 +174,23 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             job_id: cand.job_id,
             full_name: cand.full_name,
             email: cand.email,
-            experience: cand.experience || 0,
-            ai_score: score,
-            cosine_similarity: similarity,
+            experience: evalResult.experience || cand.experience || 0,
+            ai_score: evalResult.isUnprocessed ? null : evalResult.score,
+            cosine_similarity: evalResult.isUnprocessed ? null : evalResult.similarity,
             resume_text: cand.resume_text,
-            skills: cand.resume_text.match(/Skills: (.*)/)?.[1]?.split(', ') || [],
-            matched_skills: cand.resume_text.match(/Skills: (.*)/)?.[1]?.split(', ')?.slice(0, 3) || [],
+            skills: evalResult.matchedSkills,
+            matched_skills: evalResult.matchedSkills,
+            missing_skills: evalResult.missingSkills,
             client_id: DEFAULT_ZOOL_CLIENT.id,
             predictive_insights: {
-              interviewPassProb: score === 'high' ? 92 : (score === 'medium' ? 78 : 45),
-              offerAcceptanceProb: score === 'high' ? 88 : (score === 'medium' ? 70 : 50),
-              onboardingSuccessProb: score === 'high' ? 95 : (score === 'medium' ? 82 : 60),
-              retentionRisk: score === 'high' ? 'low' : (score === 'medium' ? 'medium' : 'high'),
-              retentionRiskFactor: score === 'high' ? 'Stable 3+ year average tenure' : 'Previous short tenure',
-              timeToJoinEstimate: score === 'high' ? '15 days' : '30 days',
-              assessment: `${cand.full_name} has strong experience alignment for this position. Mapped skills match job requirements.`
+              interviewPassProb: evalResult.interviewPassProb,
+              offerAcceptanceProb: evalResult.offerAcceptanceProb,
+              onboardingSuccessProb: evalResult.onboardingSuccessProb,
+              retentionRisk: evalResult.retentionRisk,
+              retentionRiskFactor: evalResult.retentionRiskFactor,
+              timeToJoinEstimate: evalResult.timeToJoinEstimate,
+              assessment: evalResult.assessment,
+              evaluatedAt: new Date().toISOString()
             }
           });
       }

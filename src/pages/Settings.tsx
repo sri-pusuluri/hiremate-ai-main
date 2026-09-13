@@ -34,6 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { mockJobs, mockCandidates } from '@/data/mockData';
 import samplePayload from '../../samples/ats_import_payload.json';
+import { evaluateResumeDeterministically } from '@/lib/ai-screening';
 import TenantBrandLogo, { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
 import TenantLogoUploader from '@/components/common/TenantLogoUploader';
 import { getAppBaseUrl } from '@/lib/app-url';
@@ -421,16 +422,35 @@ export default function Settings() {
           log(`⚠️ Edge Function Error: ${edgeError.message || "Connection refused"}. Running local fallback...`);
           await new Promise(resolve => setTimeout(resolve, 800));
 
-          // Fallback update
+          // Dynamic ATS evaluation fallback
+          const targetJobPayload = importedJobs.find(j => j.id === cand.job_id);
+          const evalResult = evaluateResumeDeterministically({
+            candidateName: cand.full_name,
+            resumeText: cand.resume_text || '',
+            job: {
+              title: targetJobPayload?.title || 'Software Engineer',
+              description: targetJobPayload?.description || '',
+              requirements: targetJobPayload?.requirements || [],
+              responsibilities: targetJobPayload?.responsibilities || []
+            }
+          });
+
           await supabase.from('candidates').update({
             resume_text: cand.resume_text,
-            ai_score: i % 2 === 0 ? 'high' : 'medium',
-            cosine_similarity: i % 2 === 0 ? 0.89 : 0.62,
+            ai_score: evalResult.isUnprocessed ? null : evalResult.score,
+            cosine_similarity: evalResult.isUnprocessed ? null : evalResult.similarity,
+            matched_skills: evalResult.matchedSkills,
+            missing_skills: evalResult.missingSkills,
+            experience: evalResult.experience,
             predictive_insights: {
-              interviewPassProb: i % 2 === 0 ? 92 : 68,
-              offerAcceptanceProb: 80,
-              retentionRisk: 'low',
-              assessment: `Candidate ${cand.full_name} processed in Demo Mode (no API key configured).`
+              interviewPassProb: evalResult.interviewPassProb,
+              offerAcceptanceProb: evalResult.offerAcceptanceProb,
+              onboardingSuccessProb: evalResult.onboardingSuccessProb,
+              retentionRisk: evalResult.retentionRisk,
+              retentionRiskFactor: evalResult.retentionRiskFactor,
+              timeToJoinEstimate: evalResult.timeToJoinEstimate,
+              assessment: evalResult.assessment,
+              evaluatedAt: new Date().toISOString()
             }
           }).eq('id', candData.id);
         } else {
