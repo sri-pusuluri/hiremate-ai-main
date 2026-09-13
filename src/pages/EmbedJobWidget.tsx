@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
+import { extractTextFromFile, parseContactInfoFromText } from '@/lib/resume-parser';
+import { evaluateResumeDeterministically } from '@/lib/ai-screening';
 
 export default function EmbedJobWidget() {
   const { jobId, clientSlug } = useParams<{ jobId?: string; clientSlug?: string }>();
@@ -30,6 +32,9 @@ export default function EmbedJobWidget() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [resumeText, setResumeText] = useState('');
+  const [resumeFileName, setResumeFileName] = useState('');
+  const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
   const [isParsing, setIsParsing] = useState(false);
   const [parsed, setParsed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -119,24 +124,39 @@ export default function EmbedJobWidget() {
     loadJob();
   }, [jobId]);
 
-  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setResumeFileName(file.name);
     setIsParsing(true);
-    setTimeout(() => {
-      const extractedName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ') || 'Aryan Verma';
-      const cleanName = extractedName.length > 25 ? 'Aryan Verma' : extractedName;
-      setFullName(cleanName);
-      setEmail(cleanName.toLowerCase().replace(/\s+/g, '.') + '@gmail.com');
-      setPhone('+91 98450 ' + Math.floor(10000 + Math.random() * 90000));
-      setIsParsing(false);
+
+    try {
+      const text = await extractTextFromFile(file);
+      const contact = parseContactInfoFromText(text, file.name);
+
+      if (contact.fullName && contact.fullName !== 'Applicant') {
+        setFullName(contact.fullName);
+      } else if (!fullName) {
+        setFullName(contact.fullName);
+      }
+
+      if (contact.email) setEmail(contact.email);
+      if (contact.phone) setPhone(contact.phone);
+
+      setResumeText(text);
+      setDetectedSkills(contact.detectedSkills);
       setParsed(true);
+
       toast({
-        title: 'Auto-filled by AI',
-        description: 'Extracted contact information from resume.',
+        title: 'Resume Auto-Parsed ✨',
+        description: `Extracted details from ${file.name}.`,
       });
-    }, 1000);
+    } catch (err) {
+      console.warn('Embed widget resume parse error:', err);
+    } finally {
+      setIsParsing(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,6 +164,23 @@ export default function EmbedJobWidget() {
     setSubmitting(true);
     try {
       const targetClientId = (job as any)?.client_id || '00000000-0000-0000-0000-000000000001';
+
+      const combinedText = [
+        resumeText,
+        `Contact Information: Name: ${fullName} | Email: ${email} | Phone: ${phone}`
+      ].filter(Boolean).join('\n\n');
+
+      const evalResult = evaluateResumeDeterministically({
+        candidateName: fullName,
+        resumeText: combinedText,
+        job: {
+          title: job?.title || 'Software Engineer',
+          description: job?.description,
+          requirements: job?.requirements || [],
+          responsibilities: job?.responsibilities || []
+        }
+      });
+
       const { error } = await supabase.from('candidates').insert([
         {
           full_name: fullName,
@@ -154,6 +191,26 @@ export default function EmbedJobWidget() {
           source: 'embed-widget',
           status: 'new',
           pipeline_stage: 'applied',
+          experience: evalResult.experience || 3,
+          role_title: evalResult.currentRole,
+          company: evalResult.company,
+          resume_text: combinedText,
+          ai_score: evalResult.isUnprocessed ? null : evalResult.score,
+          cosine_similarity: evalResult.isUnprocessed ? null : evalResult.similarity,
+          matched_skills: evalResult.matchedSkills,
+          missing_skills: evalResult.missingSkills,
+          predictive_insights: {
+            currentRole: evalResult.currentRole,
+            company: evalResult.company,
+            interviewPassProb: evalResult.interviewPassProb,
+            offerAcceptanceProb: evalResult.offerAcceptanceProb,
+            onboardingSuccessProb: evalResult.onboardingSuccessProb,
+            retentionRisk: evalResult.retentionRisk,
+            retentionRiskFactor: evalResult.retentionRiskFactor,
+            timeToJoinEstimate: evalResult.timeToJoinEstimate,
+            assessment: evalResult.assessment,
+            evaluatedAt: new Date().toISOString()
+          },
           created_at: new Date().toISOString(),
         } as any
       ]);
@@ -223,28 +280,43 @@ export default function EmbedJobWidget() {
               <label className="border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-muted/20 hover:bg-muted/40 transition-colors block">
                 <input 
                   type="file" 
-                  accept=".pdf,.doc,.docx" 
+                  accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf" 
                   className="hidden" 
                   onChange={handleResumeUpload}
                 />
                 {isParsing ? (
                   <div className="flex items-center gap-2 text-primary text-xs py-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>AI parsing resume...</span>
+                    <span>HireSort ATS parsing resume...</span>
+                  </div>
+                ) : resumeFileName ? (
+                  <div className="py-1 flex items-center justify-between w-full px-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-500" />
+                      <span className="font-semibold">{resumeFileName}</span>
+                    </div>
+                    <span className="text-primary underline">Change</span>
                   </div>
                 ) : (
                   <>
                     <UploadCloud className="w-6 h-6 text-muted-foreground mb-1" />
-                    <span className="text-xs font-medium text-foreground">Upload Resume (PDF / DOCX)</span>
+                    <span className="text-xs font-medium text-foreground">Upload Resume (PDF, DOCX, TXT, MD)</span>
                     <span className="text-[10px] text-muted-foreground">Auto-fills your details instantly</span>
                   </>
                 )}
               </label>
 
               {parsed && (
-                <div className="p-2 rounded bg-primary/10 text-primary text-xs flex items-center gap-1.5 font-medium">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Auto-filled from resume by HireSort AI!</span>
+                <div className="p-2.5 rounded-lg bg-primary/10 text-primary text-xs space-y-1 font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Auto-filled from resume by HireSort ATS!</span>
+                  </div>
+                  {detectedSkills.length > 0 && (
+                    <div className="text-[10px] text-muted-foreground">
+                      Detected: {detectedSkills.slice(0, 4).join(', ')}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

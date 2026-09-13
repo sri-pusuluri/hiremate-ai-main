@@ -55,6 +55,7 @@ import { cn } from '@/lib/utils';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 import TurnstileWidget from '@/components/common/TurnstileWidget';
 import { evaluateResumeDeterministically } from '@/lib/ai-screening';
+import { extractTextFromFile, parseContactInfoFromText } from '@/lib/resume-parser';
 
 function renderInlineFormatted(text: string): React.ReactNode {
   if (!text) return text;
@@ -137,6 +138,9 @@ export default function PublicJobApplication() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [parsedByAI, setParsedByAI] = useState(false);
+  const [extractedResumeContent, setExtractedResumeContent] = useState<string>('');
+  const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
+  const [extractedWordCount, setExtractedWordCount] = useState<number>(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [applicationId, setApplicationId] = useState('');
@@ -290,25 +294,40 @@ export default function PublicJobApplication() {
     setResumeFile(file);
     setIsParsingResume(true);
 
-    // Simulate AI parsing of the uploaded resume PDF/DOCX
-    setTimeout(() => {
-      const extractedName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ') || 'Aryan Verma';
-      const cleanName = extractedName.length > 25 ? 'Aryan Verma' : extractedName;
-      const cleanEmail = cleanName.toLowerCase().replace(/\s+/g, '.') + '@gmail.com';
+    try {
+      // Genuine client-side text and contact extraction
+      const text = await extractTextFromFile(file);
+      const contact = parseContactInfoFromText(text, file.name);
 
-      setFullName(cleanName);
-      setEmail(cleanEmail);
-      setPhone('+91 98450 ' + Math.floor(10000 + Math.random() * 90000));
-      setLinkedIn(`https://linkedin.com/in/${cleanName.toLowerCase().replace(/\s+/g, '')}`);
+      if (contact.fullName && contact.fullName !== 'Applicant') {
+        setFullName(contact.fullName);
+      } else if (!fullName) {
+        setFullName(contact.fullName);
+      }
 
-      setIsParsingResume(false);
+      if (contact.email) setEmail(contact.email);
+      if (contact.phone) setPhone(contact.phone);
+      if (contact.linkedIn) setLinkedIn(contact.linkedIn);
+      if (contact.portfolio) setPortfolio(contact.portfolio);
+
+      setExtractedResumeContent(text);
+      setDetectedSkills(contact.detectedSkills);
+      setExtractedWordCount(contact.wordCount);
       setParsedByAI(true);
 
       toast({
-        title: 'Resume Auto-Parsed by AI ✨',
-        description: 'Candidate contact details were automatically filled into the form.',
+        title: 'Resume Auto-Parsed by ATS ✨',
+        description: `Extracted candidate details and ${contact.detectedSkills.length} domain skills from ${file.name}.`,
       });
-    }, 1200);
+    } catch (err) {
+      console.warn('Resume file parse error:', err);
+      toast({
+        title: 'File Uploaded',
+        description: `${file.name} uploaded. Please verify your contact details below.`,
+      });
+    } finally {
+      setIsParsingResume(false);
+    }
   };
 
   const handleSubmitApplication = async (e: React.FormEvent) => {
@@ -388,8 +407,10 @@ export default function PublicJobApplication() {
         .map(([k, v]) => `${k}: ${v}`)
         .join('\n');
 
+      const primaryText = extractedResumeContent || extractedResumeText;
+
       const combinedResumeText = [
-        extractedResumeText,
+        primaryText,
         coverNote ? `Cover Note:\n${coverNote}` : '',
         screeningAnswersText ? `Screening Questions & Answers:\n${screeningAnswersText}` : '',
         `Contact & Profiles: Phone: ${phone} | Email: ${email} | LinkedIn: ${linkedIn} | Portfolio: ${portfolio}`
@@ -861,7 +882,7 @@ export default function PublicJobApplication() {
                     )}>
                       <input 
                         type="file" 
-                        accept=".pdf,.doc,.docx" 
+                        accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf" 
                         className="hidden" 
                         onChange={handleFileUpload} 
                       />
@@ -869,7 +890,7 @@ export default function PublicJobApplication() {
                         <div className="py-2.5 flex flex-col items-center gap-2 text-primary">
                           <Loader2 className="w-6 h-6 animate-spin" />
                           <span className="text-xs font-semibold animate-pulse">
-                            HireSort AI parsing resume... ✨
+                            HireSort ATS parsing resume & extracting skills... ✨
                           </span>
                         </div>
                       ) : resumeFile ? (
@@ -880,7 +901,9 @@ export default function PublicJobApplication() {
                             </div>
                             <div className="text-left truncate">
                               <div className="truncate font-semibold text-xs">{resumeFile.name}</div>
-                              <div className="text-[10px] text-muted-foreground">{(resumeFile.size / 1024).toFixed(0)} KB • Ready to submit</div>
+                              <div className="text-[10px] text-muted-foreground">
+                                {(resumeFile.size / 1024).toFixed(0)} KB • {extractedWordCount > 0 ? `${extractedWordCount} words parsed` : 'Text parsed & ready for ATS'}
+                              </div>
                             </div>
                           </div>
                           <span className="text-xs text-primary font-medium underline group-hover:text-primary/80 shrink-0 ml-2">
@@ -893,19 +916,40 @@ export default function PublicJobApplication() {
                             <UploadCloud className="w-5 h-5" />
                           </div>
                           <span className="text-xs font-semibold text-foreground">
-                            Click to upload or drag & drop
+                            Click to upload or drag & drop resume
                           </span>
                           <span className="text-[11px] text-muted-foreground">
-                            Supports PDF or DOCX up to 10MB
+                            Supports PDF, DOCX, TXT, MD, HTML (up to 10MB)
                           </span>
                         </div>
                       )}
                     </label>
 
                     {parsedByAI && (
-                      <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-2 text-xs text-primary font-medium animate-in fade-in-50">
-                        <Sparkles className="w-4 h-4 shrink-0" />
-                        <span>Auto-filled from resume by HireSort AI!</span>
+                      <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-2 text-xs text-primary font-medium animate-in fade-in-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 shrink-0 text-primary" />
+                            <span className="font-semibold">Auto-parsed by HireSort ATS</span>
+                          </div>
+                          <span className="text-[10px] bg-primary/20 px-2 py-0.5 rounded-full">
+                            {extractedWordCount} words parsed
+                          </span>
+                        </div>
+                        {detectedSkills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {detectedSkills.slice(0, 6).map((skill, idx) => (
+                              <span key={idx} className="px-1.5 py-0.5 rounded bg-background/80 text-[10px] font-mono border border-primary/20 text-foreground">
+                                {skill}
+                              </span>
+                            ))}
+                            {detectedSkills.length > 6 && (
+                              <span className="text-[10px] text-muted-foreground self-center">
+                                +{detectedSkills.length - 6} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

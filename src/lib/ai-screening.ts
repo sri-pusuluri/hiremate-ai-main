@@ -21,7 +21,7 @@ export interface AIAnalysisResult {
 }
 
 // Comprehensive catalog of domain technical skills for deterministic ATS evaluation
-const SKILL_CATALOG = [
+export const SKILL_CATALOG = [
   // Languages
   { label: 'PHP', patterns: [/\bphp\b/i, /\bphp\s*8/i, /\bphp\s*7/i] },
   { label: 'JavaScript', patterns: [/\bjavascript\b/i, /\bes6\+?\b/i, /\bjs\b/i] },

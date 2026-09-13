@@ -3,15 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { mockJobs as seedJobs, mockCandidates as seedCandidates } from '../../data/mockData';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'placeholder';
+const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) || 'https://placeholder.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY) || (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_PUBLISHABLE_KEY) || 'placeholder';
+
+const safeStorage = (typeof window !== 'undefined' && window.localStorage && typeof window.localStorage.getItem === 'function') 
+  ? window.localStorage 
+  : undefined;
 
 // Real client
 const realSupabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+    storage: safeStorage,
+    persistSession: Boolean(safeStorage),
+    autoRefreshToken: Boolean(safeStorage),
   }
 });
 
@@ -40,7 +44,7 @@ const MOCK_CANDIDATES_KEY = 'hiremate_mock_candidates';
 
 export const hasRealSupabase = Boolean(SUPABASE_URL && !SUPABASE_URL.includes('placeholder'));
 
-let useMock = typeof localStorage !== 'undefined' && localStorage.getItem(USE_MOCK_SUPABASE_KEY) === 'true';
+let useMock = Boolean(safeStorage && safeStorage.getItem(USE_MOCK_SUPABASE_KEY) === 'true');
 
 const DEFAULT_ZOOL_ID = '00000000-0000-0000-0000-000000000001';
 const DEFAULT_COMMIT_ID = '00000000-0000-0000-0000-000000000004';
@@ -526,38 +530,43 @@ function isNetworkError(err: any): boolean {
 
 // Local mock database helpers
 function getMockUsers() {
-  const data = localStorage.getItem(MOCK_USERS_KEY);
+  if (!safeStorage) return [];
+  const data = safeStorage.getItem(MOCK_USERS_KEY);
   return data ? JSON.parse(data) : [];
 }
 
 function saveMockUsers(users: any[]) {
-  localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+  if (safeStorage) safeStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
 }
 
 function getMockProfiles() {
-  const data = localStorage.getItem(MOCK_PROFILES_KEY);
+  if (!safeStorage) return [];
+  const data = safeStorage.getItem(MOCK_PROFILES_KEY);
   return data ? JSON.parse(data) : [];
 }
 
 function saveMockProfiles(profiles: any[]) {
-  localStorage.setItem(MOCK_PROFILES_KEY, JSON.stringify(profiles));
+  if (safeStorage) safeStorage.setItem(MOCK_PROFILES_KEY, JSON.stringify(profiles));
 }
 
 function getMockRoles() {
-  const data = localStorage.getItem(MOCK_ROLES_KEY);
+  if (!safeStorage) return [];
+  const data = safeStorage.getItem(MOCK_ROLES_KEY);
   return data ? JSON.parse(data) : [];
 }
 
 function saveMockRoles(roles: any[]) {
-  localStorage.setItem(MOCK_ROLES_KEY, JSON.stringify(roles));
+  if (safeStorage) safeStorage.setItem(MOCK_ROLES_KEY, JSON.stringify(roles));
 }
 
 function getMockSession() {
-  const data = localStorage.getItem(MOCK_SESSION_KEY);
+  if (!safeStorage) return null;
+  const data = safeStorage.getItem(MOCK_SESSION_KEY);
   return data ? JSON.parse(data) : null;
 }
 
 function setMockSession(user: any) {
+  if (!safeStorage) return;
   const session = {
     access_token: 'mock-access-token',
     token_type: 'bearer',
@@ -566,11 +575,11 @@ function setMockSession(user: any) {
     user: user,
     expires_at: Math.floor(Date.now() / 1000) + 3600
   };
-  localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
+  safeStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
 }
 
 function clearMockSession() {
-  localStorage.removeItem(MOCK_SESSION_KEY);
+  if (safeStorage) safeStorage.removeItem(MOCK_SESSION_KEY);
 }
 
 function createMockUser(email: string, fullName: string, forcedRole?: string, forcedClientId?: string | null) {

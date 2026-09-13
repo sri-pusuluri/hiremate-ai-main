@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/components/ui/ai-badges';
 import { ResumeViewerModal } from './ResumeViewerModal';
 import { JobDescriptionModal } from './JobDescriptionModal';
+import { AddCandidateModal } from './AddCandidateModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowUpDown, 
@@ -23,7 +24,8 @@ import {
   Database,
   Clock,
   Info,
-  ExternalLink
+  ExternalLink,
+  UserPlus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -54,6 +56,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
   const [resumeCandidate, setResumeCandidate] = useState<Candidate | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [showJDModal, setShowJDModal] = useState(false);
+  const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<CandidateTab>('all');
   const { toast } = useToast();
 
@@ -255,15 +258,26 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
           </div>
         </div>
 
-        {selectedIds.size > 0 && (
-          <Button 
-            variant="ai-primary"
-            onClick={() => onCreateShortlist(selectedCandidates)}
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <Button 
+              variant="ai-primary"
+              size="sm"
+              onClick={() => onCreateShortlist(selectedCandidates)}
+            >
+              <CheckSquare className="w-4 h-4 mr-1" />
+              Create Shortlist ({selectedIds.size})
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={() => setShowAddCandidateModal(true)}
+            className="gap-1.5"
           >
-            <CheckSquare className="w-4 h-4" />
-            Create Shortlist ({selectedIds.size})
+            <UserPlus className="w-4 h-4" />
+            Add Candidate
           </Button>
-        )}
+        </div>
       </div>
 
       {selectedJob?.aiProcessingStatus === 'processing' && (
@@ -471,6 +485,51 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
         job={selectedJob}
         open={showJDModal}
         onOpenChange={setShowJDModal}
+      />
+
+      {/* Add Candidate Modal */}
+      <AddCandidateModal
+        open={showAddCandidateModal}
+        onOpenChange={setShowAddCandidateModal}
+        targetJob={selectedJob}
+        onCandidateAdded={() => {
+          // Re-fetch candidate list
+          const targetJobId = selectedJob?.id;
+          if (targetJobId) {
+            supabase
+              .from('candidates')
+              .select('*')
+              .eq('job_id', targetJobId)
+              .then(({ data }) => {
+                if (data) {
+                  const mapped: Candidate[] = data.map((c: any, index: number) => ({
+                    id: c.id,
+                    jobId: c.job_id,
+                    name: c.full_name,
+                    email: c.email,
+                    phone: c.phone || '',
+                    experience: c.experience,
+                    location: c.location || 'Remote',
+                    appliedDate: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    matchedSkills: c.matched_skills || [],
+                    missingSkills: c.missing_skills || [],
+                    evaluationStatus: (c.cosine_similarity === null) ? 'unprocessed' : 'evaluated',
+                    currentRole: c.role_title,
+                    currentCompany: c.company,
+                    aiScore: c.ai_score,
+                    aiRank: index + 1,
+                    cosineSimilarity: c.cosine_similarity,
+                    source: c.source || 'applied',
+                    status: c.status || 'new',
+                    resumeUrl: c.resume_url,
+                    resumeText: c.resume_text,
+                    predictiveInsights: c.predictive_insights
+                  }));
+                  setCandidates(mapped);
+                }
+              });
+          }
+        }}
       />
     </div>
   );
