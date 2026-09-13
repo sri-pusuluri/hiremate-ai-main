@@ -577,43 +577,48 @@ export function AIMatchAnalysis({
             <div className="p-4 pt-0 space-y-3.5 border-t border-border/50 animate-in fade-in-50 duration-200">
               {/* Dynamic Engine Selector & Live Re-screen Trigger */}
               <div className="pt-3">
-                <div className="p-3 rounded-lg bg-muted/40 border border-border/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-primary shrink-0" />
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-foreground">Active Screening Engine</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-primary/10 text-primary border border-primary/20 font-medium">Dynamic</span>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">Select engine to re-screen candidate and update provider telemetry</span>
+                <div className="p-3 rounded-lg bg-muted/40 border border-border/70 space-y-2.5 overflow-hidden">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Cpu className="w-4 h-4 text-primary shrink-0" />
+                      <span className="text-xs font-semibold text-foreground truncate">Active Screening Engine</span>
                     </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-primary/10 text-primary border border-primary/20 font-medium shrink-0">
+                      Dynamic
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <select
-                      value={selectedEngine}
-                      onChange={(e) => {
-                        const newEngine = e.target.value;
-                        setSelectedEngine(newEngine);
-                        if (typeof window !== 'undefined') {
-                          localStorage.setItem('ai_provider', newEngine);
-                        }
-                      }}
-                      className="text-xs bg-background border border-border rounded-md px-2.5 py-1.5 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-auto cursor-pointer"
-                    >
-                      <option value="deterministic-ats">Deterministic ATS Engine (Rule-based NLP & Heuristics)</option>
-                      <option value="openai">OpenAI (gpt-4o-mini)</option>
-                      <option value="gemini">Google Gemini (gemini-1.5-flash)</option>
-                      <option value="claude">Anthropic Claude (claude-3-5-sonnet)</option>
-                      <option value="supabase-edge">Supabase Vector Engine (pgvector)</option>
-                    </select>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Select engine to re-screen candidate and update provider telemetry
+                  </p>
+
+                  <div className="flex items-center gap-2 w-full pt-0.5">
+                    <div className="relative flex-1 min-w-0">
+                      <select
+                        value={selectedEngine}
+                        onChange={(e) => {
+                          const newEngine = e.target.value;
+                          setSelectedEngine(newEngine);
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('ai_provider', newEngine);
+                          }
+                        }}
+                        className="w-full text-xs bg-background border border-border rounded-md px-2.5 py-1.5 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary truncate cursor-pointer shadow-2xs"
+                      >
+                        <option value="deterministic-ats">Deterministic ATS (Rule-based NLP)</option>
+                        <option value="openai">OpenAI (gpt-4o-mini)</option>
+                        <option value="gemini">Google Gemini (gemini-1.5-flash)</option>
+                        <option value="claude">Anthropic Claude (claude-3-5-sonnet)</option>
+                        <option value="supabase-edge">Supabase Vector (pgvector)</option>
+                      </select>
+                    </div>
 
                     {onReanalyze && (
                       <button
                         type="button"
                         disabled={isReanalyzing}
                         onClick={() => onReanalyze(selectedEngine)}
-                        className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer shadow-2xs"
+                        className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer shadow-2xs whitespace-nowrap"
                       >
                         <RefreshCw className={cn("w-3.5 h-3.5", isReanalyzing && "animate-spin")} />
                         <span>{isReanalyzing ? "Evaluating..." : "Re-screen"}</span>
