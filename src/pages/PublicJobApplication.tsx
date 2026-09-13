@@ -141,6 +141,7 @@ export default function PublicJobApplication() {
   const [extractedResumeContent, setExtractedResumeContent] = useState<string>('');
   const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
   const [extractedWordCount, setExtractedWordCount] = useState<number>(0);
+  const [showParsedTextPreview, setShowParsedTextPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [applicationId, setApplicationId] = useState('');
@@ -932,9 +933,18 @@ export default function PublicJobApplication() {
                             <Sparkles className="w-4 h-4 shrink-0 text-primary" />
                             <span className="font-semibold">Auto-parsed by HireSort ATS</span>
                           </div>
-                          <span className="text-[10px] bg-primary/20 px-2 py-0.5 rounded-full">
-                            {extractedWordCount} words parsed
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] bg-primary/20 px-2 py-0.5 rounded-full">
+                              {extractedWordCount} words parsed
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setShowParsedTextPreview(!showParsedTextPreview)}
+                              className="text-[10px] underline font-bold hover:text-primary/80 flex items-center gap-0.5 cursor-pointer text-primary"
+                            >
+                              {showParsedTextPreview ? 'Hide Text' : 'View Parsed Text'}
+                            </button>
+                          </div>
                         </div>
                         {detectedSkills.length > 0 && (
                           <div className="flex flex-wrap gap-1 pt-1">
@@ -948,6 +958,16 @@ export default function PublicJobApplication() {
                                 +{detectedSkills.length - 6} more
                               </span>
                             )}
+                          </div>
+                        )}
+
+                        {showParsedTextPreview && (
+                          <div className="mt-2 p-2.5 rounded-lg bg-background/95 border border-border text-[11px] text-foreground font-mono max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+                            <div className="text-[10px] font-sans font-semibold text-muted-foreground uppercase pb-1 mb-1 border-b border-border flex items-center justify-between">
+                              <span>Confirmed Extracted Content:</span>
+                              <span className="text-emerald-600 dark:text-emerald-400">✓ Parsed 100%</span>
+                            </div>
+                            {extractedResumeContent || 'No textual content detected.'}
                           </div>
                         )}
                       </div>

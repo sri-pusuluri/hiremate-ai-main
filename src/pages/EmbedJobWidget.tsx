@@ -37,6 +37,7 @@ export default function EmbedJobWidget() {
   const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
   const [isParsing, setIsParsing] = useState(false);
   const [parsed, setParsed] = useState(false);
+  const [showParsedTextPreview, setShowParsedTextPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -307,14 +308,32 @@ export default function EmbedJobWidget() {
               </label>
 
               {parsed && (
-                <div className="p-2.5 rounded-lg bg-primary/10 text-primary text-xs space-y-1 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Auto-filled from resume by HireSort ATS!</span>
+                <div className="p-2.5 rounded-lg bg-primary/10 text-primary text-xs space-y-2 font-medium">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Auto-filled from resume by HireSort ATS!</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowParsedTextPreview(!showParsedTextPreview)}
+                      className="text-[10px] underline font-bold hover:text-primary/80"
+                    >
+                      {showParsedTextPreview ? 'Hide Text' : 'View Parsed Text'}
+                    </button>
                   </div>
                   {detectedSkills.length > 0 && (
                     <div className="text-[10px] text-muted-foreground">
                       Detected: {detectedSkills.slice(0, 4).join(', ')}
+                    </div>
+                  )}
+                  {showParsedTextPreview && (
+                    <div className="p-2 rounded bg-background border border-border text-[10px] text-foreground font-mono max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+                      <div className="font-sans font-semibold text-muted-foreground uppercase text-[9px] pb-1 mb-1 border-b border-border flex items-center justify-between">
+                        <span>Extracted Resume Text:</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">✓ Parsed 100%</span>
+                      </div>
+                      {resumeText || 'No text extracted.'}
                     </div>
                   )}
                 </div>

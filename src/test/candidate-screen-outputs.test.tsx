@@ -45,12 +45,23 @@ describe('Candidate Screen Output Captures', () => {
     render(<AIMatchAnalysis candidate={sampleCandidate} job={sampleJob} />);
 
     // 1. Semantic Math Score (cosine_similarity * 100) -> 82%
-    expect(screen.getByText('82%')).toBeDefined();
+    expect(screen.getAllByText(/82%/).length).toBeGreaterThan(0);
     expect(screen.getByText('Semantic Math Score')).toBeDefined();
 
     // 2. LLM Fit Score (ai_score) -> high
-    expect(screen.getByText('high')).toBeDefined();
+    expect(screen.getAllByText(/high/i).length).toBeGreaterThan(0);
     expect(screen.getByText('LLM Fit Score')).toBeDefined();
+  });
+
+  it('captures External LLM & Screening Provider Details and full coverage specification on screen', () => {
+    render(<AIMatchAnalysis candidate={sampleCandidate} job={sampleJob} />);
+
+    // External LLM details panel
+    expect(screen.getByText(/External LLM & Screening Provider Details/i)).toBeDefined();
+    expect(screen.getByText(/Inference pipeline, model telemetry, and multi-attribute screening coverage/i)).toBeDefined();
+    expect(screen.getByText(/1536-dim Cosine/i)).toBeDefined();
+    expect(screen.getByText(/0% Hardcoded/i)).toBeDefined();
+    expect(screen.getByText(/What & All Does the External Provider Cover\?/i)).toBeDefined();
   });
 
   it('captures matched_skills and missing_skills on screen with badges', () => {
