@@ -16,6 +16,9 @@ export interface AIAnalysisResult {
   retentionRiskFactor: string;
   timeToJoinEstimate: string;
   assessment: string;
+  provider?: 'openai' | 'gemini' | 'claude' | 'supabase-edge' | 'deterministic-ats' | string;
+  model?: string;
+  executionMode?: 'external_llm' | 'supabase_vector' | 'deterministic_ats';
   isUnprocessed?: boolean;
   error?: string;
 }
@@ -264,6 +267,9 @@ export function evaluateResumeDeterministically(input: {
     retentionRiskFactor,
     timeToJoinEstimate: '15–30 days',
     assessment,
+    provider: 'deterministic-ats',
+    model: 'Deterministic ATS Engine (Rule-based NLP & Heuristic Matching)',
+    executionMode: 'deterministic_ats',
     isUnprocessed: false,
   };
 }
@@ -274,7 +280,8 @@ export function evaluateResumeDeterministically(input: {
  */
 export async function analyzeCandidateWithAI(
   candidate: { id: string; name?: string; full_name?: string; resume_text?: string | null; resume_url?: string | null },
-  job: { id: string; title: string; description?: string; requirements?: string[]; responsibilities?: string[] }
+  job: { id: string; title: string; description?: string; requirements?: string[]; responsibilities?: string[] },
+  options?: { preferredProvider?: 'openai' | 'gemini' | 'claude' | 'supabase-edge' | 'deterministic-ats' | string }
 ): Promise<AIAnalysisResult> {
   const name = candidate.name || candidate.full_name || 'Applicant';
   const resumeText = await extractResumeText(name, candidate.resume_url, candidate.resume_text);
@@ -296,6 +303,9 @@ export async function analyzeCandidateWithAI(
       retentionRiskFactor: 'Missing or unreadable resume text.',
       timeToJoinEstimate: 'Unknown',
       assessment: 'Screening failed: No parseable resume text was available for this candidate.',
+      provider: 'deterministic-ats',
+      model: 'Text Extraction Parser',
+      executionMode: 'deterministic_ats',
       isUnprocessed: true,
       error: 'Data Not Processed: Missing or unparseable resume text.'
     };
@@ -311,6 +321,9 @@ export async function analyzeCandidateWithAI(
           predictive_insights: {
             assessment: failureResult.assessment,
             error: failureResult.error,
+            provider: failureResult.provider,
+            model: failureResult.model,
+            executionMode: failureResult.executionMode,
             evaluatedAt: new Date().toISOString()
           }
         })
@@ -322,8 +335,16 @@ export async function analyzeCandidateWithAI(
     return failureResult;
   }
 
-  const openaiKey = localStorage.getItem('openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY;
-  const geminiKey = localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY;
+  const selectedProvider = options?.preferredProvider || 
+    (typeof window !== 'undefined' ? localStorage.getItem('ai_provider') : null) || 'auto';
+
+  const openaiKey = (typeof window !== 'undefined' ? localStorage.getItem('openai_api_key') : null) || import.meta.env.VITE_OPENAI_API_KEY;
+  const geminiKey = (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null) || import.meta.env.VITE_GEMINI_API_KEY;
+  const claudeKey = (typeof window !== 'undefined' ? localStorage.getItem('claude_api_key') : null) || import.meta.env.VITE_CLAUDE_API_KEY;
+
+  const openaiModel = (typeof window !== 'undefined' ? localStorage.getItem('openai_model') : null) || 'gpt-4o-mini';
+  const geminiModel = (typeof window !== 'undefined' ? localStorage.getItem('gemini_model') : null) || 'gemini-1.5-flash';
+  const claudeModel = (typeof window !== 'undefined' ? localStorage.getItem('claude_model') : null) || 'claude-3-5-sonnet';
 
   const jobTitle = job.title || 'Software Engineer';
   const jobDesc = job.description || 'Modern software development role.';
@@ -364,52 +385,66 @@ Output ONLY valid JSON without markdown wrapping.`;
 
   let result: AIAnalysisResult | null = null;
 
-  // 1. Try Backend Edge Function
-  try {
-    const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('ingest-resume', {
-      body: {
-        candidateId: candidate.id,
-        resumeText,
-        jobId: job.id,
-        jobTitle: job.title,
-        jobRequirements: job.requirements || []
-      }
+  // Option A: If explicitly requested deterministic ATS, run directly
+  if (selectedProvider === 'deterministic-ats') {
+    result = evaluateResumeDeterministically({
+      candidateName: name,
+      resumeText,
+      job
     });
-
-    if (!edgeErr && edgeData?.success) {
-      const { data: updatedCand } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('id', candidate.id)
-        .maybeSingle();
-
-      if (updatedCand && updatedCand.cosine_similarity) {
-        const insights = (updatedCand.predictive_insights as any) || {};
-        result = {
-          currentRole: updatedCand.role_title || jobTitle,
-          company: updatedCand.company || 'Independent',
-          experience: updatedCand.experience || 3,
-          score: (updatedCand.ai_score as any) || 'medium',
-          similarity: updatedCand.cosine_similarity,
-          matchedSkills: updatedCand.matched_skills || [],
-          missingSkills: updatedCand.missing_skills || [],
-          interviewPassProb: insights.interviewPassProb || 70,
-          offerAcceptanceProb: insights.offerAcceptanceProb || 70,
-          onboardingSuccessProb: insights.onboardingSuccessProb || 75,
-          retentionRisk: insights.retentionRisk || 'medium',
-          retentionRiskFactor: insights.retentionRiskFactor || 'Standard career trajectory',
-          timeToJoinEstimate: insights.timeToJoinEstimate || '15–30 days',
-          assessment: insights.assessment || 'Candidate evaluated via AI screening.',
-          isUnprocessed: false
-        };
-      }
-    }
-  } catch (edgeErr) {
-    console.debug('[AI Screening] Backend Edge Function skipped, using direct evaluation:', edgeErr);
   }
 
-  // 2. Client OpenAI Key
-  if (!result && openaiKey) {
+  // Option B: Try Backend Edge Function (if auto or supabase-edge requested)
+  if (!result && (selectedProvider === 'auto' || selectedProvider === 'supabase-edge')) {
+    try {
+      const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('ingest-resume', {
+        body: {
+          candidateId: candidate.id,
+          resumeText,
+          jobId: job.id,
+          jobTitle: job.title,
+          jobRequirements: job.requirements || []
+        }
+      });
+
+      if (!edgeErr && edgeData?.success) {
+        const { data: updatedCand } = await supabase
+          .from('candidates')
+          .select('*')
+          .eq('id', candidate.id)
+          .maybeSingle();
+
+        if (updatedCand && updatedCand.cosine_similarity) {
+          const insights = (updatedCand.predictive_insights as any) || {};
+          result = {
+            currentRole: updatedCand.role_title || jobTitle,
+            company: updatedCand.company || 'Independent',
+            experience: updatedCand.experience || 3,
+            score: (updatedCand.ai_score as any) || 'medium',
+            similarity: updatedCand.cosine_similarity,
+            matchedSkills: updatedCand.matched_skills || [],
+            missingSkills: updatedCand.missing_skills || [],
+            interviewPassProb: insights.interviewPassProb || 70,
+            offerAcceptanceProb: insights.offerAcceptanceProb || 70,
+            onboardingSuccessProb: insights.onboardingSuccessProb || 75,
+            retentionRisk: insights.retentionRisk || 'medium',
+            retentionRiskFactor: insights.retentionRiskFactor || 'Standard career trajectory',
+            timeToJoinEstimate: insights.timeToJoinEstimate || '15–30 days',
+            assessment: insights.assessment || 'Candidate evaluated via AI screening.',
+            provider: 'supabase-edge',
+            model: 'Supabase pgvector (1536-dim Embedding)',
+            executionMode: 'supabase_vector',
+            isUnprocessed: false
+          };
+        }
+      }
+    } catch (edgeErr) {
+      console.debug('[AI Screening] Backend Edge Function skipped, using direct evaluation:', edgeErr);
+    }
+  }
+
+  // Option C: Client OpenAI Key
+  if (!result && (selectedProvider === 'auto' || selectedProvider === 'openai') && openaiKey) {
     try {
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -418,7 +453,7 @@ Output ONLY valid JSON without markdown wrapping.`;
           'Authorization': `Bearer ${openaiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: openaiModel,
           messages: [{ role: 'user', content: prompt }],
           response_format: { type: 'json_object' }
         })
@@ -426,17 +461,26 @@ Output ONLY valid JSON without markdown wrapping.`;
 
       if (res.ok) {
         const data = await res.json();
-        result = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+        const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+        if (parsed.similarity !== undefined) {
+          result = {
+            ...parsed,
+            provider: 'openai',
+            model: openaiModel,
+            executionMode: 'external_llm',
+            isUnprocessed: false
+          };
+        }
       }
     } catch (err) {
       console.warn('[AI Screening] OpenAI call failed:', err);
     }
   }
 
-  // 3. Client Gemini Key
-  if (!result && geminiKey) {
+  // Option D: Client Gemini Key
+  if (!result && (selectedProvider === 'auto' || selectedProvider === 'gemini') && geminiKey) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -447,14 +491,59 @@ Output ONLY valid JSON without markdown wrapping.`;
 
       if (res.ok) {
         const data = await res.json();
-        result = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}');
+        const parsed = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}');
+        if (parsed.similarity !== undefined) {
+          result = {
+            ...parsed,
+            provider: 'gemini',
+            model: geminiModel,
+            executionMode: 'external_llm',
+            isUnprocessed: false
+          };
+        }
       }
     } catch (err) {
       console.warn('[AI Screening] Gemini call failed:', err);
     }
   }
 
-  // 4. Reliable Deterministic ATS Fallback (Runs if no external LLM key is configured)
+  // Option E: Client Anthropic Claude Key
+  if (!result && (selectedProvider === 'auto' || selectedProvider === 'claude') && claudeKey) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': claudeKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: claudeModel,
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const rawText = data.content?.[0]?.text || '{}';
+        const parsed = JSON.parse(rawText);
+        if (parsed.similarity !== undefined) {
+          result = {
+            ...parsed,
+            provider: 'claude',
+            model: claudeModel,
+            executionMode: 'external_llm',
+            isUnprocessed: false
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('[AI Screening] Claude call failed:', err);
+    }
+  }
+
+  // Option F: Reliable Deterministic ATS Engine (Runs if external LLM unconfigured or fallback needed)
   if (!result) {
     result = evaluateResumeDeterministically({
       candidateName: name,
@@ -463,7 +552,7 @@ Output ONLY valid JSON without markdown wrapping.`;
     });
   }
 
-  // 5. Update Supabase with honest, dynamic evaluation results
+  // 5. Update Supabase with honest, dynamic evaluation results and provider telemetry
   try {
     await supabase
       .from('candidates')
@@ -485,6 +574,9 @@ Output ONLY valid JSON without markdown wrapping.`;
           retentionRiskFactor: result.retentionRiskFactor,
           timeToJoinEstimate: result.timeToJoinEstimate,
           assessment: result.assessment,
+          provider: result.provider || 'deterministic-ats',
+          model: result.model || 'Deterministic ATS Engine (Rule-based NLP & Heuristics)',
+          executionMode: result.executionMode || 'deterministic_ats',
           evaluatedAt: new Date().toISOString()
         }
       })

@@ -197,12 +197,13 @@ export function CandidateDetail({
     onFeedback(type);
   };
 
-  const handleReanalyze = async () => {
+  const handleReanalyze = async (customProvider?: string) => {
     setIsReanalyzing(true);
     try {
       const result = await analyzeCandidateWithAI(
         candidate, 
-        job || { id: candidate.jobId || '', title: 'Software Engineer', description: 'Technical software engineering position' }
+        job || { id: candidate.jobId || '', title: 'Software Engineer', description: 'Technical software engineering position' },
+        { preferredProvider: customProvider }
       );
       if (result) {
         candidate.currentRole = result.currentRole;
@@ -224,6 +225,9 @@ export function CandidateDetail({
           retentionRiskFactor: result.retentionRiskFactor,
           timeToJoinEstimate: result.timeToJoinEstimate,
           assessment: result.assessment,
+          provider: result.provider,
+          model: result.model,
+          executionMode: result.executionMode,
           isUnprocessed: result.isUnprocessed,
           error: result.error
         });
@@ -383,7 +387,7 @@ export function CandidateDetail({
 
               {/* Dual Engine Analysis */}
               <div className="mb-6">
-                <AIMatchAnalysis candidate={candidate} job={job} />
+                <AIMatchAnalysis candidate={candidate} job={job} onReanalyze={handleReanalyze} isReanalyzing={isReanalyzing} />
               </div>
 
               {/* Predictive Insights - NEW */}

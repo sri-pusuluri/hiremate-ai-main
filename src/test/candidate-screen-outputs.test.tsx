@@ -130,4 +130,33 @@ describe('Candidate Screen Output Captures', () => {
     // Executive Assessment
     expect(screen.getByText(/Strong match: Tariq Al-Mansoor brings 5 years of relevant experience/i)).toBeDefined();
   });
+
+  it('dynamically updates screening provider and model based on candidate predictive insights', () => {
+    const geminiCandidate: Candidate = {
+      ...sampleCandidate,
+      predictiveInsights: {
+        ...sampleCandidate.predictiveInsights,
+        provider: 'gemini',
+        model: 'gemini-1.5-flash',
+        executionMode: 'external_llm'
+      } as any
+    };
+
+    const { rerender } = render(<AIMatchAnalysis candidate={geminiCandidate} job={sampleJob} />);
+    expect(screen.getByText('Google Gemini')).toBeDefined();
+    expect(screen.getByText('gemini-1.5-flash')).toBeDefined();
+
+    const deterministicCandidate: Candidate = {
+      ...sampleCandidate,
+      predictiveInsights: {
+        ...sampleCandidate.predictiveInsights,
+        provider: 'deterministic-ats',
+        model: 'Deterministic ATS Engine (Rule-based NLP & Heuristics)',
+        executionMode: 'deterministic_ats'
+      } as any
+    };
+
+    rerender(<AIMatchAnalysis candidate={deterministicCandidate} job={sampleJob} />);
+    expect(screen.getByText('Deterministic ATS Engine')).toBeDefined();
+  });
 });
