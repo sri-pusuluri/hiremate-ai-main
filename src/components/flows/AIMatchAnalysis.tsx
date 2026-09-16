@@ -437,119 +437,119 @@ export function AIMatchAnalysis({
 
           {showCoverageDimensions && (
             <div className="p-4 pt-0 space-y-3.5 border-t border-border/50 animate-in fade-in-50 duration-200">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs pt-3">
+              <div className="rounded-xl border border-border/70 divide-y divide-border/60 bg-card overflow-hidden shadow-2xs mt-3">
                 {/* Dimension 1: Domain Specialization */}
-                <div className="p-3 rounded-lg bg-muted/30 border border-border/60 hover:bg-muted/40 transition-colors flex flex-col justify-between gap-2">
-                  <div>
-                    <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        <span className="font-semibold text-foreground truncate">
-                          1. Core Stack Alignment
-                        </span>
-                        <ScoreInfoButton 
-                          title="1. Core Stack Alignment Details"
-                          description={matchedCount >= 3 
-                            ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
-                            : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
-                        />
+                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                        <Zap className="w-3.5 h-3.5" />
                       </div>
-                      <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded shrink-0 whitespace-nowrap border",
-                        matchedCount >= 3 
-                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
-                          : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                      )}>
-                        {matchedCount >= 3 ? "Verified Primary Stack" : "Stack Gaps Detected"}
+                      <span className="font-semibold text-foreground text-xs truncate">
+                        1. Core Stack Alignment
                       </span>
+                      <ScoreInfoButton 
+                        title="1. Core Stack Alignment Details"
+                        description={matchedCount >= 3 
+                          ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
+                          : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
+                      />
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      {matchedCount >= 3 
-                        ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
-                        : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
-                    </p>
+                    <span className={cn(
+                      "text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
+                      matchedCount >= 3 
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                        : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                    )}>
+                      {matchedCount >= 3 ? "Verified Primary Stack" : "Stack Gaps Detected"}
+                    </span>
                   </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
+                    {matchedCount >= 3 
+                      ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
+                      : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
+                  </p>
                 </div>
 
                 {/* Dimension 2: Requirement Ratio */}
-                <div className="p-3 rounded-lg bg-muted/30 border border-border/60 hover:bg-muted/40 transition-colors flex flex-col justify-between gap-2">
-                  <div>
-                    <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Code className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                        <span className="font-semibold text-foreground truncate">
-                          2. Competency Coverage
-                        </span>
-                        <ScoreInfoButton 
-                          title="2. Competency Coverage Details"
-                          description={`Matches ${matchedCount} explicit skills requested in the job description across technical specifications.`}
-                        />
+                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                        <Code className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-[10px] font-mono font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
-                        {matchedCount} / {matchedCount + missingCount} ({skillMatchPercentage}%)
+                      <span className="font-semibold text-foreground text-xs truncate">
+                        2. Competency Coverage
                       </span>
+                      <ScoreInfoButton 
+                        title="2. Competency Coverage Details"
+                        description={`Matches ${matchedCount} explicit skills requested in the job description across technical specifications.`}
+                      />
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Matches {matchedCount} explicit skills requested in the job description across technical specifications.
-                    </p>
+                    <span className="text-[10px] font-mono font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
+                      {matchedCount} / {matchedCount + missingCount} ({skillMatchPercentage}%)
+                    </span>
                   </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
+                    Matches {matchedCount} explicit skills requested in the job description across technical specifications.
+                  </p>
                 </div>
 
                 {/* Dimension 3: Seniority Fit */}
-                <div className="p-3 rounded-lg bg-muted/30 border border-border/60 hover:bg-muted/40 transition-colors flex flex-col justify-between gap-2">
-                  <div>
-                    <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Briefcase className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                        <span className="font-semibold text-foreground truncate">
-                          3. Seniority Trajectory
-                        </span>
-                        <ScoreInfoButton 
-                          title="3. Seniority Trajectory Details"
-                          description={expDiff >= 0 
-                            ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
-                            : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
-                        />
+                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                        <Briefcase className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-[10px] font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
-                        {candidate.experience} yrs candidate
+                      <span className="font-semibold text-foreground text-xs truncate">
+                        3. Seniority Trajectory
                       </span>
+                      <ScoreInfoButton 
+                        title="3. Seniority Trajectory Details"
+                        description={expDiff >= 0 
+                          ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
+                          : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
+                      />
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      {expDiff >= 0 
-                        ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
-                        : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
-                    </p>
+                    <span className="text-[10px] font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
+                      {candidate.experience} yrs candidate
+                    </span>
                   </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
+                    {expDiff >= 0 
+                      ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
+                      : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
+                  </p>
                 </div>
 
                 {/* Dimension 4: Retention Stability */}
-                <div className="p-3 rounded-lg bg-muted/30 border border-border/60 hover:bg-muted/40 transition-colors flex flex-col justify-between gap-2">
-                  <div>
-                    <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <TrendingUp className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <span className="font-semibold text-foreground truncate">
-                          4. Predictive Retention
-                        </span>
-                        <ScoreInfoButton 
-                          title="4. Predictive Retention Details"
-                          description={(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
-                        />
+                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                        <TrendingUp className="w-3.5 h-3.5" />
                       </div>
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
-                        (candidate.predictiveInsights as any)?.retentionRisk === 'low' 
-                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
-                          : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                      )}>
-                        {(candidate.predictiveInsights as any)?.retentionRisk || 'Standard'} Risk
+                      <span className="font-semibold text-foreground text-xs truncate">
+                        4. Predictive Retention
                       </span>
+                      <ScoreInfoButton 
+                        title="4. Predictive Retention Details"
+                        description={(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
+                      />
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      {(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
-                    </p>
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
+                      (candidate.predictiveInsights as any)?.retentionRisk === 'low' 
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                        : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                    )}>
+                      {(candidate.predictiveInsights as any)?.retentionRisk || 'Standard'} Risk
+                    </span>
                   </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
+                    {(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
+                  </p>
                 </div>
               </div>
 
