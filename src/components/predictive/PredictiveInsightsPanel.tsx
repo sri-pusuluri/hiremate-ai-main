@@ -1,15 +1,31 @@
+import { useState } from 'react';
 import { Candidate } from '@/types/hiresort';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CheckCircle2, TrendingUp, AlertTriangle, Info, Sparkles } from 'lucide-react';
+import { 
+    AlertCircle, 
+    CheckCircle2, 
+    TrendingUp, 
+    AlertTriangle, 
+    Info, 
+    Sparkles, 
+    Zap, 
+    Briefcase, 
+    ShieldCheck, 
+    ChevronDown, 
+    ChevronUp 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface PredictiveInsightsPanelProps {
     candidate: Candidate;
 }
 
 export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelProps) {
+    const [showBreakdownDetails, setShowBreakdownDetails] = useState(false);
+
     if (!candidate.predictiveInsights) return null;
 
     const {
@@ -74,17 +90,47 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm items-center">
                             <span className="text-muted-foreground flex items-center gap-1.5">
-                                Interview Pass Probability
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Info className="w-3.5 h-3.5 text-muted-foreground/70" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p className="max-w-xs text-xs">Based on skills match, experience alignment, and historical interview outcomes for similar profiles.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <span>Interview Pass Probability</span>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            aria-label="View Interview Pass Details"
+                                            title="Click to view candidate breakdown"
+                                            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-primary transition-colors cursor-pointer inline-flex items-center justify-center"
+                                        >
+                                            <Info className="w-3.5 h-3.5 text-primary" />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 p-3.5 space-y-2.5 z-50 text-xs shadow-lg border border-border bg-card">
+                                        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                                            <span className="font-semibold text-foreground flex items-center gap-1.5 text-xs">
+                                                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                                Interview Pass Drivers: {candidate.name}
+                                            </span>
+                                            <span className="font-bold text-primary font-mono">{interviewPassProb}%</span>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                            Projected pass probability for technical & recruiter screens based on verified skills and role seniority.
+                                        </p>
+                                        <div className="space-y-1.5 pt-1">
+                                            <div className="flex items-start gap-1.5 text-[11px]">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                                <span><strong>Verified Stack:</strong> {candidate.matchedSkills && candidate.matchedSkills.length > 0 ? candidate.matchedSkills.slice(0, 3).join(', ') : 'Direct skills evaluated'}</span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5 text-[11px]">
+                                                <Briefcase className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                                <span><strong>Experience Match:</strong> {candidate.experience} yrs in {candidate.currentRole}</span>
+                                            </div>
+                                            {candidate.missingSkills && candidate.missingSkills.length > 0 && (
+                                                <div className="flex items-start gap-1.5 text-[11px]">
+                                                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                    <span><strong>Probe During Interview:</strong> {candidate.missingSkills.slice(0, 2).join(', ')}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
                             </span>
                             <span className="font-semibold">{interviewPassProb}%</span>
                         </div>
@@ -94,17 +140,41 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm items-center">
                             <span className="text-muted-foreground flex items-center gap-1.5">
-                                Offer Acceptance Probability
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Info className="w-3.5 h-3.5 text-muted-foreground/70" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p className="max-w-xs text-xs">Derived from salary alignment, location preferences, and market competitiveness.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <span>Offer Acceptance Probability</span>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            aria-label="View Offer Acceptance Details"
+                                            title="Click to view candidate breakdown"
+                                            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-primary transition-colors cursor-pointer inline-flex items-center justify-center"
+                                        >
+                                            <Info className="w-3.5 h-3.5 text-primary" />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 p-3.5 space-y-2.5 z-50 text-xs shadow-lg border border-border bg-card">
+                                        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                                            <span className="font-semibold text-foreground flex items-center gap-1.5 text-xs">
+                                                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                                                Offer Acceptance Drivers: {candidate.name}
+                                            </span>
+                                            <span className="font-bold text-primary font-mono">{offerAcceptanceProb}%</span>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                            Likelihood of signing an offer package based on current seniority tier, growth motivation, and availability.
+                                        </p>
+                                        <div className="space-y-1.5 pt-1">
+                                            <div className="flex items-start gap-1.5 text-[11px]">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                                <span><strong>Career Trajectory:</strong> Currently {candidate.currentRole} at {candidate.company || 'previous employer'}, representing strong career progression.</span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5 text-[11px]">
+                                                <Briefcase className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                                <span><strong>Projected Availability:</strong> Estimated {timeToJoinEstimate || '15–30 days'} joining window.</span>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
                             </span>
                             <span className="font-semibold">{offerAcceptanceProb}%</span>
                         </div>
@@ -114,21 +184,97 @@ export function PredictiveInsightsPanel({ candidate }: PredictiveInsightsPanelPr
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm items-center">
                             <span className="text-muted-foreground flex items-center gap-1.5">
-                                Onboarding Success Probability
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Info className="w-3.5 h-3.5 text-muted-foreground/70" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p className="max-w-xs text-xs">Calculated from cultural fit indicators, past tenure stability, and role clarity alignment.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <span>Onboarding Success Probability</span>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            aria-label="View Onboarding Success Details"
+                                            title="Click to view candidate breakdown"
+                                            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-primary transition-colors cursor-pointer inline-flex items-center justify-center"
+                                        >
+                                            <Info className="w-3.5 h-3.5 text-primary" />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 p-3.5 space-y-2.5 z-50 text-xs shadow-lg border border-border bg-card">
+                                        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                                            <span className="font-semibold text-foreground flex items-center gap-1.5 text-xs">
+                                                <ShieldCheck className="w-3.5 h-3.5 text-purple-500" />
+                                                Onboarding Drivers: {candidate.name}
+                                            </span>
+                                            <span className="font-bold text-primary font-mono">{onboardingSuccessProb}%</span>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                            Forecasted 90-day onboarding velocity and cultural retention based on tenure history.
+                                        </p>
+                                        <div className="space-y-1.5 pt-1">
+                                            <div className="flex items-start gap-1.5 text-[11px]">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                                <span><strong>Tenure Stability:</strong> {retentionRisk.toUpperCase()} risk — {retentionRiskFactor || 'Demonstrates steady job stability.'}</span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5 text-[11px]">
+                                                <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                <span><strong>Technical Ramp:</strong> Strong alignment across {candidate.matchedSkills?.length || 0} core competencies ensures fast time-to-productivity.</span>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
                             </span>
                             <span className="font-semibold">{onboardingSuccessProb}%</span>
                         </div>
                         <Progress value={onboardingSuccessProb} className="h-2" />
+                    </div>
+
+                    {/* Inline Expandable Toggle for Candidate Breakdown */}
+                    <div className="pt-1">
+                        <button
+                            type="button"
+                            onClick={() => setShowBreakdownDetails(!showBreakdownDetails)}
+                            className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 rounded-md transition-colors border border-primary/20 cursor-pointer"
+                        >
+                            <span className="flex items-center gap-1.5">
+                                <Info className="w-3.5 h-3.5" />
+                                {showBreakdownDetails ? `Hide Candidate Predictive Factors` : `View Candidate Predictive Factors (${candidate.name})`}
+                            </span>
+                            {showBreakdownDetails ? (
+                                <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                                <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                        </button>
+
+                        {showBreakdownDetails && (
+                            <div className="mt-2 p-3 rounded-lg bg-muted/40 border border-border/70 space-y-2.5 text-xs animate-in fade-in-50 duration-200">
+                                <div className="space-y-1 border-b border-border/50 pb-2">
+                                    <span className="font-semibold text-foreground flex items-center gap-1">
+                                        <Zap className="w-3 h-3 text-amber-500" />
+                                        Interview Pass Drivers ({interviewPassProb}%):
+                                    </span>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {candidate.name} has {candidate.experience} years as {candidate.currentRole} with {candidate.matchedSkills?.length || 0} verified skills ({candidate.matchedSkills?.slice(0, 3).join(', ')}).
+                                        {candidate.missingSkills && candidate.missingSkills.length > 0 && ` Probe ${candidate.missingSkills.slice(0, 2).join(', ')} during technical rounds.`}
+                                    </p>
+                                </div>
+                                <div className="space-y-1 border-b border-border/50 pb-2">
+                                    <span className="font-semibold text-foreground flex items-center gap-1">
+                                        <TrendingUp className="w-3 h-3 text-emerald-500" />
+                                        Offer Acceptance Drivers ({offerAcceptanceProb}%):
+                                    </span>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Career level matches target role seniority. Estimated joining window is {timeToJoinEstimate || '15–30 days'}.
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="font-semibold text-foreground flex items-center gap-1">
+                                        <ShieldCheck className="w-3 h-3 text-purple-500" />
+                                        Onboarding Success Drivers ({onboardingSuccessProb}%):
+                                    </span>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {retentionRisk.toUpperCase()} risk profile: {retentionRiskFactor || 'Steady progression with minimal flight risk.'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
