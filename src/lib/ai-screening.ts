@@ -94,6 +94,8 @@ export async function extractResumeText(
 export function evaluateResumeDeterministically(input: {
   candidateName: string;
   resumeText: string;
+  currentRole?: string;
+  company?: string;
   job: {
     title: string;
     description?: string;
@@ -218,16 +220,28 @@ export function evaluateResumeDeterministically(input: {
     similarity >= 0.72 ? 'high' : (similarity >= 0.45 ? 'medium' : 'low');
 
   // 8. Extract Current Role & Company
-  let currentRole = 'Software Engineer';
-  let company = 'Independent';
+  let currentRole = (input.currentRole && input.currentRole !== 'Unspecified') ? input.currentRole : 'Software Engineer';
+  let company = (input.company && input.company !== 'Unknown') ? input.company : 'Independent';
+
   const roleCompanyMatch = resumeText.match(/###?\s*([^|\n]+)\s*\|\s*([^\n]+)/);
   if (roleCompanyMatch) {
     currentRole = roleCompanyMatch[1].trim();
     company = roleCompanyMatch[2].trim().replace(/\*.*$/, '');
   } else {
-    const summaryRoleMatch = resumeText.match(/(?:experience as (?:a|an)|working as (?:a|an)|Summary\n\s*([^.]+Engineer|Developer|Designer))/i);
-    if (summaryRoleMatch && summaryRoleMatch[1]) {
-      currentRole = summaryRoleMatch[1].trim();
+    // Check for standard role – company patterns like "UI/UX Designer – Zool Tech Solutions"
+    const standardRoleCompany = resumeText.match(/([A-Za-z0-9/ ]{2,35}?(?:Designer|Developer|Engineer|Architect|Consultant|Manager|Lead|Specialist))\s*[–—|-]\s*([A-Za-z0-9&., ]{2,40}?(?:Pvt\s*Ltd|Ltd|Inc|Corp|Solutions|Technologies|LLC|Group|Foundation|Studio))/i);
+    if (standardRoleCompany && standardRoleCompany[1] && standardRoleCompany[2]) {
+      currentRole = standardRoleCompany[1].trim();
+      company = standardRoleCompany[2].trim();
+    } else {
+      const summaryRoleMatch = resumeText.match(/(?:experience as (?:a|an)|working as (?:a|an)|Summary\n\s*([^.]+Engineer|Developer|Designer))/i);
+      if (summaryRoleMatch && summaryRoleMatch[1]) {
+        currentRole = summaryRoleMatch[1].trim();
+      }
+      const genericRoleMatch = resumeText.match(/\b(UI\/UX Designer|UX\/UI Designer|Product Designer|Frontend Developer|Full Stack Developer|WordPress Developer|Backend Developer|Software Engineer)\b/i);
+      if (genericRoleMatch && (currentRole === 'Software Engineer' || !input.currentRole)) {
+        currentRole = genericRoleMatch[1].trim();
+      }
     }
   }
 
@@ -279,14 +293,46 @@ export function evaluateResumeDeterministically(input: {
  * Tries live backend edge function or client AI keys; falls back to deterministic ATS engine.
  */
 export async function analyzeCandidateWithAI(
-  candidate: { id: string; name?: string; full_name?: string; resume_text?: string | null; resume_url?: string | null },
+  candidate: { 
+    id: string; 
+    name?: string; 
+    full_name?: string; 
+    resume_text?: string | null; 
+    resumeText?: string | null;
+    resume_url?: string | null;
+    resumeUrl?: string | null;
+    currentRole?: string;
+    role_title?: string;
+    company?: string;
+  },
   job: { id: string; title: string; description?: string; requirements?: string[]; responsibilities?: string[] },
   options?: { preferredProvider?: 'openai' | 'gemini' | 'claude' | 'supabase-edge' | 'deterministic-ats' | string }
 ): Promise<AIAnalysisResult> {
   const name = candidate.name || candidate.full_name || 'Applicant';
-  const resumeText = await extractResumeText(name, candidate.resume_url, candidate.resume_text);
+  let resumeText = await extractResumeText(
+    name, 
+    candidate.resume_url || (candidate as any).resumeUrl, 
+    candidate.resume_text || (candidate as any).resumeText
+  );
 
-  // 1. If resume text is empty or corrupted, return diagnostic failure immediately
+  // 1. If text is missing from the passed object, fetch from Supabase candidates table
+  if ((!resumeText || resumeText.trim().length < 25) && candidate.id) {
+    try {
+      const { data: dbCandidate } = await supabase
+        .from('candidates')
+        .select('resume_text, role_title, company')
+        .eq('id', candidate.id)
+        .maybeSingle();
+
+      if (dbCandidate?.resume_text && dbCandidate.resume_text.trim().length >= 25) {
+        resumeText = dbCandidate.resume_text.trim();
+      }
+    } catch (e) {
+      console.warn('Could not load candidate resume_text from DB fallback:', e);
+    }
+  }
+
+  // If resume text is truly empty or corrupted, return diagnostic failure
   if (!resumeText || resumeText.trim().length < 25) {
     const failureResult: AIAnalysisResult = {
       currentRole: 'Unspecified',
@@ -390,6 +436,8 @@ Output ONLY valid JSON without markdown wrapping.`;
     result = evaluateResumeDeterministically({
       candidateName: name,
       resumeText,
+      currentRole: candidate.currentRole || candidate.role_title,
+      company: candidate.company,
       job
     });
   }
@@ -548,6 +596,8 @@ Output ONLY valid JSON without markdown wrapping.`;
     result = evaluateResumeDeterministically({
       candidateName: name,
       resumeText,
+      currentRole: candidate.currentRole || candidate.role_title,
+      company: candidate.company,
       job
     });
   }

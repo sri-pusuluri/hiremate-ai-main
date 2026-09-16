@@ -157,8 +157,8 @@ export default function Candidates() {
               };
             })(),
             aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
-            company: c.company || 'Tech Solutions',
-            currentRole: c.current_role || c.currentRole || 'Software Engineer',
+            company: c.company || (c.predictive_insights as any)?.company || 'Tech Solutions',
+            currentRole: c.role_title || (c.predictive_insights as any)?.currentRole || c.current_role || c.currentRole || 'Software Engineer',
             resumeText: c.resume_text || c.resumeText || '',
             resumeUrl: c.resume_url || c.resumeUrl || '',
             source: c.source || (c.email.length % 3 === 0 ? 'talent-pool' : 'applied'),

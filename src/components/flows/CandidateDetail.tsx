@@ -205,14 +205,25 @@ export function CandidateDetail({
   const handleReanalyze = async (customProvider?: string) => {
     setIsReanalyzing(true);
     try {
+      const candidatePayload = {
+        ...candidate,
+        resume_text: candidate.resumeText || (candidate as any).resume_text,
+        resume_url: candidate.resumeUrl || (candidate as any).resume_url,
+        role_title: (candidate as any).role_title || candidate.currentRole,
+        company: candidate.company
+      };
       const result = await analyzeCandidateWithAI(
-        candidate, 
+        candidatePayload, 
         job || { id: candidate.jobId || '', title: 'Software Engineer', description: 'Technical software engineering position' },
         { preferredProvider: customProvider }
       );
       if (result) {
-        candidate.currentRole = result.currentRole;
-        candidate.company = result.company;
+        if (!result.isUnprocessed || result.currentRole !== 'Unspecified') {
+          candidate.currentRole = result.currentRole;
+        }
+        if (!result.isUnprocessed || result.company !== 'Unknown') {
+          candidate.company = result.company;
+        }
         candidate.experience = result.experience;
         candidate.aiScore = result.score;
         candidate.cosineSimilarity = result.similarity;
@@ -301,7 +312,7 @@ export function CandidateDetail({
                 {effectiveAIEnabled && <RankBadge rank={candidate.aiRank || 0} score={candidate.aiScore || 'low'} />}
               </div>
               <p className="text-muted-foreground">
-                {candidate.currentRole} at {candidate.company}
+                {(candidate.currentRole && candidate.currentRole !== 'Unspecified') ? candidate.currentRole : ((candidate as any).role_title || 'Software Engineer')} at {(candidate.company && candidate.company !== 'Unknown') ? candidate.company : 'Independent'}
               </p>
               <div className="flex items-center gap-2 mt-2">
                 {effectiveAIEnabled && <RelevanceLabel score={candidate.aiScore || 'low'} />}
