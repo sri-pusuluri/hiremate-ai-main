@@ -658,16 +658,28 @@ export function AIMatchAnalysis({
                 </div>
               </div>
 
-              {/* Detailed Screening Coverage Accordion/Breakdown */}
+              {/* Detailed Screening Coverage Information Box */}
               <div className="space-y-2">
                 <button 
                   type="button"
                   onClick={() => setShowProviderCoverageDetails(!showProviderCoverageDetails)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-colors border border-border/70"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 text-xs font-semibold text-foreground transition-colors border border-blue-200/60 dark:border-blue-800/40 cursor-pointer"
                 >
-                  <div className="flex items-center gap-1.5">
-                    <FileSearch className="w-3.5 h-3.5 text-primary" />
-                    <span>What & All Does the External Provider Cover? (Detailed Specification)</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center shrink-0">
+                      <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-foreground">AI Engine Architecture Specification</span>
+                        <span className="text-[9px] bg-blue-500/15 text-blue-600 dark:text-blue-400 px-1.5 py-0.2 rounded font-medium border border-blue-500/20">
+                          Info Box
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground block font-normal">
+                        What & All Does the External Provider Cover? (System Reference)
+                      </span>
+                    </div>
                   </div>
                   {showProviderCoverageDetails ? (
                     <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -678,6 +690,18 @@ export function AIMatchAnalysis({
 
                 {showProviderCoverageDetails && (
                   <div className="p-3 rounded-lg bg-muted/20 border border-border/60 space-y-2.5 text-xs animate-in fade-in-50 duration-200">
+                    {/* Information Banner clarifying this is a platform spec, not candidate report */}
+                    <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-foreground">
+                      <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 block">
+                          Informational Reference Guide (Platform Standard)
+                        </span>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          This information box describes the 6-layer algorithmic capabilities executed by the AI provider across <em>all</em> candidates. For <strong>{candidate.name}</strong>'s individual match scores, verified skills, and interview questions, review the personalized <strong>AI Assessment</strong> and <strong>Full Screening Coverage Dimensions</strong> sections above.
+                        </p>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                       <div className="p-2 rounded bg-card border border-border/60 space-y-1">
                         <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
