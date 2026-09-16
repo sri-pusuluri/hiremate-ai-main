@@ -275,7 +275,7 @@ export function CandidateDetail({
 
   return (
     <>
-      <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-card border-l border-border shadow-dropdown z-40 flex flex-col animate-slide-in-right">
+      <div className="fixed inset-y-0 right-0 w-full max-w-xl sm:max-w-2xl bg-card border-l border-border shadow-dropdown z-40 flex flex-col animate-slide-in-right">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-border">
           <div className="flex items-start gap-4">
@@ -554,41 +554,48 @@ export function CandidateDetail({
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-border p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="border-t border-border p-3 sm:p-4 bg-card shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <Button 
               variant={isShortlisted ? "secondary" : "ghost"} 
               size="sm"
               onClick={handleToggleShortlist}
-              className={cn("cursor-pointer transition-colors", isShortlisted ? "text-amber-500 font-medium" : "")}
+              className={cn("h-8 px-2 sm:px-2.5 text-xs cursor-pointer transition-colors", isShortlisted ? "text-amber-500 font-medium" : "")}
               title={isShortlisted ? "Unpin candidate" : "Pin candidate"}
             >
-              <Pin className={cn("w-4 h-4", isShortlisted && "fill-amber-500 text-amber-500")} />
+              <Pin className={cn("w-3.5 h-3.5 mr-1", isShortlisted && "fill-amber-500 text-amber-500")} />
               {isShortlisted ? "Pinned" : "Pin"}
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => onBoost?.(candidate.id)}
-              className="cursor-pointer"
+              className="h-8 px-2 sm:px-2.5 text-xs cursor-pointer"
+              title="Boost candidate ranking"
             >
-              <ArrowUp className="w-4 h-4" />
+              <ArrowUp className="w-3.5 h-3.5 mr-1" />
               Boost
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => onDemote?.(candidate.id)}
-              className="cursor-pointer"
+              className="h-8 px-2 sm:px-2.5 text-xs cursor-pointer"
+              title="Demote candidate ranking"
             >
-              <ArrowDown className="w-4 h-4" />
+              <ArrowDown className="w-3.5 h-3.5 mr-1" />
               Demote
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowResumeModal(true)} className="cursor-pointer">
-              <FileText className="w-4 h-4" />
+          <div className="flex items-center gap-2 shrink-0">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowResumeModal(true)} 
+              className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5 mr-1.5" />
               View Resume
             </Button>
             {isShortlisted ? (
@@ -597,9 +604,9 @@ export function CandidateDetail({
                 size="sm"
                 disabled={updatingShortlist}
                 onClick={handleToggleShortlist}
-                className="border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40 cursor-pointer transition-all"
+                className="h-8 px-2.5 sm:px-3 text-xs border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40 cursor-pointer transition-all"
               >
-                <Trash2 className="w-3.5 h-3.5 mr-1 text-rose-500" />
+                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-rose-500" />
                 Remove from Shortlist
               </Button>
             ) : (
@@ -608,9 +615,9 @@ export function CandidateDetail({
                 size="sm"
                 disabled={updatingShortlist}
                 onClick={handleToggleShortlist}
-                className="bg-primary hover:bg-primary/90 cursor-pointer shadow-sm transition-all"
+                className="h-8 px-2.5 sm:px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs transition-all"
               >
-                <Star className="w-3.5 h-3.5 mr-1 fill-white text-white" />
+                <Star className="w-3.5 h-3.5 mr-1.5 fill-white text-white" />
                 Add to Shortlist
               </Button>
             )}
