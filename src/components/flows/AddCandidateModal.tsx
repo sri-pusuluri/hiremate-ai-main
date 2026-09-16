@@ -6,6 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   UserPlus, 
   UploadCloud, 
@@ -63,6 +73,14 @@ export function AddCandidateModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
   const [wordCount, setWordCount] = useState(0);
+
+  // Duplicate candidate alert state
+  const [duplicateCandidate, setDuplicateCandidate] = useState<{
+    existing: any;
+    pendingCandidate: any;
+    evalResult: any;
+  } | null>(null);
+  const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
 
   // Sync selected job if targetJob changes
   useEffect(() => {
@@ -232,6 +250,28 @@ export function AddCandidateModal({
         created_at: new Date().toISOString()
       };
 
+      // 1. Check for existing duplicate candidate for this job
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanPhone = phone.trim();
+
+      const { data: duplicateMatches } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('job_id', activeJob.id)
+        .or(`email.ilike.${cleanEmail},phone.eq.${cleanPhone}`);
+
+      if (duplicateMatches && duplicateMatches.length > 0) {
+        const existing = duplicateMatches[0];
+        setDuplicateCandidate({
+          existing,
+          pendingCandidate: newCandidate,
+          evalResult
+        });
+        setShowDuplicateAlert(true);
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('candidates')
         .insert([newCandidate])
@@ -269,8 +309,62 @@ export function AddCandidateModal({
     }
   };
 
+  const handleConfirmOverwrite = async () => {
+    if (!duplicateCandidate || !activeJob) return;
+    setIsSubmitting(true);
+
+    try {
+      const existingId = duplicateCandidate.existing.id;
+      const updatePayload = {
+        ...duplicateCandidate.pendingCandidate,
+        id: existingId,
+        created_at: duplicateCandidate.existing.created_at,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('candidates')
+        .update(updatePayload)
+        .eq('id', existingId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: 'Candidate Record Overwritten & Updated ✨',
+        description: `Overwrote existing candidate for ${activeJob.title} with latest resume and refreshed match score (${Math.round((duplicateCandidate.evalResult.similarity || 0) * 100)}%).`,
+      });
+
+      // Reset form
+      setFullName('');
+      setEmail('');
+      setPhone('');
+      setRoleTitle('');
+      setCompany('');
+      setResumeText('');
+      setUploadedFileName('');
+      setDetectedSkills([]);
+      setShowDuplicateAlert(false);
+      setDuplicateCandidate(null);
+
+      onCandidateAdded?.(data || updatePayload);
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error('Failed to overwrite candidate:', err);
+      toast({
+        title: 'Overwrite Failed',
+        description: err.message || 'Could not update existing candidate record.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
         <form onSubmit={handleSubmit}>
           <DialogHeader className="p-6 pb-4 border-b border-border">
@@ -534,5 +628,83 @@ export function AddCandidateModal({
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Duplicate Candidate Confirmation Alert */}
+    <AlertDialog open={showDuplicateAlert} onOpenChange={setShowDuplicateAlert}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-1">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <AlertDialogTitle className="text-base font-bold text-foreground">
+            Duplicate Candidate Detected
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed">
+            A candidate matching email <strong>{email}</strong> or phone <strong>{phone}</strong> already exists in the pipeline for <strong>{activeJob?.title}</strong>.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        {duplicateCandidate && (
+          <div className="space-y-2.5 py-1 text-xs">
+            <div className="p-3 rounded-lg bg-muted/60 border border-border space-y-1">
+              <div className="flex items-center justify-between font-semibold text-foreground">
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Existing Record:</span>
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  {Math.round((duplicateCandidate.existing.cosine_similarity || 0) * 100)}% Match
+                </Badge>
+              </div>
+              <p className="font-semibold text-foreground text-sm">
+                {duplicateCandidate.existing.full_name}
+              </p>
+              <p className="text-muted-foreground">
+                {duplicateCandidate.existing.role_title || duplicateCandidate.existing.currentRole || 'Software Engineer'} at {duplicateCandidate.existing.company || 'Tech Company'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Applied on {new Date(duplicateCandidate.existing.created_at).toLocaleDateString()}
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
+              <div className="flex items-center justify-between font-semibold text-primary">
+                <span className="text-[11px] uppercase tracking-wider">New Upload / Rescan:</span>
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] font-mono">
+                  {Math.round((duplicateCandidate.evalResult.similarity || 0) * 100)}% Match
+                </Badge>
+              </div>
+              <p className="font-semibold text-foreground text-sm">
+                {fullName}
+              </p>
+              <p className="text-muted-foreground">
+                {roleTitle || duplicateCandidate.evalResult.currentRole} at {company || duplicateCandidate.evalResult.company}
+              </p>
+              <p className="text-[10px] text-primary/90 font-medium pt-0.5">
+                Overwriting will refresh the existing candidate with the new resume text, updated skills, and newly computed ATS score.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <AlertDialogFooter className="gap-2 sm:gap-0 mt-2">
+          <AlertDialogCancel onClick={() => setShowDuplicateAlert(false)} disabled={isSubmitting}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleConfirmOverwrite}
+            disabled={isSubmitting}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                Overwriting...
+              </>
+            ) : (
+              'Overwrite & Update Record'
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

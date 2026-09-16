@@ -438,49 +438,87 @@ export default function PublicJobApplication() {
         }
       });
 
-      // 5. Insert into Supabase candidates table with truthful scores
-      const { error: insertError } = await supabase.from('candidates').insert([
-        {
-          full_name: fullName,
-          email: email,
-          phone: phone,
-          job_id: job?.id,
-          client_id: targetClientId,
-          source: 'applied',
-          status: 'new',
-          pipeline_stage: 'applied',
-          experience: evalResult.experience || 3,
-          role_title: evalResult.currentRole,
+      // 4. Construct candidate payload
+      const candidatePayload = {
+        full_name: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        job_id: job?.id,
+        client_id: targetClientId,
+        source: 'applied',
+        status: 'new',
+        pipeline_stage: 'applied',
+        experience: evalResult.experience || 3,
+        role_title: evalResult.currentRole,
+        company: evalResult.company,
+        resume_url: resumeUrl,
+        resume_text: combinedResumeText,
+        custom_answers: {
+          ...screeningAnswers,
+          linkedin: linkedIn,
+          portfolio: portfolio,
+          cover_note: coverNote,
+        },
+        ai_score: evalResult.isUnprocessed ? null : evalResult.score,
+        cosine_similarity: evalResult.isUnprocessed ? null : evalResult.similarity,
+        matched_skills: evalResult.matchedSkills,
+        missing_skills: evalResult.missingSkills,
+        predictive_insights: {
+          currentRole: evalResult.currentRole,
           company: evalResult.company,
-          resume_url: resumeUrl,
-          resume_text: combinedResumeText,
-          custom_answers: {
-            ...screeningAnswers,
-            linkedin: linkedIn,
-            portfolio: portfolio,
-            cover_note: coverNote,
-          },
-          ai_score: evalResult.isUnprocessed ? null : evalResult.score,
-          cosine_similarity: evalResult.isUnprocessed ? null : evalResult.similarity,
-          matched_skills: evalResult.matchedSkills,
-          missing_skills: evalResult.missingSkills,
-          predictive_insights: {
-            currentRole: evalResult.currentRole,
-            company: evalResult.company,
-            interviewPassProb: evalResult.interviewPassProb,
-            offerAcceptanceProb: evalResult.offerAcceptanceProb,
-            onboardingSuccessProb: evalResult.onboardingSuccessProb,
-            retentionRisk: evalResult.retentionRisk,
-            retentionRiskFactor: evalResult.retentionRiskFactor,
-            timeToJoinEstimate: evalResult.timeToJoinEstimate,
-            assessment: evalResult.assessment,
-            evaluatedAt: new Date().toISOString(),
-            isUnprocessed: evalResult.isUnprocessed,
-            error: evalResult.error
-          },
-          created_at: new Date().toISOString(),
-        } as any
-      ]);
+          interviewPassProb: evalResult.interviewPassProb,
+          offerAcceptanceProb: evalResult.offerAcceptanceProb,
+          onboardingSuccessProb: evalResult.onboardingSuccessProb,
+          retentionRisk: evalResult.retentionRisk,
+          retentionRiskFactor: evalResult.retentionRiskFactor,
+          timeToJoinEstimate: evalResult.timeToJoinEstimate,
+          assessment: evalResult.assessment,
+          evaluatedAt: new Date().toISOString(),
+          isUnprocessed: evalResult.isUnprocessed,
+          error: evalResult.error
+        },
+        created_at: new Date().toISOString(),
+      };
+
+      // 5. Duplicate Check: if candidate already applied for this job, update existing record
+      if (job?.id) {
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = phone.trim();
+
+        const { data: existingApp } = await supabase
+          .from('candidates')
+          .select('id, full_name, email, created_at')
+          .eq('job_id', job.id)
+          .or(`email.ilike.${cleanEmail},phone.eq.${cleanPhone}`)
+          .maybeSingle();
+
+        if (existingApp) {
+          const { error: updateError } = await supabase
+            .from('candidates')
+            .update({
+              ...candidatePayload,
+              created_at: existingApp.created_at,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingApp.id);
+
+          if (updateError) {
+            console.error('Candidate update error:', updateError);
+            throw updateError;
+          }
+
+          setApplicationId(existingApp.id.substring(0, 8).toUpperCase());
+          setSubmitted(true);
+          toast({
+            title: 'Application Updated! ✨',
+            description: `We recognized your existing application for ${job?.title} and updated it with your latest resume.`,
+          });
+          return;
+        }
+      }
+
+      // 6. Insert into Supabase candidates table with truthful scores
+      const { error: insertError } = await supabase.from('candidates').insert([candidatePayload]);
 
       if (insertError) {
         console.error('Candidate insert failed:', insertError);
