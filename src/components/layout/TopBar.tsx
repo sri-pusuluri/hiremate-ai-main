@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Bell, Search, Building2, Globe, ShieldCheck, HelpCircle, LifeBuoy, Compass } from 'lucide-react';
+import { Bell, Search, Building2, Globe, ShieldCheck, HelpCircle, LifeBuoy, Compass, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { isMockMode, disableMockMode } from '@/integrations/supabase/client';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
 import { HelpDrawer } from '@/components/support/HelpDrawer';
 import { useNavigate } from 'react-router-dom';
@@ -67,6 +68,30 @@ export function TopBar({ title, subtitle }: TopBarProps) {
             </>
           )}
         </div>
+
+        {/* Database Connection / Mock Mode Indicator */}
+        {isMockMode() ? (
+          <button
+            type="button"
+            onClick={() => {
+              disableMockMode();
+              window.location.reload();
+            }}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[11px] font-semibold hover:bg-amber-500/20 transition-colors cursor-pointer shadow-2xs"
+            title="Local offline mock mode is active. Click to switch to live Supabase Cloud database."
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>Mock Mode (Click for Live DB)</span>
+          </button>
+        ) : (
+          <div 
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium"
+            title="Connected to live Supabase Cloud database"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live DB</span>
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative hidden md:block">
