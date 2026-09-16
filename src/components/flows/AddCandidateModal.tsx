@@ -29,7 +29,8 @@ import {
   Phone,
   User,
   Building2,
-  Zap
+  Zap,
+  Copy
 } from 'lucide-react';
 import { Job, Candidate } from '@/types/hiresort';
 import { supabase } from '@/integrations/supabase/client';
@@ -362,6 +363,50 @@ export function AddCandidateModal({
     }
   };
 
+  const handleRetainBoth = async () => {
+    if (!duplicateCandidate || !activeJob) return;
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('candidates')
+        .insert([duplicateCandidate.pendingCandidate])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: 'Candidate Added as Separate Entry 📄',
+        description: `Retained both existing and new records for ${duplicateCandidate.pendingCandidate.full_name} under ${activeJob.title}.`,
+      });
+
+      // Reset form
+      setFullName('');
+      setEmail('');
+      setPhone('');
+      setRoleTitle('');
+      setCompany('');
+      setResumeText('');
+      setUploadedFileName('');
+      setDetectedSkills([]);
+      setShowDuplicateAlert(false);
+      setDuplicateCandidate(null);
+
+      onCandidateAdded?.(data || duplicateCandidate.pendingCandidate);
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error('Failed to retain both records:', err);
+      toast({
+        title: 'Error Saving Record',
+        description: err.message || 'Could not save the new candidate entry.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -684,14 +729,30 @@ export function AddCandidateModal({
           </div>
         )}
 
-        <AlertDialogFooter className="gap-2 sm:gap-0 mt-2">
+        <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 mt-2">
           <AlertDialogCancel onClick={() => setShowDuplicateAlert(false)} disabled={isSubmitting}>
             Cancel
           </AlertDialogCancel>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleRetainBoth}
+            disabled={isSubmitting}
+            className="text-xs border-primary/30 text-primary hover:bg-primary/10 cursor-pointer h-9 px-3 gap-1.5"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+            Keep Both (Retain All)
+          </Button>
+
           <AlertDialogAction 
             onClick={handleConfirmOverwrite}
             disabled={isSubmitting}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-3"
           >
             {isSubmitting ? (
               <>
