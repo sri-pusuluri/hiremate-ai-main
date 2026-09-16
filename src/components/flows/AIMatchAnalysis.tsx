@@ -706,66 +706,10 @@ export function AIMatchAnalysis({
                         </p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                          1. Semantic Vector Similarity (Math)
-                        </span>
-                        <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          Converts both candidate resume and job description into 1536-dimensional dense embedding vectors, measuring geometric cosine distance to capture lexical context without keyword stuffing bias.
-                        </p>
-                      </div>
-
-                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                          2. Contextual Cognitive Reasoning
-                        </span>
-                        <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          Examines architectural scope, project impact, system complexity, and transferable engineering proficiencies beyond verbatim title matching.
-                        </p>
-                      </div>
-
-                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          3. Technical Competency & Gap Extraction
-                        </span>
-                        <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          Evaluates resume against complete skills catalog, separating verified proficiencies (matched_skills) from unsatisfied job criteria (missing_skills).
-                        </p>
-                      </div>
-
-                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                          4. Seniority Trajectory & Experience Fit
-                        </span>
-                        <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          Analyzes career progression timeline, leadership indicators (Senior, Lead, Staff), and tenure delta relative to target requirements.
-                        </p>
-                      </div>
-
-                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                          5. Predictive Retention & Behavioral Risk
-                        </span>
-                        <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          Synthesizes interview pass likelihood, offer acceptance rate, onboarding probability, flight risk factors, and joining timeframe estimates.
-                        </p>
-                      </div>
-
-                      <div className="p-2 rounded bg-card border border-border/60 space-y-1">
-                        <span className="font-semibold text-foreground flex items-center gap-1 text-[11px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                          6. Targeted Recruiter Interview Probes
-                        </span>
-                        <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          Dynamically crafts tailored technical questions to investigate specific detected candidate skill gaps during technical and recruiter screens.
-                        </p>
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {PLATFORM_COVERAGE_LAYERS.map((layer) => (
+                        <LayerInfoItem key={layer.id} layer={layer} />
+                      ))}
                     </div>
 
                     <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground">
@@ -877,3 +821,99 @@ function ScoreInfoButton({ title, description }: ScoreInfoButtonProps) {
     </Popover>
   );
 }
+
+const PLATFORM_COVERAGE_LAYERS = [
+  {
+    id: 1,
+    title: "1. Semantic Vector Similarity (Math)",
+    colorDot: "bg-blue-500",
+    description: "Converts both candidate resume and job description into 1536-dimensional dense embedding vectors, measuring geometric cosine distance to capture lexical context without keyword stuffing bias."
+  },
+  {
+    id: 2,
+    title: "2. Contextual Cognitive Reasoning",
+    colorDot: "bg-purple-500",
+    description: "Examines architectural scope, project impact, system complexity, and transferable engineering proficiencies beyond verbatim title matching."
+  },
+  {
+    id: 3,
+    title: "3. Technical Competency & Gap Extraction",
+    colorDot: "bg-emerald-500",
+    description: "Evaluates resume against complete skills catalog, separating verified proficiencies (matched_skills) from unsatisfied job criteria (missing_skills)."
+  },
+  {
+    id: 4,
+    title: "4. Seniority Trajectory & Experience Fit",
+    colorDot: "bg-amber-500",
+    description: "Analyzes career progression timeline, leadership indicators (Senior, Lead, Staff), and tenure delta relative to target requirements."
+  },
+  {
+    id: 5,
+    title: "5. Predictive Retention & Behavioral Risk",
+    colorDot: "bg-rose-500",
+    description: "Synthesizes interview pass likelihood, offer acceptance rate, onboarding probability, flight risk factors, and joining timeframe estimates."
+  },
+  {
+    id: 6,
+    title: "6. Targeted Recruiter Interview Probes",
+    colorDot: "bg-cyan-500",
+    description: "Dynamically crafts tailored technical questions to investigate specific detected candidate skill gaps during technical and recruiter screens."
+  }
+];
+
+function LayerInfoItem({ layer }: { layer: typeof PLATFORM_COVERAGE_LAYERS[number] }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(prev => !prev);
+          }}
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setOpen(prev => !prev);
+            }
+          }}
+          className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/60 hover:bg-muted/40 hover:border-border transition-all cursor-pointer group"
+        >
+          <span className="font-semibold text-foreground flex items-center gap-1.5 text-[11px] group-hover:text-primary transition-colors">
+            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", layer.colorDot)} />
+            {layer.title}
+          </span>
+          <div
+            className="inline-flex items-center justify-center p-1 rounded-md text-muted-foreground/70 group-hover:text-blue-500 hover:bg-blue-500/10 transition-colors shrink-0"
+            aria-label={`About ${layer.title}`}
+          >
+            <Info className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        align="center"
+        sideOffset={6}
+        className="w-80 p-3.5 text-xs bg-popover/95 backdrop-blur-sm border border-border shadow-xl z-50 rounded-xl space-y-1.5 animate-in fade-in-50 zoom-in-95"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs border-b border-border/60 pb-1.5">
+          <span className={cn("w-2 h-2 rounded-full shrink-0", layer.colorDot)} />
+          <span>{layer.title}</span>
+        </div>
+        <p className="text-muted-foreground text-[11px] leading-relaxed font-normal normal-case tracking-normal">
+          {layer.description}
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
