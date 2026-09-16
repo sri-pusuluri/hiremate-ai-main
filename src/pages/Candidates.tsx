@@ -40,6 +40,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { getInitials } from '@/lib/utils';
 
 type TabType = 'all' | 'applied' | 'talent-pool';
 
@@ -472,9 +473,9 @@ export default function Candidates() {
               >
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-sm font-medium text-primary">
-                        {candidate.name.split(' ').map(n => n[0]).join('')}
+                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-primary">
+                        {getInitials(candidate.name)}
                       </span>
                     </div>
                     <div>

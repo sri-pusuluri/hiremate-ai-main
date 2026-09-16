@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { parseCandidateResume } from '@/lib/resume-parser';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { PredictiveInsightsPanel } from '@/components/predictive/PredictiveInsightsPanel';
 import { Input } from '@/components/ui/input';
@@ -83,6 +83,7 @@ export function CandidateDetail({
   );
   const [isShortlisted, setIsShortlisted] = useState<boolean>(initialIsShortlisted);
   const [updatingShortlist, setUpdatingShortlist] = useState(false);
+  const [avatarColorIndex, setAvatarColorIndex] = useState(0);
 
   useEffect(() => {
     setFeedback(candidate.recruiterFeedback || null);
@@ -268,11 +269,31 @@ export function CandidateDetail({
         <div className="flex items-start justify-between p-6 border-b border-border">
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-xl font-semibold text-primary">
-                {candidate.name.split(' ').map(n => n[0]).join('')}
-              </span>
-            </div>
+            {(() => {
+              const avatarStyles = [
+                'bg-primary/10 text-primary border-primary/20',
+                'bg-purple-500/10 text-purple-600 border-purple-500/30',
+                'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+                'bg-amber-500/10 text-amber-600 border-amber-500/30',
+                'bg-rose-500/10 text-rose-600 border-rose-500/30'
+              ];
+              const currentStyle = avatarStyles[avatarColorIndex % avatarStyles.length];
+
+              return (
+                <div 
+                  className={cn(
+                    "w-14 h-14 rounded-full border flex items-center justify-center shrink-0 shadow-2xs cursor-pointer transition-all hover:scale-105 active:scale-95 select-none",
+                    currentStyle
+                  )}
+                  title="Click to toggle profile icon color"
+                  onClick={() => setAvatarColorIndex(prev => prev + 1)}
+                >
+                  <span className="text-xl font-bold tracking-tight">
+                    {getInitials(candidate.name)}
+                  </span>
+                </div>
+              );
+            })()}
 
             <div>
               <div className="flex items-center gap-2 mb-1">

@@ -107,16 +107,21 @@ export function AddCandidateModal({
       }
       if (contact.email) setEmail(contact.email);
       if (contact.phone) setPhone(contact.phone);
+      if (contact.roleTitle) setRoleTitle(contact.roleTitle);
+      if (contact.company) setCompany(contact.company);
+      if (contact.experienceYears) setExperience(contact.experienceYears);
 
       setResumeText(text);
       setDetectedSkills(contact.detectedSkills);
       setWordCount(contact.wordCount);
 
-      // Auto-extract role title / company if possible
-      const roleMatch = text.match(/###?\s*([^|\n]+)\s*\|\s*([^\n]+)/);
-      if (roleMatch) {
-        setRoleTitle(roleMatch[1].trim());
-        setCompany(roleMatch[2].trim().replace(/\*.*$/, ''));
+      // Auto-extract role title / company if not already detected
+      if (!contact.roleTitle || !contact.company) {
+        const roleMatch = text.match(/###?\s*([^|\n]+)\s*\|\s*([^\n]+)/);
+        if (roleMatch) {
+          if (!contact.roleTitle) setRoleTitle(roleMatch[1].trim());
+          if (!contact.company) setCompany(roleMatch[2].trim().replace(/\*.*$/, ''));
+        }
       }
 
       toast({
@@ -150,10 +155,19 @@ export function AddCandidateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fullName.trim() || !email.trim()) {
+    if (!fullName.trim() || !email.trim() || !phone.trim()) {
       toast({
         title: 'Missing Required Fields',
-        description: 'Candidate full name and email are required.',
+        description: 'Candidate full name, email address, and phone number are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!email.includes('@') || !email.includes('.')) {
+      toast({
+        title: 'Invalid Email Address',
+        description: 'Please enter a valid candidate email address.',
         variant: 'destructive',
       });
       return;
@@ -365,6 +379,13 @@ export function AddCandidateModal({
               </TabsContent>
             </Tabs>
 
+            {/* Missing Contact Warning Notice */}
+            {resumeText && (!email || !phone) && (
+              <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
+                <span>⚠️ Please enter the candidate's {!email && !phone ? 'Email Address and Phone Number' : !email ? 'Email Address' : 'Phone Number'} below before saving.</span>
+              </div>
+            )}
+
             {/* Candidate Contact Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="space-y-1">
@@ -399,15 +420,16 @@ export function AddCandidateModal({
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="c-phone" className="text-xs font-semibold">Phone Number</Label>
+                <Label htmlFor="c-phone" className="text-xs font-semibold">Phone Number *</Label>
                 <div className="relative">
                   <Phone className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="c-phone"
-                    placeholder="e.g. +1 415 628 9901"
+                    placeholder="e.g. +91 63829 45643"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="pl-8 h-8 text-xs"
+                    required
                   />
                 </div>
               </div>

@@ -334,10 +334,19 @@ export default function PublicJobApplication() {
   const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fullName || !email) {
+    if (!fullName.trim() || !email.trim() || !phone.trim()) {
       toast({
         title: 'Missing Required Fields',
-        description: 'Please provide your Full Name and Email Address.',
+        description: 'Please provide your Full Name, Email Address, and Phone Number.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!email.includes('@') || !email.includes('.')) {
+      toast({
+        title: 'Invalid Email Address',
+        description: 'Please provide a valid email address.',
         variant: 'destructive',
       });
       return;
@@ -1009,7 +1018,7 @@ export default function PublicJobApplication() {
 
                   {/* 4. Phone */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="phone" className="text-xs font-medium">Phone Number</Label>
+                    <Label htmlFor="phone" className="text-xs font-medium">Phone Number *</Label>
                     <div className="relative">
                       <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                       <Input 
@@ -1018,6 +1027,7 @@ export default function PublicJobApplication() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className="pl-9 h-10 text-xs rounded-lg bg-background"
+                        required
                       />
                     </div>
                   </div>

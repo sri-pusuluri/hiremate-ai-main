@@ -21,6 +21,7 @@ import {
   Building2,
   Clock
 } from 'lucide-react';
+import { getInitials } from '@/lib/utils';
 
 interface ResumeViewerModalProps {
   candidate: Candidate | null;
@@ -136,8 +137,8 @@ ${certificationsList.join('\n')}
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                <span className="text-lg font-semibold text-primary">
-                  {candidate.name.split(' ').map(n => n[0]).join('')}
+                <span className="text-lg font-bold text-primary">
+                  {getInitials(candidate.name)}
                 </span>
               </div>
               <div>

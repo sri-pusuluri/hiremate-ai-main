@@ -99,4 +99,33 @@ Email: david@cloud.dev
     expect(lowEval.matchedSkills).not.toContain('PHP');
     expect(lowEval.retentionRiskFactor).toContain('Domain gap');
   });
+
+  it('correctly parses Adlin Yona resume text with Indian phone, Behance link, and clean name without role title', () => {
+    const adlinText = `
+ADLIN YONA
+U I U X D E S I G N E R
+6382945643
+adlinyonaai@gmail.com
+Bengaluru, India
+https://www.behance.net/adlinyonaa
+
+PROFILE
+UI/UX Designer with 2.5+ years of experience creating user-centered websites, dashboards, and web applications. Skilled in UI design, wireframing, prototyping, responsive design, and design systems. Proficient in Figma, Adobe XD, Photoshop, Illustrator, Canva, and Framer (no-code).
+
+WORK EXPERIENCE
+UI/UX Designer – Zool Tech Solutions
+Aug 2025 – Present
+- Designed The Health Worker website for Azim Premji Foundation.
+    `;
+
+    const contact = parseContactInfoFromText(adlinText, 'Adlin_Yona_Ui_Ux_Designer_Resume.pdf');
+    expect(contact.fullName).toBe('Adlin Yona');
+    expect(contact.email).toBe('adlinyonaai@gmail.com');
+    expect(contact.phone).toBe('6382945643');
+    expect(contact.roleTitle).toContain('UI/UX Designer');
+    expect(contact.company).toBe('Zool Tech Solutions');
+    expect(contact.experienceYears).toBe(2.5);
+    expect(contact.location).toBe('Bengaluru, India');
+    expect(contact.portfolio).toBe('https://www.behance.net/adlinyonaa');
+  });
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { 
   Sparkles, 
   LayoutDashboard, 
@@ -359,8 +359,8 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
       <div className="p-3 border-t border-sidebar-border shrink-0 bg-sidebar z-10">
         <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-sidebar-accent/30">
           <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-sidebar-primary">
-              {profile?.full_name?.split(' ').map(n => n[0]).join('') || (user?.email ? user.email.substring(0, 2).toUpperCase() : 'SR')}
+            <span className="text-xs font-bold text-sidebar-primary">
+              {getInitials(profile?.full_name || user?.email?.split('@')[0])}
             </span>
           </div>
           <div className="flex-1 min-w-0">

@@ -38,6 +38,7 @@ import { evaluateResumeDeterministically } from '@/lib/ai-screening';
 import TenantBrandLogo, { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
 import TenantLogoUploader from '@/components/common/TenantLogoUploader';
 import { getAppBaseUrl } from '@/lib/app-url';
+import { getInitials } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -688,8 +689,8 @@ export default function Settings() {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6">
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-2xl font-medium text-primary">
-                    {fullName?.split(' ').map(n => n[0]).join('') || '?'}
+                  <span className="text-2xl font-bold text-primary">
+                    {getInitials(fullName)}
                   </span>
                 </div>
                 <div>

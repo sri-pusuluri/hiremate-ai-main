@@ -61,6 +61,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ClientTenant } from '@/types/hiresort';
 import { logAuditEvent } from '@/lib/audit-logger';
+import { getInitials } from '@/lib/utils';
 
 interface UserWithRole {
   id: string;
@@ -1101,9 +1102,9 @@ export default function UserManagement() {
                   className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-lg font-medium text-primary">
-                        {u.full_name?.split(' ').map(n => n[0]).join('') || '?'}
+                    <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-lg font-bold text-primary">
+                        {getInitials(u.full_name)}
                       </span>
                     </div>
                     <div>
