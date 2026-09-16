@@ -22,8 +22,12 @@ import {
   Globe,
   Sparkles,
   Star,
-  Trash2
+  Trash2,
+  Building2,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
+import { parseCandidateResume } from '@/lib/resume-parser';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -297,12 +301,70 @@ export function CandidateDetail({
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-6">
           {/* Quick Info */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-5">
             <InfoItem icon={Briefcase} label="Experience" value={`${candidate.experience} years`} />
             <InfoItem icon={MapPin} label="Location" value={candidate.location} />
             <InfoItem icon={Calendar} label="Applied" value={candidate.appliedDate} />
             <InfoItem icon={Mail} label="Email" value={candidate.email} />
           </div>
+
+          {/* Past Work Experience & Career Timeline */}
+          {(() => {
+            const parsed = candidate.resumeText ? parseCandidateResume(candidate.resumeText) : null;
+            const history = (parsed?.experience && parsed.experience.length > 0) ? parsed.experience : null;
+
+            return (
+              <div className="bg-card border border-border rounded-xl p-4 mb-5 shadow-2xs">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/60">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-primary" />
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">Tracked Work History</h3>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {history ? `${history.length} Past ${history.length === 1 ? 'Role' : 'Roles'} Tracked` : `${candidate.experience} Years Tracked`}
+                  </span>
+                </div>
+
+                {history && history.length > 0 ? (
+                  <div className="space-y-3">
+                    {history.map((exp, idx) => (
+                      <div key={idx} className="relative pl-3.5 border-l-2 border-primary/40 py-0.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-xs font-semibold text-foreground">{exp.role}</h4>
+                          <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                            {exp.duration}
+                          </span>
+                        </div>
+                        <p className="text-xs text-primary font-medium mt-0.5 flex items-center gap-1">
+                          <Building2 className="w-3 h-3" />
+                          {exp.company}
+                        </p>
+                        {exp.highlights && exp.highlights.length > 0 && (
+                          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                            • {exp.highlights[0]}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="relative pl-3.5 border-l-2 border-primary/40 py-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs font-semibold text-foreground">{candidate.currentRole}</h4>
+                      <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {candidate.experience} Years
+                      </span>
+                    </div>
+                    <p className="text-xs text-primary font-medium mt-0.5 flex items-center gap-1">
+                      <Building2 className="w-3 h-3" />
+                      {candidate.company}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* View Resume Button */}
           <Button
@@ -310,8 +372,8 @@ export function CandidateDetail({
             className="w-full mb-6"
             onClick={() => setShowResumeModal(true)}
           >
-            <FileText className="w-4 h-4" />
-            View Full Resume
+            <FileText className="w-4 h-4 mr-2" />
+            View Full Resume & Parsing Breakdown
           </Button>
 
           {/* LinkedIn Profile Sync Card */}

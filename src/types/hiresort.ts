@@ -9,6 +9,7 @@ export interface Candidate {
   appliedDate: string;
   jobId?: string; // Reference to the job they applied for
   resumeUrl?: string;
+  resumeText?: string;
   lastUpdated?: string; // For talent pool freshness filtering
   source?: 'applied' | 'talent-pool'; // Whether candidate applied or from talent pool
   avatarUrl?: string;

@@ -12,6 +12,22 @@ export interface ParsedCandidateContact {
   wordCount: number;
 }
 
+export interface ResumeWorkExperience {
+  role: string;
+  company: string;
+  duration?: string;
+  highlights: string[];
+}
+
+export interface ParsedResumeData {
+  summary: string;
+  experience: ResumeWorkExperience[];
+  skills: string[];
+  education: string[];
+  certifications?: string[];
+  rawText: string;
+}
+
 /**
  * Extracts raw readable text from an uploaded File object (txt, md, html, json, pdf strings).
  */
@@ -218,5 +234,103 @@ export function parseContactInfoFromText(text: string, fileName?: string): Parse
     detectedSkills,
     extractedText,
     wordCount
+  };
+}
+
+/**
+ * Parses full resume text (Markdown or plain structured text) into structured sections:
+ * Summary, Work Experience timeline, Skills, Education, and Certifications.
+ */
+export function parseCandidateResume(resumeText?: string): ParsedResumeData | null {
+  if (!resumeText || resumeText.trim().length === 0) return null;
+
+  const rawText = resumeText.trim();
+
+  // 1. Extract Summary
+  let summary = '';
+  const summaryMatch = rawText.match(/##\s*(?:Professional\s+)?Summary\s*\n([\s\S]*?)(?=\n##|$)/i);
+  if (summaryMatch) {
+    summary = summaryMatch[1].trim();
+  }
+
+  // 2. Extract Experience
+  const expMatch = rawText.match(/##\s*(?:Professional\s+)?Experience\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const experience: ResumeWorkExperience[] = [];
+
+  if (expMatch) {
+    const expContent = expMatch[1];
+    // Split by '### ' headings for individual job roles
+    const roleBlocks = expContent.split(/(?=###\s*)/g).filter(b => b.trim().startsWith('###'));
+    
+    for (const block of roleBlocks) {
+      const headerLine = block.match(/###\s*([^|\n]+)(?:\|\s*([^\n]+))?/);
+      const durationLine = block.match(/\*([^*]+)\*/);
+      const highlights = Array.from(block.matchAll(/^\s*[-•]\s*(.+)$/gm)).map(m => m[1].trim());
+
+      if (headerLine) {
+        experience.push({
+          role: headerLine[1]?.trim() || 'Software Engineer',
+          company: headerLine[2]?.trim() || 'Tech Company',
+          duration: durationLine ? durationLine[1].trim() : undefined,
+          highlights
+        });
+      }
+    }
+  }
+
+  // Fallback pattern if no markdown ### headings (e.g. "Software Engineer at Company (2020 - 2024)")
+  if (experience.length === 0) {
+    const plainExpMatches = Array.from(
+      rawText.matchAll(/([A-Z][A-Za-z0-9\s/]+)\s+(?:at|@)\s+([A-Za-z0-9\s.,]+?)(?:\s*[–—(-]\s*(\d{4}[^\n)]*))?$/gm)
+    );
+    for (const m of plainExpMatches.slice(0, 4)) {
+      if (m[1].length < 40 && m[2].length < 40) {
+        experience.push({
+          role: m[1].trim(),
+          company: m[2].trim(),
+          duration: m[3] ? m[3].replace(/[()]/g, '').trim() : undefined,
+          highlights: []
+        });
+      }
+    }
+  }
+
+  // 3. Extract Skills
+  const skills: string[] = [];
+  const skillsMatch = rawText.match(/##\s*(?:Core\s+Technical\s+Competencies|Technical\s+Skills|Skills)\s*\n([\s\S]*?)(?=\n##|$)/i);
+  if (skillsMatch) {
+    const lines = skillsMatch[1].split('\n');
+    for (const line of lines) {
+      const bulletMatch = line.match(/^[-•*]\s*(?:\*\*[^*]+:\*\*\s*)?(.+)$/);
+      if (bulletMatch) {
+        const items = bulletMatch[1].split(',').map(s => s.trim().replace(/\.$/, ''));
+        skills.push(...items.filter(s => s.length > 1 && s.length < 35));
+      }
+    }
+  }
+
+  // 4. Extract Education
+  const education: string[] = [];
+  const eduMatch = rawText.match(/##\s*Education\s*\n([\s\S]*?)(?=\n##|$)/i);
+  if (eduMatch) {
+    const eduLines = eduMatch[1].split('\n').filter(l => l.trim().length > 0);
+    education.push(...eduLines.map(l => l.replace(/^[-•*]\s*/, '').trim()));
+  }
+
+  // 5. Extract Certifications
+  const certifications: string[] = [];
+  const certMatch = rawText.match(/##\s*(?:Certifications|Awards|Credentials)\s*\n([\s\S]*?)(?=\n##|$)/i);
+  if (certMatch) {
+    const certLines = certMatch[1].split('\n').filter(l => l.trim().length > 0);
+    certifications.push(...certLines.map(l => l.replace(/^[-•*]\s*/, '').trim()));
+  }
+
+  return {
+    summary,
+    experience,
+    skills,
+    education,
+    certifications,
+    rawText
   };
 }
