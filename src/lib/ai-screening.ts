@@ -384,9 +384,9 @@ export async function analyzeCandidateWithAI(
   const selectedProvider = options?.preferredProvider || 
     (typeof window !== 'undefined' ? localStorage.getItem('ai_provider') : null) || 'auto';
 
-  const openaiKey = (typeof window !== 'undefined' ? localStorage.getItem('openai_api_key') : null) || import.meta.env.VITE_OPENAI_API_KEY;
-  const geminiKey = (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null) || import.meta.env.VITE_GEMINI_API_KEY;
-  const claudeKey = (typeof window !== 'undefined' ? localStorage.getItem('claude_api_key') : null) || import.meta.env.VITE_CLAUDE_API_KEY;
+  const openaiKey = (typeof window !== 'undefined' ? localStorage.getItem('openai_api_key') : null) || import.meta?.env?.VITE_OPENAI_API_KEY;
+  const geminiKey = (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null) || import.meta?.env?.VITE_GEMINI_API_KEY;
+  const claudeKey = (typeof window !== 'undefined' ? localStorage.getItem('claude_api_key') : null) || import.meta?.env?.VITE_CLAUDE_API_KEY;
 
   const openaiModel = (typeof window !== 'undefined' ? localStorage.getItem('openai_model') : null) || 'gpt-4o-mini';
   const geminiModel = (typeof window !== 'undefined' ? localStorage.getItem('gemini_model') : null) || 'gemini-1.5-flash';

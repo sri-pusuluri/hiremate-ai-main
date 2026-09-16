@@ -467,6 +467,7 @@ export function HireSortApp() {
           job={selectedJob}
           onClose={() => setSelectedCandidate(null)}
           onFeedback={(type) => console.log('Feedback:', type)}
+          onCandidateUpdate={(updated) => setSelectedCandidate(updated)}
         />
       )}
 

@@ -946,6 +946,7 @@ export default function Reports() {
           onTogglePin={() => {}}
           onBoost={() => {}}
           onDemote={() => {}}
+          onCandidateUpdate={(updated) => setActiveCandidateDetail(updated)}
         />
       )}
     </div>

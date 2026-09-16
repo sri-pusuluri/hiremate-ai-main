@@ -48,28 +48,75 @@ interface CandidateDetailProps {
   onBoost?: (candidateId: string) => void;
   onDemote?: (candidateId: string) => void;
   onToggleShortlist?: (candidateId: string, isShortlisted: boolean) => void;
+  onCandidateUpdate?: (candidate: Candidate) => void;
   isAIEnabled?: boolean;
 }
 
 export function CandidateDetail({ 
-  candidate, 
-  job, 
+  candidate: initialCandidate, 
+  job: initialJob, 
   onClose, 
   onFeedback,
   onTogglePin,
   onBoost,
   onDemote,
-  onToggleShortlist
+  onToggleShortlist,
+  onCandidateUpdate,
+  isAIEnabled: propIsAIEnabled
 }: CandidateDetailProps) {
   const { user, client, role } = useAuth();
-  const [feedback, setFeedback] = useState<'good' | 'poor' | null>(candidate.recruiterFeedback || null);
+  const [candidate, setCandidate] = useState<Candidate>(initialCandidate);
+  const [job, setJob] = useState<Job | undefined>(initialJob);
+  const [feedback, setFeedback] = useState<'good' | 'poor' | null>(initialCandidate.recruiterFeedback || null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const { toast } = useToast();
-  const [linkedinUrl, setLinkedinUrl] = useState(`https://linkedin.com/in/${candidate.name.toLowerCase().replace(/\s+/g, '-')}`);
+  const [linkedinUrl, setLinkedinUrl] = useState(`https://linkedin.com/in/${initialCandidate.name.toLowerCase().replace(/\s+/g, '-')}`);
   const [syncing, setSyncing] = useState(false);
   const [syncLogs, setSyncLogs] = useState<string[]>([]);
   const [isSynced, setIsSynced] = useState(false);
   const [localAIEnabled, setLocalAIEnabled] = useState(false);
+
+  useEffect(() => {
+    setCandidate(initialCandidate);
+  }, [initialCandidate]);
+
+  useEffect(() => {
+    setJob(initialJob);
+  }, [initialJob]);
+
+  // Load fresh candidate record from Supabase to guarantee fresh data
+  useEffect(() => {
+    let isMounted = true;
+    if (!initialCandidate?.id) return;
+
+    supabase
+      .from('candidates')
+      .select('*')
+      .eq('id', initialCandidate.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!isMounted || error || !data) return;
+        setCandidate(prev => ({
+          ...prev,
+          currentRole: data.role_title || (data.predictive_insights as any)?.currentRole || prev.currentRole,
+          company: data.company || (data.predictive_insights as any)?.company || prev.company,
+          experience: data.experience ?? prev.experience,
+          aiScore: data.ai_score ?? prev.aiScore,
+          cosineSimilarity: (data.cosine_similarity !== null && data.cosine_similarity !== undefined) 
+            ? data.cosine_similarity 
+            : prev.cosineSimilarity,
+          matchedSkills: data.matched_skills || prev.matchedSkills,
+          missingSkills: data.missing_skills || prev.missingSkills,
+          evaluationStatus: (data.cosine_similarity !== null) ? 'completed' : ((data.predictive_insights as any)?.isUnprocessed ? 'failed' : 'pending'),
+          evaluationError: (data.predictive_insights as any)?.error,
+          predictiveInsights: data.predictive_insights || prev.predictiveInsights,
+          resumeText: data.resume_text || prev.resumeText,
+          resumeUrl: data.resume_url || prev.resumeUrl,
+        }));
+      });
+
+    return () => { isMounted = false; };
+  }, [initialCandidate?.id]);
 
   const isAIEnabled = job ? job.hireSortEnabled : true;
   const effectiveAIEnabled = isAIEnabled || localAIEnabled;
@@ -205,48 +252,75 @@ export function CandidateDetail({
   const handleReanalyze = async (customProvider?: string) => {
     setIsReanalyzing(true);
     try {
+      // 1. Fetch fresh resume text and metadata from DB if missing in memory
+      let resumeText = candidate.resumeText || (candidate as any).resume_text;
+      let roleTitle = candidate.currentRole || (candidate as any).role_title;
+      let company = candidate.company;
+
+      if ((!resumeText || resumeText.trim().length < 25) && candidate.id) {
+        const { data: dbCand } = await supabase
+          .from('candidates')
+          .select('resume_text, role_title, company')
+          .eq('id', candidate.id)
+          .maybeSingle();
+        if (dbCand?.resume_text) resumeText = dbCand.resume_text;
+        if (dbCand?.role_title) roleTitle = dbCand.role_title;
+        if (dbCand?.company) company = dbCand.company;
+      }
+
       const candidatePayload = {
         ...candidate,
-        resume_text: candidate.resumeText || (candidate as any).resume_text,
+        resume_text: resumeText,
+        resumeText: resumeText,
         resume_url: candidate.resumeUrl || (candidate as any).resume_url,
-        role_title: (candidate as any).role_title || candidate.currentRole,
-        company: candidate.company
+        role_title: roleTitle,
+        company: company
       };
+
       const result = await analyzeCandidateWithAI(
         candidatePayload, 
         job || { id: candidate.jobId || '', title: 'Software Engineer', description: 'Technical software engineering position' },
         { preferredProvider: customProvider }
       );
-      if (result) {
-        if (!result.isUnprocessed || result.currentRole !== 'Unspecified') {
-          candidate.currentRole = result.currentRole;
-        }
-        if (!result.isUnprocessed || result.company !== 'Unknown') {
-          candidate.company = result.company;
-        }
-        candidate.experience = result.experience;
-        candidate.aiScore = result.score;
-        candidate.cosineSimilarity = result.similarity;
-        candidate.matchedSkills = result.matchedSkills;
-        candidate.missingSkills = result.missingSkills;
-        candidate.evaluationStatus = result.isUnprocessed ? 'failed' : 'completed';
-        candidate.evaluationError = result.error;
 
-        if (!candidate.predictiveInsights) candidate.predictiveInsights = {} as any;
-        Object.assign(candidate.predictiveInsights, {
-          interviewPassProb: result.interviewPassProb,
-          offerAcceptanceProb: result.offerAcceptanceProb,
-          onboardingSuccessProb: result.onboardingSuccessProb,
-          retentionRisk: result.retentionRisk,
-          retentionRiskFactor: result.retentionRiskFactor,
-          timeToJoinEstimate: result.timeToJoinEstimate,
-          assessment: result.assessment,
-          provider: result.provider,
-          model: result.model,
-          executionMode: result.executionMode,
-          isUnprocessed: result.isUnprocessed,
-          error: result.error
-        });
+      if (result) {
+        const nextRole = (!result.isUnprocessed && result.currentRole !== 'Unspecified')
+          ? result.currentRole
+          : (roleTitle || candidate.currentRole || 'Software Engineer');
+        const nextCompany = (!result.isUnprocessed && result.company !== 'Unknown')
+          ? result.company
+          : (company || candidate.company || 'Independent');
+
+        const updatedCandidate: Candidate = {
+          ...candidate,
+          currentRole: nextRole,
+          company: nextCompany,
+          experience: result.experience ?? candidate.experience,
+          aiScore: result.score,
+          cosineSimilarity: result.similarity,
+          matchedSkills: result.matchedSkills,
+          missingSkills: result.missingSkills,
+          evaluationStatus: result.isUnprocessed ? 'failed' : 'completed',
+          evaluationError: result.error,
+          predictiveInsights: {
+            ...(candidate.predictiveInsights || {} as any),
+            interviewPassProb: result.interviewPassProb,
+            offerAcceptanceProb: result.offerAcceptanceProb,
+            onboardingSuccessProb: result.onboardingSuccessProb,
+            retentionRisk: result.retentionRisk,
+            retentionRiskFactor: result.retentionRiskFactor,
+            timeToJoinEstimate: result.timeToJoinEstimate,
+            assessment: result.assessment,
+            provider: result.provider,
+            model: result.model,
+            executionMode: result.executionMode,
+            isUnprocessed: result.isUnprocessed,
+            error: result.error
+          }
+        };
+
+        setCandidate(updatedCandidate);
+        onCandidateUpdate?.(updatedCandidate);
 
         if (result.isUnprocessed) {
           toast({

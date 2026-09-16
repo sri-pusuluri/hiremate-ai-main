@@ -486,6 +486,10 @@ export default function Shortlisted() {
           onClose={handleCloseDetail}
           onFeedback={handleFeedback}
           onToggleShortlist={handleToggleShortlist}
+          onCandidateUpdate={(updated) => {
+            setSelectedCandidate(updated);
+            setCandidates(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
+          }}
         />
       )}
     </div>
