@@ -319,8 +319,7 @@ export function AddCandidateModal({
       const updatePayload = {
         ...duplicateCandidate.pendingCandidate,
         id: existingId,
-        created_at: duplicateCandidate.existing.created_at,
-        updated_at: new Date().toISOString()
+        created_at: duplicateCandidate.existing.created_at || new Date().toISOString()
       };
 
       const { data, error } = await supabase

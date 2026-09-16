@@ -497,8 +497,7 @@ export default function PublicJobApplication() {
             .from('candidates')
             .update({
               ...candidatePayload,
-              created_at: existingApp.created_at,
-              updated_at: new Date().toISOString()
+              created_at: existingApp.created_at || new Date().toISOString()
             })
             .eq('id', existingApp.id);
 
