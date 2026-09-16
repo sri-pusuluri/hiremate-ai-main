@@ -742,9 +742,28 @@ export function AIMatchAnalysis({
                         </p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-border/70 divide-y divide-border/60 bg-card overflow-hidden shadow-2xs">
                       {PLATFORM_COVERAGE_LAYERS.map((layer) => (
-                        <LayerInfoItem key={layer.id} layer={layer} />
+                        <div key={layer.id} className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={cn("w-2 h-2 rounded-full shrink-0", layer.colorDot)} />
+                              <span className="font-semibold text-foreground text-xs truncate">
+                                {layer.title}
+                              </span>
+                              <ScoreInfoButton 
+                                title={layer.title}
+                                description={layer.description}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
+                              Layer {layer.id}/6
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed pl-4">
+                            {layer.description}
+                          </p>
+                        </div>
                       ))}
                     </div>
 
@@ -897,59 +916,4 @@ const PLATFORM_COVERAGE_LAYERS = [
   }
 ];
 
-function LayerInfoItem({ layer }: { layer: typeof PLATFORM_COVERAGE_LAYERS[number] }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen(prev => !prev);
-          }}
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setOpen(prev => !prev);
-            }
-          }}
-          className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/60 hover:bg-muted/40 hover:border-border transition-all cursor-pointer group"
-        >
-          <span className="font-semibold text-foreground flex items-center gap-1.5 text-[11px] group-hover:text-primary transition-colors">
-            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", layer.colorDot)} />
-            {layer.title}
-          </span>
-          <div
-            className="inline-flex items-center justify-center p-1 rounded-md text-muted-foreground/70 group-hover:text-blue-500 hover:bg-blue-500/10 transition-colors shrink-0"
-            aria-label={`About ${layer.title}`}
-          >
-            <Info className="w-3.5 h-3.5" />
-          </div>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="center"
-        sideOffset={6}
-        className="w-80 p-3.5 text-xs bg-popover/95 backdrop-blur-sm border border-border shadow-xl z-50 rounded-xl space-y-1.5 animate-in fade-in-50 zoom-in-95"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-      >
-        <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs border-b border-border/60 pb-1.5">
-          <span className={cn("w-2 h-2 rounded-full shrink-0", layer.colorDot)} />
-          <span>{layer.title}</span>
-        </div>
-        <p className="text-muted-foreground text-[11px] leading-relaxed font-normal normal-case tracking-normal">
-          {layer.description}
-        </p>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
