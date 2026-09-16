@@ -675,7 +675,7 @@ export function AddCandidateModal({
 
     {/* Duplicate Candidate Confirmation Alert */}
     <AlertDialog open={showDuplicateAlert} onOpenChange={setShowDuplicateAlert}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent className="sm:max-w-[540px] w-[95vw] p-5 sm:p-6 overflow-hidden">
         <AlertDialogHeader>
           <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-1">
             <AlertCircle className="w-5 h-5" />
@@ -689,47 +689,51 @@ export function AddCandidateModal({
         </AlertDialogHeader>
 
         {duplicateCandidate && (
-          <div className="space-y-2.5 py-1 text-xs">
-            <div className="p-3 rounded-lg bg-muted/60 border border-border space-y-1">
-              <div className="flex items-center justify-between font-semibold text-foreground">
-                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Existing Record:</span>
-                <Badge variant="outline" className="text-[10px] font-mono">
+          <div className="space-y-3 py-1 text-xs">
+            <div className="p-3.5 rounded-lg bg-muted/60 border border-border space-y-1.5 overflow-hidden">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Existing Record:</span>
+                <Badge variant="outline" className="text-[11px] font-mono shrink-0">
                   {Math.round((duplicateCandidate.existing.cosine_similarity || 0) * 100)}% Match
                 </Badge>
               </div>
-              <p className="font-semibold text-foreground text-sm">
+              <p className="font-semibold text-foreground text-sm truncate">
                 {duplicateCandidate.existing.full_name}
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 {duplicateCandidate.existing.role_title || duplicateCandidate.existing.currentRole || 'Software Engineer'} at {duplicateCandidate.existing.company || 'Tech Company'}
               </p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 Applied on {new Date(duplicateCandidate.existing.created_at).toLocaleDateString()}
               </p>
             </div>
 
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
-              <div className="flex items-center justify-between font-semibold text-primary">
-                <span className="text-[11px] uppercase tracking-wider">New Upload / Rescan:</span>
-                <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] font-mono">
+            <div className="p-3.5 rounded-lg bg-primary/5 border border-primary/25 space-y-1.5 overflow-hidden">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">New Upload / Rescan:</span>
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-[11px] font-mono shrink-0">
                   {Math.round((duplicateCandidate.evalResult.similarity || 0) * 100)}% Match
                 </Badge>
               </div>
-              <p className="font-semibold text-foreground text-sm">
+              <p className="font-semibold text-foreground text-sm truncate">
                 {fullName}
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 {roleTitle || duplicateCandidate.evalResult.currentRole} at {company || duplicateCandidate.evalResult.company}
               </p>
-              <p className="text-[10px] text-primary/90 font-medium pt-0.5">
+              <p className="text-[11px] text-primary/90 font-medium pt-0.5 leading-snug">
                 Overwriting will refresh the existing candidate with the new resume text, updated skills, and newly computed ATS score.
               </p>
             </div>
           </div>
         )}
 
-        <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 mt-2">
-          <AlertDialogCancel onClick={() => setShowDuplicateAlert(false)} disabled={isSubmitting}>
+        <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-3 border-t border-border/60 mt-1">
+          <AlertDialogCancel 
+            onClick={() => setShowDuplicateAlert(false)} 
+            disabled={isSubmitting}
+            className="mt-0 h-9 text-xs px-3"
+          >
             Cancel
           </AlertDialogCancel>
 
@@ -738,7 +742,7 @@ export function AddCandidateModal({
             variant="outline"
             onClick={handleRetainBoth}
             disabled={isSubmitting}
-            className="text-xs border-primary/30 text-primary hover:bg-primary/10 cursor-pointer h-9 px-3 gap-1.5"
+            className="text-xs border-primary/30 text-primary hover:bg-primary/10 cursor-pointer h-9 px-3 gap-1.5 whitespace-nowrap"
           >
             {isSubmitting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -751,7 +755,7 @@ export function AddCandidateModal({
           <AlertDialogAction 
             onClick={handleConfirmOverwrite}
             disabled={isSubmitting}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-3"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-3 whitespace-nowrap"
           >
             {isSubmitting ? (
               <>
