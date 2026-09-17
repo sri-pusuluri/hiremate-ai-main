@@ -8,13 +8,13 @@ import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/compone
 import { ResumeViewerModal } from './ResumeViewerModal';
 import { JobDescriptionModal } from './JobDescriptionModal';
 import { AddCandidateModal } from './AddCandidateModal';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowUpDown, 
   GripVertical, 
   Pin, 
   ArrowUp, 
   ArrowDown,
+  ArrowLeft,
   ChevronRight,
   Filter,
   CheckSquare,
@@ -224,204 +224,259 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
   const selectedCandidates = currentCandidates.filter((c) => selectedIds.has(c.id));
 
   return (
-    <div className="p-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
+    <div className="p-4 sm:p-5 animate-fade-in">
+      {/* Compact Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+        <div className="flex items-center flex-wrap gap-2 min-w-0">
           {onBack && (
             <button 
               onClick={onBack}
-              className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-2.5 py-1.5 rounded-md border border-border/50 transition-colors cursor-pointer shrink-0"
+              title="Back to Jobs"
             >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-              Back to Jobs
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Jobs</span>
             </button>
           )}
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-semibold text-foreground">Candidates</h2>
+          {onBack && <div className="h-4 w-px bg-border/60 hidden sm:block" />}
+          
+          <div className="flex items-center gap-1.5 shrink-0">
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Candidates</h2>
             {selectedJob?.hireSortEnabled && <AIBadge />}
           </div>
-          <div className="flex flex-wrap items-center gap-2.5 text-muted-foreground mt-1">
-            <span>
-              {selectedJob ? `${selectedJob.title} • ` : ''}{candidates.length} total candidates • {sortedCandidates.length} shown
-            </span>
-            {selectedJob && (
+
+          <span className="text-muted-foreground/40 text-xs hidden sm:inline">•</span>
+
+          {selectedJob && (
+            <div className="flex items-center flex-wrap gap-1.5 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/90 truncate max-w-[200px] sm:max-w-xs md:max-w-sm" title={selectedJob.title}>
+                {selectedJob.title}
+              </span>
+              <span className="text-muted-foreground/60">•</span>
+              <span>{candidates.length} total candidates</span>
+              <span className="text-muted-foreground/60">•</span>
+              <span>{sortedCandidates.length} shown</span>
               <button 
                 onClick={() => setShowJDModal(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-full border border-primary/20 transition-all cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-full border border-primary/20 transition-all cursor-pointer shadow-2xs ml-0.5"
                 title="View Job Description, Responsibilities & Requirements"
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3 h-3" />
                 View JD
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
           {selectedIds.size > 0 && (
             <Button 
               variant="ai-primary"
               size="sm"
+              className="h-8 text-xs px-3"
               onClick={() => onCreateShortlist(selectedCandidates)}
             >
-              <CheckSquare className="w-4 h-4 mr-1" />
+              <CheckSquare className="w-3.5 h-3.5 mr-1" />
               Create Shortlist ({selectedIds.size})
             </Button>
           )}
           <Button
             size="sm"
             onClick={() => setShowAddCandidateModal(true)}
-            className="gap-1.5"
+            className="h-8 text-xs px-3 gap-1.5 shadow-sm"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
             Add Candidate
           </Button>
         </div>
       </div>
 
       {selectedJob?.aiProcessingStatus === 'processing' && (
-        <div className="mb-6 p-4 bg-ai-surface/50 border border-ai-accent/30 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-ai-surface flex items-center justify-center animate-pulse-soft">
-              <Sparkles className="w-5 h-5 text-ai-accent" />
+        <div className="mb-3 p-3 bg-ai-surface/50 border border-ai-accent/30 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-ai-surface flex items-center justify-center animate-pulse-soft">
+              <Sparkles className="w-4 h-4 text-ai-accent" />
             </div>
             <div>
-              <h3 className="font-medium text-foreground">AI is ranking candidates</h3>
-              <p className="text-sm text-muted-foreground">Evaluating resumes in the background. Results will appear automatically.</p>
+              <h3 className="text-sm font-medium text-foreground">AI is ranking candidates</h3>
+              <p className="text-xs text-muted-foreground">Evaluating resumes in the background. Results will appear automatically.</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Candidate Source Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CandidateTab)} className="mb-4">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            All Candidates
-            <span className="ml-1 px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded-full">
+      {/* Compact Unified Toolbar: Source Tabs + Sort + Filter */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 bg-card border border-border/80 rounded-lg p-1.5 mb-2.5 shadow-2xs">
+        {/* Source Tabs */}
+        <div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-md text-xs font-medium w-fit shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab('all')}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded transition-all text-xs font-medium cursor-pointer",
+              activeTab === 'all'
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>All Candidates</span>
+            <span className={cn(
+              "px-1.5 py-0.2 rounded-full text-[10px] font-semibold",
+              activeTab === 'all' ? "bg-primary/15 text-primary" : "bg-muted-foreground/15 text-muted-foreground"
+            )}>
               {candidates.length}
             </span>
-          </TabsTrigger>
-          <TabsTrigger value="applied" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Applied
+          </button>
+
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => setActiveTab('applied')}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded transition-all text-xs font-medium cursor-pointer",
+                activeTab === 'applied'
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Applied</span>
+              <span className={cn(
+                "px-1.5 py-0.2 rounded-full text-[10px] font-semibold",
+                activeTab === 'applied' ? "bg-primary/15 text-primary" : "bg-muted-foreground/15 text-muted-foreground"
+              )}>
+                {appliedCandidates.length}
+              </span>
+            </button>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="flex items-center cursor-help" onClick={(e) => e.stopPropagation()}>
-                    <Info className="w-3.5 h-3.5 opacity-50 hover:opacity-100" />
+                  <span className="p-0.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help">
+                    <Info className="w-3 h-3" />
                   </span>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[200px] text-center">
-                  <p className="text-xs font-normal text-foreground">Candidates who directly applied to this active job posting.</p>
+                <TooltipContent className="max-w-[220px] text-center text-xs">
+                  Candidates who directly applied to this active job posting.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <span className="ml-1 px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded-full">
-              {appliedCandidates.length}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="talent-pool" className="flex items-center gap-2">
-            <Database className="w-4 h-4" />
-            Talent Pool
+          </div>
+
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => setActiveTab('talent-pool')}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded transition-all text-xs font-medium cursor-pointer",
+                activeTab === 'talent-pool'
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Talent Pool</span>
+              <span className={cn(
+                "px-1.5 py-0.2 rounded-full text-[10px] font-semibold",
+                activeTab === 'talent-pool' ? "bg-primary/15 text-primary" : "bg-muted-foreground/15 text-muted-foreground"
+              )}>
+                {talentPoolCandidates.length}
+              </span>
+            </button>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="flex items-center cursor-help" onClick={(e) => e.stopPropagation()}>
-                    <Info className="w-3.5 h-3.5 opacity-50 hover:opacity-100" />
+                  <span className="p-0.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help">
+                    <Info className="w-3 h-3" />
                   </span>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[200px] text-center">
-                  <p className="text-xs font-normal text-foreground">Candidates sourced from previous job postings or the broader talent network in the last 3 months.</p>
+                <TooltipContent className="max-w-[240px] text-center text-xs">
+                  Candidates sourced from past jobs and talent network in the last 3 months.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <span className="ml-1 px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded-full">
-              {talentPoolCandidates.length}
-            </span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+          </div>
+        </div>
+
+        {/* Sort & Filter Controls */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs">
+          {/* Sort Controls */}
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] font-medium text-muted-foreground mr-0.5">Sort by:</span>
+            <div className="flex items-center gap-0.5">
+              {selectedJob?.hireSortEnabled && (
+                <SortButton 
+                  active={sortMode === 'ai-rank'} 
+                  onClick={() => setSortMode('ai-rank')}
+                  icon={<Sparkles className="w-3 h-3 text-ai-accent" />}
+                >
+                  AI Rank
+                </SortButton>
+              )}
+              <SortButton 
+                active={sortMode === 'experience'} 
+                onClick={() => setSortMode('experience')}
+              >
+                Experience
+              </SortButton>
+              <SortButton 
+                active={sortMode === 'date'} 
+                onClick={() => setSortMode('date')}
+              >
+                Date Applied
+              </SortButton>
+              <SortButton 
+                active={sortMode === 'name'} 
+                onClick={() => setSortMode('name')}
+              >
+                Name
+              </SortButton>
+            </div>
+          </div>
+
+          {/* Filter Controls */}
+          {selectedJob?.hireSortEnabled && (
+            <>
+              <div className="h-4 w-px bg-border/70 hidden sm:block" />
+              <div className="flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground/70" />
+                <div className="flex items-center gap-0.5">
+                  <FilterButton active={filterMode === 'all'} onClick={() => setFilterMode('all')}>
+                    All
+                  </FilterButton>
+                  <FilterButton active={filterMode === 'high'} onClick={() => setFilterMode('high')} color="success">
+                    Strong
+                  </FilterButton>
+                  <FilterButton active={filterMode === 'medium'} onClick={() => setFilterMode('medium')} color="warning">
+                    Potential
+                  </FilterButton>
+                  <FilterButton active={filterMode === 'low'} onClick={() => setFilterMode('low')}>
+                    Low
+                  </FilterButton>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Talent Pool Notice */}
       {activeTab === 'talent-pool' && (
-        <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-lg px-4 py-3 mb-4">
-          <Clock className="w-4 h-4 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Candidates available in the <span className="font-medium text-foreground">Talent Pool Database</span> from the last 3 months. These candidates haven't applied but match the job requirements.
+        <div className="flex items-center gap-2 bg-muted/40 border border-border/60 rounded-md px-3 py-1.5 mb-2.5 text-xs text-muted-foreground">
+          <Clock className="w-3.5 h-3.5 shrink-0" />
+          <p>
+            Candidates available in the <span className="font-medium text-foreground">Talent Pool Database</span> from the last 3 months.
           </p>
         </div>
       )}
 
-      {/* Controls Bar */}
-      <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3 mb-4">
-        {/* Sort Controls */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Sort by:</span>
-          <div className="flex items-center gap-1">
-            {selectedJob?.hireSortEnabled && (
-              <SortButton 
-                active={sortMode === 'ai-rank'} 
-                onClick={() => setSortMode('ai-rank')}
-                icon={<Sparkles className="w-4 h-4" />}
-              >
-                AI Rank
-              </SortButton>
-            )}
-            <SortButton 
-              active={sortMode === 'experience'} 
-              onClick={() => setSortMode('experience')}
-            >
-              Experience
-            </SortButton>
-            <SortButton 
-              active={sortMode === 'date'} 
-              onClick={() => setSortMode('date')}
-            >
-              Date Applied
-            </SortButton>
-            <SortButton 
-              active={sortMode === 'name'} 
-              onClick={() => setSortMode('name')}
-            >
-              Name
-            </SortButton>
-          </div>
-        </div>
-
-        {/* Filter Controls */}
-        {selectedJob?.hireSortEnabled && (
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <div className="flex items-center gap-1">
-              <FilterButton active={filterMode === 'all'} onClick={() => setFilterMode('all')}>
-                All
-              </FilterButton>
-              <FilterButton active={filterMode === 'high'} onClick={() => setFilterMode('high')} color="success">
-                Strong
-              </FilterButton>
-              <FilterButton active={filterMode === 'medium'} onClick={() => setFilterMode('medium')} color="warning">
-                Potential
-              </FilterButton>
-              <FilterButton active={filterMode === 'low'} onClick={() => setFilterMode('low')}>
-                Low
-              </FilterButton>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* AI Ranking Notice */}
       {selectedJob?.hireSortEnabled && (
-        <div className="flex items-center gap-2 bg-ai-surface border border-ai-border rounded-lg px-4 py-3 mb-4">
-          <Sparkles className="w-4 h-4 text-ai-accent" />
-          <p className="text-sm text-foreground">
-            <span className="font-medium">Rankings are suggestions.</span>
-            <span className="text-muted-foreground ml-1">
-              Drag to reorder, pin favorites, or use filters to focus your review.
-            </span>
+        <div className="flex items-center gap-2 bg-ai-surface/60 border border-ai-border/40 rounded-md px-3 py-1.5 mb-2.5 text-xs text-muted-foreground">
+          <Sparkles className="w-3.5 h-3.5 text-ai-accent shrink-0" />
+          <p>
+            <span className="font-medium text-foreground">Rankings are suggestions.</span>
+            <span className="ml-1">Drag to reorder, pin favorites, or use filters to focus your review.</span>
           </p>
         </div>
       )}
@@ -710,10 +765,10 @@ function SortButton({ active, onClick, children, icon }: SortButtonProps) {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+        "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
         active 
-          ? "bg-primary text-primary-foreground" 
-          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+          ? "bg-primary text-primary-foreground shadow-2xs font-semibold" 
+          : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
       )}
     >
       {icon}
@@ -734,11 +789,11 @@ function FilterButton({ active, onClick, children, color }: FilterButtonProps) {
     <button
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-        active && !color && "bg-secondary text-secondary-foreground",
-        active && color === 'success' && "bg-success-muted text-success",
-        active && color === 'warning' && "bg-warning-muted text-warning",
-        !active && "text-muted-foreground hover:bg-accent hover:text-foreground"
+        "px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+        active && !color && "bg-secondary text-secondary-foreground font-semibold shadow-2xs",
+        active && color === 'success' && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30",
+        active && color === 'warning' && "bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30",
+        !active && "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
       )}
     >
       {children}
