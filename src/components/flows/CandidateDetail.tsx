@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/components/ui/ai-badges';
 import { ResumeViewerModal } from './ResumeViewerModal';
 import { AIMatchAnalysis } from './AIMatchAnalysis';
-import { analyzeCandidateWithAI } from '@/lib/ai-screening';
+import { analyzeCandidateWithAI, extractResumeText } from '@/lib/ai-screening';
 import {
   X,
   ThumbsUp,
@@ -417,30 +417,83 @@ export function CandidateDetail({
       let resumeText = candidate.resumeText || (candidate as any).resume_text;
       let roleTitle = candidate.currentRole || (candidate as any).role_title;
       let company = candidate.company;
+      let resumeUrl = candidate.resumeUrl || (candidate as any).resume_url;
 
       if ((!resumeText || resumeText.trim().length < 25) && candidate.id) {
-        const { data: dbCand } = await supabase
-          .from('candidates')
-          .select('resume_text, role_title, company')
-          .eq('id', candidate.id)
-          .maybeSingle();
-        if (dbCand?.resume_text) resumeText = dbCand.resume_text;
-        if (dbCand?.role_title) roleTitle = dbCand.role_title;
-        if (dbCand?.company) company = dbCand.company;
+        try {
+          const { data: dbCand } = await supabase
+            .from('candidates')
+            .select('*')
+            .eq('id', candidate.id)
+            .maybeSingle();
+          if (dbCand?.resume_text && dbCand.resume_text.trim().length >= 25) {
+            resumeText = dbCand.resume_text.trim();
+          }
+          if (dbCand?.role_title) roleTitle = dbCand.role_title;
+          if (dbCand?.company) company = dbCand.company;
+          if (dbCand?.resume_url) resumeUrl = dbCand.resume_url;
+        } catch (de) {
+          console.warn('Could not load candidate from DB in handleReanalyze:', de);
+        }
+      }
+
+      // 2. If resume text is still missing but resumeUrl exists, attempt to fetch and parse it
+      if ((!resumeText || resumeText.trim().length < 25) && resumeUrl) {
+        try {
+          const fetched = await extractResumeText(candidate.name, resumeUrl);
+          if (fetched && fetched.trim().length >= 25) {
+            resumeText = fetched.trim();
+          }
+        } catch (fe) {
+          console.warn('Could not extract resume from URL in handleReanalyze:', fe);
+        }
+      }
+
+      // 3. If target job details are incomplete, attempt to fetch the job from Supabase
+      let effectiveJob = job;
+      const targetJobId = candidate.jobId || (candidate as any).job_id;
+      if ((!effectiveJob || !effectiveJob.title || !effectiveJob.requirements || effectiveJob.requirements.length === 0) && targetJobId) {
+        try {
+          const { data: dbJob } = await supabase
+            .from('jobs')
+            .select('*')
+            .eq('id', targetJobId)
+            .maybeSingle();
+          if (dbJob) {
+            effectiveJob = {
+              id: dbJob.id,
+              title: dbJob.title,
+              description: dbJob.description || '',
+              requirements: dbJob.requirements || [],
+              responsibilities: dbJob.responsibilities || [],
+              department: dbJob.department || '',
+              location: dbJob.location || '',
+              type: dbJob.type || 'full-time',
+              salary: dbJob.salary || '',
+              hireSortEnabled: dbJob.hire_sort_enabled,
+              aiProcessingStatus: dbJob.ai_processing_status,
+              lastRankedAt: dbJob.last_ranked_at,
+              candidateCount: dbJob.candidate_count || 0
+            };
+            setJob(effectiveJob);
+          }
+        } catch (je) {
+          console.warn('Could not fetch target job for re-analysis:', je);
+        }
       }
 
       const candidatePayload = {
         ...candidate,
         resume_text: resumeText,
         resumeText: resumeText,
-        resume_url: candidate.resumeUrl || (candidate as any).resume_url,
+        resume_url: resumeUrl,
         role_title: roleTitle,
         company: company
       };
 
       const result = await analyzeCandidateWithAI(
         candidatePayload, 
-        job || { id: candidate.jobId || '', title: 'Software Engineer', description: 'Technical software engineering position' },
+        effectiveJob || { id: targetJobId || '', title: 'Software Engineer', description: 'Technical software engineering position' },
         { preferredProvider: customProvider }
       );
 
@@ -462,7 +515,8 @@ export function CandidateDetail({
           matchedSkills: result.matchedSkills,
           missingSkills: result.missingSkills,
           evaluationStatus: result.isUnprocessed ? 'failed' : 'completed',
-          evaluationError: result.error,
+          evaluationError: result.isUnprocessed ? result.error : undefined,
+          resumeText: resumeText,
           predictiveInsights: {
             ...(candidate.predictiveInsights || {} as any),
             interviewPassProb: result.interviewPassProb,
@@ -476,7 +530,7 @@ export function CandidateDetail({
             model: result.model,
             executionMode: result.executionMode,
             isUnprocessed: result.isUnprocessed,
-            error: result.error
+            error: result.isUnprocessed ? result.error : undefined
           }
         };
 
@@ -492,7 +546,7 @@ export function CandidateDetail({
         } else {
           toast({
             title: "ATS Analysis Updated ✨",
-            description: `Evaluated against ${job?.title || 'Job Description'}: ${Math.round((result.similarity || 0) * 100)}% match score.`,
+            description: `Evaluated against ${effectiveJob?.title || 'Job Description'}: ${Math.round((result.similarity || 0) * 100)}% match score.`,
           });
         }
       }

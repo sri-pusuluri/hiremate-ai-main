@@ -108,4 +108,33 @@ Software Engineer | TechSolutions Inc. (June 2022 - Present)
     expect(emptyResult.error).toContain('Data Not Processed');
     expect(emptyResult.assessment).toContain('No parseable resume text');
   });
+
+  it('analyzeCandidateWithAI gracefully re-analyzes candidate using available profile metadata when resumeText was missing in payload', async () => {
+    const { analyzeCandidateWithAI } = await import('../lib/ai-screening');
+
+    const candidatePayload = {
+      id: 'mock-candidate-12345',
+      name: 'Adlin Yona',
+      currentRole: 'UI/UX Designer',
+      company: 'Zool Tech Solutions',
+      experience: 4,
+      matchedSkills: ['UI/UX Design', 'Figma', 'Design Systems'],
+      missingSkills: ['PHP', 'WordPress'],
+      resumeText: '',
+      resume_text: ''
+    };
+
+    const result = await analyzeCandidateWithAI(
+      candidatePayload,
+      wordPressJob,
+      { preferredProvider: 'deterministic-ats' }
+    );
+
+    expect(result.isUnprocessed).toBe(false);
+    expect(result.similarity).toBeGreaterThan(0);
+    expect(result.score).toBe('low');
+    expect(result.error).toBeUndefined();
+    expect(result.currentRole).toBe('UI/UX Designer');
+  });
 });
+

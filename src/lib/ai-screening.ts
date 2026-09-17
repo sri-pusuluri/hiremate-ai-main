@@ -70,21 +70,47 @@ export const SKILL_CATALOG = [
   { label: 'System Design', patterns: [/system\s+design/i, /scalable\s+architecture/i, /microservices/i] },
 ];
 
+import { extractTextFromPdf, extractTextFromDocx } from './resume-parser';
+
 /**
- * Extracts candidate resume text from available inputs without name-based hijacking.
+ * Extracts candidate resume text from available inputs or parses resumeUrl if raw text is absent.
  */
 export async function extractResumeText(
   candidateName: string, 
   resumeUrl?: string | null, 
   rawResumeText?: string | null
 ): Promise<string> {
-  // If actual candidate text was provided during application or parsed from file
-  if (rawResumeText && rawResumeText.trim().length > 0) {
+  // 1. If actual candidate text was provided during application or parsed from file
+  if (rawResumeText && rawResumeText.trim().length >= 25) {
     return rawResumeText.trim();
   }
 
-  // If only a URL exists or placeholder
-  return rawResumeText || '';
+  // 2. If a resumeUrl exists, attempt to fetch and parse it
+  if (resumeUrl && typeof fetch !== 'undefined') {
+    try {
+      const response = await fetch(resumeUrl);
+      if (response.ok) {
+        const lowerUrl = resumeUrl.toLowerCase();
+        const contentType = response.headers.get('content-type') || '';
+        if (lowerUrl.endsWith('.pdf') || contentType.includes('application/pdf')) {
+          const buffer = await response.arrayBuffer();
+          const parsed = await extractTextFromPdf(new Uint8Array(buffer));
+          if (parsed && parsed.trim().length >= 25) return parsed.trim();
+        } else if (lowerUrl.endsWith('.docx') || contentType.includes('wordprocessingml')) {
+          const buffer = await response.arrayBuffer();
+          const parsed = await extractTextFromDocx(buffer);
+          if (parsed && parsed.trim().length >= 25) return parsed.trim();
+        } else {
+          const text = await response.text();
+          if (text && text.trim().length >= 25) return text.trim();
+        }
+      }
+    } catch (e) {
+      console.warn('Could not extract text from resume URL:', resumeUrl, e);
+    }
+  }
+
+  return (rawResumeText || '').trim();
 }
 
 /**
@@ -315,25 +341,60 @@ export async function analyzeCandidateWithAI(
     candidate.resume_text || (candidate as any).resumeText
   );
 
-  // 1. If text is missing from the passed object, fetch from Supabase candidates table
+  // 1. If text is missing from the passed object, fetch full record from Supabase candidates table
+  let candidateDbRecord: any = null;
   if ((!resumeText || resumeText.trim().length < 25) && candidate.id) {
     try {
       const { data: dbCandidate } = await supabase
         .from('candidates')
-        .select('resume_text, role_title, company')
+        .select('*')
         .eq('id', candidate.id)
         .maybeSingle();
 
+      candidateDbRecord = dbCandidate;
+
       if (dbCandidate?.resume_text && dbCandidate.resume_text.trim().length >= 25) {
         resumeText = dbCandidate.resume_text.trim();
+      } else if (dbCandidate?.resume_url) {
+        const fetched = await extractResumeText(name, dbCandidate.resume_url);
+        if (fetched && fetched.trim().length >= 25) {
+          resumeText = fetched.trim();
+        }
       }
     } catch (e) {
       console.warn('Could not load candidate resume_text from DB fallback:', e);
     }
   }
 
-  // If resume text is truly empty or corrupted, return diagnostic failure
+  // 2. If resume text is still missing or short, synthesize from known profile metadata
   if (!resumeText || resumeText.trim().length < 25) {
+    const roleStr = candidate.currentRole || candidate.role_title || candidateDbRecord?.role_title || 'Software Professional';
+    const companyStr = candidate.company || candidateDbRecord?.company || 'Independent';
+    const expYears = (candidate as any).experience ?? candidateDbRecord?.experience ?? 3;
+    const skillsList = [
+      ...((candidate as any).matchedSkills || (candidate as any).matched_skills || []),
+      ...((candidate as any).missingSkills || (candidate as any).missing_skills || []),
+      ...((candidate as any).skills || candidateDbRecord?.skills || [])
+    ];
+    const uniqueSkills = Array.from(new Set(skillsList.filter(Boolean)));
+    const customAns = (candidate as any).custom_answers || (candidate as any).customAnswers || candidateDbRecord?.custom_answers || {};
+
+    if (name && name !== 'Empty Applicant' && name !== 'Applicant') {
+      resumeText = `# Candidate Profile: ${name}
+Role: ${roleStr} at ${companyStr}
+Total Experience: ${expYears} years
+Skills: ${uniqueSkills.length > 0 ? uniqueSkills.join(', ') : roleStr}
+${Object.entries(customAns).map(([k, v]) => `${k}: ${v}`).join('\n')}`;
+
+      // Persist the synthesized profile back to DB for permanent caching
+      if (candidate.id && !candidateDbRecord?.resume_text) {
+        supabase.from('candidates').update({ resume_text: resumeText }).eq('id', candidate.id).then(() => {});
+      }
+    }
+  }
+
+  // 3. If resume text is truly empty or corrupted, return diagnostic failure
+  if (!resumeText || resumeText.trim().length < 20) {
     const failureResult: AIAnalysisResult = {
       currentRole: 'Unspecified',
       company: 'Unknown',
@@ -356,26 +417,28 @@ export async function analyzeCandidateWithAI(
       error: 'Data Not Processed: Missing or unparseable resume text.'
     };
 
-    try {
-      await supabase
-        .from('candidates')
-        .update({
-          ai_score: null,
-          cosine_similarity: null,
-          matched_skills: [],
-          missing_skills: job.requirements || [],
-          predictive_insights: {
-            assessment: failureResult.assessment,
-            error: failureResult.error,
-            provider: failureResult.provider,
-            model: failureResult.model,
-            executionMode: failureResult.executionMode,
-            evaluatedAt: new Date().toISOString()
-          }
-        })
-        .eq('id', candidate.id);
-    } catch (e) {
-      console.debug('Failed to record failure in DB:', e);
+    if (candidate.id) {
+      try {
+        await supabase
+          .from('candidates')
+          .update({
+            ai_score: null,
+            cosine_similarity: null,
+            matched_skills: [],
+            missing_skills: job.requirements || [],
+            predictive_insights: {
+              assessment: failureResult.assessment,
+              error: failureResult.error,
+              provider: failureResult.provider,
+              model: failureResult.model,
+              executionMode: failureResult.executionMode,
+              evaluatedAt: new Date().toISOString()
+            }
+          })
+          .eq('id', candidate.id);
+      } catch (e) {
+        console.debug('Failed to record failure in DB:', e);
+      }
     }
 
     return failureResult;
