@@ -34,6 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getInitials } from '@/lib/utils';
+import { getAppBaseUrl } from '@/lib/app-url';
 
 const jobUuidMap: Record<string, string> = {
   'job-1': '11111111-1111-1111-1111-111111111111',
@@ -286,7 +287,7 @@ export default function Shortlisted() {
   };
 
   const handleShareWithHiringManager = () => {
-    const shareUrl = `${window.location.origin}/shortlisted?filterJob=${filterJob}`;
+    const shareUrl = `${getAppBaseUrl()}/shortlisted?filterJob=${filterJob}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareUrl).catch(() => {});
     }

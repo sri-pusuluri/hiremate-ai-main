@@ -35,12 +35,14 @@ import {
   Eye,
   FileText,
   Database,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getInitials } from '@/lib/utils';
+import { AddCandidateModal } from '@/components/flows/AddCandidateModal';
 
 type TabType = 'all' | 'applied' | 'talent-pool';
 
@@ -184,6 +186,7 @@ export default function Candidates() {
   const [filterJob, setFilterJob] = useState<string>('all');
   const [filterStage, setFilterStage] = useState<string>('all');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
 
   const handleStageChange = async (candidateId: string, newStage: any) => {
@@ -366,6 +369,14 @@ export default function Candidates() {
           >
             <Download className="w-4 h-4 mr-1.5" />
             Export ({filteredCandidates.length})
+          </Button>
+          <Button 
+            size="sm"
+            className="h-9 text-xs gap-1.5 shadow-sm"
+            onClick={() => setShowAddCandidateModal(true)}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Candidate
           </Button>
         </div>
       </div>
@@ -674,6 +685,22 @@ export default function Candidates() {
           }}
         />
       )}
+
+      {/* Add Candidate Modal */}
+      <AddCandidateModal
+        open={showAddCandidateModal}
+        onOpenChange={setShowAddCandidateModal}
+        targetJob={selectedJob || undefined}
+        availableJobs={jobs}
+        onCandidateAdded={() => {
+          supabase
+            .from('candidates')
+            .select('*')
+            .then(() => {
+              window.location.reload();
+            });
+        }}
+      />
     </div>
   );
 }

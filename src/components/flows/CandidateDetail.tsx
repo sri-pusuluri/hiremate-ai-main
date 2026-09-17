@@ -390,9 +390,24 @@ export function CandidateDetail({
     }, 600);
   };
 
-  const handleFeedback = (type: 'good' | 'poor') => {
+  const handleFeedback = async (type: 'good' | 'poor') => {
     setFeedback(type);
     onFeedback(type);
+    if (candidate?.id) {
+      try {
+        const updatedAnswers = {
+          ...((candidate as any).custom_answers || (candidate as any).customAnswers || {}),
+          recruiter_feedback: type,
+          feedback_at: new Date().toISOString()
+        };
+        await supabase
+          .from('candidates')
+          .update({ custom_answers: updatedAnswers })
+          .eq('id', candidate.id);
+      } catch (e) {
+        console.warn('Could not persist feedback in CandidateDetail:', e);
+      }
+    }
   };
 
   const handleReanalyze = async (customProvider?: string) => {

@@ -4,20 +4,38 @@ import React from 'react';
 import Shortlisted from '../pages/Shortlisted';
 import Candidates from '../pages/Candidates';
 import { BrowserRouter } from 'react-router-dom';
+import { getAppBaseUrl, APP_BASE_URL } from '../lib/app-url';
 
 // Mock useAuth
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     user: { id: 'test-user-id', email: 'recruiter@hiremate.ai' },
-    client: { id: '00000000-0000-0000-0000-000000000001', name: 'Zool' },
+    client: { id: '00000000-0000-0000-0000-000000000001', name: 'Zool', slug: 'zool' },
     clientId: '00000000-0000-0000-0000-000000000001',
     isSuperAdmin: false,
   }),
-  DEFAULT_ZOOL_CLIENT: { id: '00000000-0000-0000-0000-000000000001', name: 'Zool' },
+  DEFAULT_ZOOL_CLIENT: { id: '00000000-0000-0000-0000-000000000001', name: 'Zool', slug: 'zool' },
 }));
 
-describe('QA Suite: Shortlisted & Candidates Directory', () => {
-  it('renders Shortlisted page with functional toolbar, count badge, export and share buttons', async () => {
+describe('QA Suite: Production URLs & Shortlisted/Candidates Directory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('1. Verifies hosted production base URL strictly resolves to https://hiresortai.zool.in', () => {
+    expect(APP_BASE_URL).toBe('https://hiresortai.zool.in');
+    expect(getAppBaseUrl()).toBe('https://hiresortai.zool.in');
+  });
+
+  it('2. Renders Shortlisted page with functional toolbar, count badge, export and share buttons using valid hosted URL', async () => {
+    // Mock navigator.clipboard.writeText
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
     render(
       <BrowserRouter>
         <Shortlisted />
@@ -36,11 +54,12 @@ describe('QA Suite: Shortlisted & Candidates Directory', () => {
     expect(shareBtn).toBeDefined();
     expect(shareBtn.hasAttribute('disabled')).toBe(false);
 
-    // Clicking share copies link and fires toast without crashing
+    // Clicking share copies link with valid hosted production domain
     fireEvent.click(shareBtn);
+    expect(writeTextMock).toHaveBeenCalledWith('https://hiresortai.zool.in/shortlisted?filterJob=all');
   });
 
-  it('renders Candidates directory with Export CSV button and tab filters', async () => {
+  it('3. Renders Candidates directory with Export CSV button, Add Candidate button, and tab filters', async () => {
     render(
       <BrowserRouter>
         <Candidates />
@@ -52,6 +71,11 @@ describe('QA Suite: Shortlisted & Candidates Directory', () => {
     expect(exportBtn).toBeDefined();
     expect(exportBtn.hasAttribute('disabled')).toBe(false);
 
+    // Verify Add Candidate button
+    const addBtn = screen.getByRole('button', { name: /add candidate/i });
+    expect(addBtn).toBeDefined();
+    expect(addBtn.hasAttribute('disabled')).toBe(false);
+
     // Verify search input
     expect(screen.getByPlaceholderText('Search by name, email, company...')).toBeDefined();
 
@@ -59,5 +83,22 @@ describe('QA Suite: Shortlisted & Candidates Directory', () => {
     expect(screen.getByText('All Candidates')).toBeDefined();
     expect(screen.getAllByText('Applied').length).toBeGreaterThan(0);
     expect(screen.getByText('Talent Pool')).toBeDefined();
+
+    // Clicking Add Candidate opens modal
+    fireEvent.click(addBtn);
+    await waitFor(() => {
+      expect(screen.getByText('Add Candidate & Evaluate ATS')).toBeDefined();
+    });
+  });
+
+  it('4. Verifies production careers and embed URL schemas use https://hiresortai.zool.in', () => {
+    const slug = 'zool';
+    const careersUrl = `${getAppBaseUrl()}/careers/${slug}`;
+    const embedUrl = `${getAppBaseUrl()}/embed/careers/${slug}`;
+    const ssoCallbackUrl = `${getAppBaseUrl()}/auth/v1/sso/callback`;
+
+    expect(careersUrl).toBe('https://hiresortai.zool.in/careers/zool');
+    expect(embedUrl).toBe('https://hiresortai.zool.in/embed/careers/zool');
+    expect(ssoCallbackUrl).toBe('https://hiresortai.zool.in/auth/v1/sso/callback');
   });
 });
