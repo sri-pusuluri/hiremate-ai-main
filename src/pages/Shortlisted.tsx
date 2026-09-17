@@ -64,6 +64,7 @@ const candidateUuidMap: Record<string, string> = {
 
 export default function Shortlisted() {
   const { client, clientId } = useAuth();
+  const { toast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -161,8 +162,8 @@ export default function Shortlisted() {
             })(),
             aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
             isPinned: c.is_pinned || c.ai_score === 'high' || c.aiScore === 'high' || false,
-            company: c.company || 'Tech Solutions',
-            currentRole: c.current_role || c.currentRole || 'Software Engineer',
+            company: c.company || (c.predictive_insights as any)?.company || 'Independent',
+            currentRole: c.role_title || (c.predictive_insights as any)?.currentRole || c.current_role || c.currentRole || 'Software Engineer',
             resumeText: c.resume_text || c.resumeText || '',
             resumeUrl: c.resume_url || c.resumeUrl || ''
           }));
@@ -247,8 +248,75 @@ export default function Shortlisted() {
     }
   };
 
-  const handleFeedback = (type: 'good' | 'poor') => {
-    console.log('Feedback:', type, 'for candidate:', selectedCandidate?.id);
+  const handleExportCSV = () => {
+    if (filteredCandidates.length === 0) {
+      toast({ title: 'No Data', description: 'No shortlisted candidates to export.' });
+      return;
+    }
+    const headers = [
+      'Rank', 'Name', 'Email', 'Phone', 'Applied Job', 'Current Role', 'Company', 'Experience (Yrs)', 'Match Score (%)', 'AI Rating', 'Status'
+    ];
+    const rows = filteredCandidates.map((c, idx) => [
+      idx + 1,
+      `"${(c.name || '').replace(/"/g, '""')}"`,
+      `"${(c.email || '').replace(/"/g, '""')}"`,
+      `"${(c.phone || '').replace(/"/g, '""')}"`,
+      `"${(c.jobId ? jobMap[c.jobId]?.title || 'Unassigned' : 'Unassigned').replace(/"/g, '""')}"`,
+      `"${(c.currentRole || '').replace(/"/g, '""')}"`,
+      `"${(c.company || '').replace(/"/g, '""')}"`,
+      c.experience || 0,
+      c.cosineSimilarity !== null && c.cosineSimilarity !== undefined ? Math.round(c.cosineSimilarity * 100) : '--',
+      c.aiScore || 'pending',
+      c.status || 'shortlisted'
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `shortlisted_candidates_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({
+      title: 'Export Complete ✨',
+      description: `Exported ${filteredCandidates.length} shortlisted candidates to CSV.`
+    });
+  };
+
+  const handleShareWithHiringManager = () => {
+    const shareUrl = `${window.location.origin}/shortlisted?filterJob=${filterJob}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl).catch(() => {});
+    }
+    toast({
+      title: 'Shortlist Link Copied 📋',
+      description: `Shareable packet link for ${filteredCandidates.length} candidates copied to clipboard for your Hiring Manager.`
+    });
+  };
+
+  const handleFeedback = async (type: 'good' | 'poor') => {
+    if (!selectedCandidate) return;
+    const candId = selectedCandidate.id;
+    try {
+      await supabase
+        .from('candidates')
+        .update({
+          custom_answers: {
+            ...((selectedCandidate as any).custom_answers || (selectedCandidate as any).customAnswers || {}),
+            recruiter_feedback: type,
+            feedback_at: new Date().toISOString()
+          }
+        })
+        .eq('id', candId);
+    } catch (e) {
+      console.warn('Could not save feedback to DB:', e);
+    }
+    toast({
+      title: type === 'good' ? 'Feedback Saved: Accurate Match 👍' : 'Feedback Saved: Poor Match 👎',
+      description: 'Your rating helps calibrate the ATS scoring model.'
+    });
   };
 
   return (
@@ -284,11 +352,20 @@ export default function Shortlisted() {
           <p className="text-xs text-muted-foreground hidden md:block mr-1">
             {filteredCandidates.length} {filteredCandidates.length === 1 ? 'candidate' : 'candidates'} ready
           </p>
-          <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 text-xs gap-1.5"
+            onClick={handleExportCSV}
+          >
             <Download className="w-3.5 h-3.5" />
             Export
           </Button>
-          <Button size="sm" className="h-9 text-xs gap-1.5 shadow-sm">
+          <Button 
+            size="sm" 
+            className="h-9 text-xs gap-1.5 shadow-sm"
+            onClick={handleShareWithHiringManager}
+          >
             <Send className="w-3.5 h-3.5" />
             Share with Hiring Manager
           </Button>

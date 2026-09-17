@@ -284,8 +284,63 @@ export default function Candidates() {
     }
   };
 
-  const handleFeedback = (type: 'good' | 'poor') => {
-    console.log('Feedback:', type, 'for candidate:', selectedCandidate?.id);
+  const handleExportCSV = () => {
+    if (filteredCandidates.length === 0) {
+      toast({ title: 'No Data', description: 'No candidate records to export.' });
+      return;
+    }
+    const headers = [
+      'Name', 'Email', 'Phone', 'Applied Job', 'Current Role', 'Company', 'Experience (Yrs)', 'Match Score (%)', 'AI Rating', 'Status'
+    ];
+    const rows = filteredCandidates.map((c) => [
+      `"${(c.name || '').replace(/"/g, '""')}"`,
+      `"${(c.email || '').replace(/"/g, '""')}"`,
+      `"${(c.phone || '').replace(/"/g, '""')}"`,
+      `"${(c.jobId ? jobMap[c.jobId]?.title || 'Unassigned' : 'Unassigned').replace(/"/g, '""')}"`,
+      `"${(c.currentRole || '').replace(/"/g, '""')}"`,
+      `"${(c.company || '').replace(/"/g, '""')}"`,
+      c.experience || 0,
+      c.cosineSimilarity !== null && c.cosineSimilarity !== undefined ? Math.round(c.cosineSimilarity * 100) : '--',
+      c.aiScore || 'pending',
+      c.status || 'new'
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `candidates_directory_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({
+      title: 'Export Complete ✨',
+      description: `Exported ${filteredCandidates.length} candidate profiles to CSV.`
+    });
+  };
+
+  const handleFeedback = async (type: 'good' | 'poor') => {
+    if (!selectedCandidate) return;
+    const candId = selectedCandidate.id;
+    try {
+      await supabase
+        .from('candidates')
+        .update({
+          custom_answers: {
+            ...((selectedCandidate as any).custom_answers || (selectedCandidate as any).customAnswers || {}),
+            recruiter_feedback: type,
+            feedback_at: new Date().toISOString()
+          }
+        })
+        .eq('id', candId);
+    } catch (e) {
+      console.warn('Could not save feedback to DB:', e);
+    }
+    toast({
+      title: type === 'good' ? 'Feedback Saved: Accurate Match 👍' : 'Feedback Saved: Poor Match 👎',
+      description: 'Your rating helps calibrate the ATS scoring model.'
+    });
   };
 
   return (
@@ -304,9 +359,13 @@ export default function Candidates() {
               Filtering: {selectedJob.title}
             </Badge>
           )}
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4" />
-            Export
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleExportCSV}
+          >
+            <Download className="w-4 h-4 mr-1.5" />
+            Export ({filteredCandidates.length})
           </Button>
         </div>
       </div>
