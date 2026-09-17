@@ -439,117 +439,93 @@ export function AIMatchAnalysis({
             <div className="p-4 pt-0 space-y-3.5 border-t border-border/50 animate-in fade-in-50 duration-200">
               <div className="rounded-xl border border-border/70 divide-y divide-border/60 bg-card overflow-hidden shadow-2xs mt-3">
                 {/* Dimension 1: Domain Specialization */}
-                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                        <Zap className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="font-semibold text-foreground text-xs truncate">
-                        1. Core Stack Alignment
-                      </span>
-                      <ScoreInfoButton 
-                        title="1. Core Stack Alignment Details"
-                        description={matchedCount >= 3 
-                          ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
-                          : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
-                      />
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 hover:bg-muted/20 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                      <Zap className="w-3.5 h-3.5" />
                     </div>
-                    <span className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
-                      matchedCount >= 3 
-                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
-                        : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                    )}>
-                      {matchedCount >= 3 ? "Verified Primary Stack" : "Stack Gaps Detected"}
+                    <span className="font-semibold text-foreground text-xs truncate">
+                      1. Core Stack Alignment
                     </span>
+                    <ScoreInfoButton 
+                      title="1. Core Stack Alignment Details"
+                      description={matchedCount >= 3 
+                        ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
+                        : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
+                    />
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
-                    {matchedCount >= 3 
-                      ? `Candidate demonstrates verified core competency in ${candidate.matchedSkills?.slice(0, 2).join(' & ')}.`
-                      : `Core specialization requirements for ${job?.title || 'this role'} are partially or completely missing from resume.`}
-                  </p>
+                  <span className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
+                    matchedCount >= 3 
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                      : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                  )}>
+                    {matchedCount >= 3 ? "Verified Primary Stack" : "Stack Gaps Detected"}
+                  </span>
                 </div>
 
                 {/* Dimension 2: Requirement Ratio */}
-                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                        <Code className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="font-semibold text-foreground text-xs truncate">
-                        2. Competency Coverage
-                      </span>
-                      <ScoreInfoButton 
-                        title="2. Competency Coverage Details"
-                        description={`Matches ${matchedCount} explicit skills requested in the job description across technical specifications.`}
-                      />
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 hover:bg-muted/20 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                      <Code className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
-                      {matchedCount} / {matchedCount + missingCount} ({skillMatchPercentage}%)
+                    <span className="font-semibold text-foreground text-xs truncate">
+                      2. Competency Coverage
                     </span>
+                    <ScoreInfoButton 
+                      title="2. Competency Coverage Details"
+                      description={`Matches ${matchedCount} explicit skills requested in the job description across technical specifications.`}
+                    />
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
-                    Matches {matchedCount} explicit skills requested in the job description across technical specifications.
-                  </p>
+                  <span className="text-[10px] font-mono font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
+                    {matchedCount} / {matchedCount + missingCount} ({skillMatchPercentage}%)
+                  </span>
                 </div>
 
                 {/* Dimension 3: Seniority Fit */}
-                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
-                        <Briefcase className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="font-semibold text-foreground text-xs truncate">
-                        3. Seniority Trajectory
-                      </span>
-                      <ScoreInfoButton 
-                        title="3. Seniority Trajectory Details"
-                        description={expDiff >= 0 
-                          ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
-                          : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
-                      />
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 hover:bg-muted/20 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-md bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                      <Briefcase className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[10px] font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
-                      {candidate.experience} yrs candidate
+                    <span className="font-semibold text-foreground text-xs truncate">
+                      3. Seniority Trajectory
                     </span>
+                    <ScoreInfoButton 
+                      title="3. Seniority Trajectory Details"
+                      description={expDiff >= 0 
+                        ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
+                        : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
+                    />
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
-                    {expDiff >= 0 
-                      ? `Meets target experience baseline with ${candidate.experience} verified years in software/product roles.`
-                      : `Below ideal target tenure (${Math.abs(expDiff)} yrs under recommendation). Requires closer technical screening.`}
-                  </p>
+                  <span className="text-[10px] font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
+                    {candidate.experience} yrs candidate
+                  </span>
                 </div>
 
                 {/* Dimension 4: Retention Stability */}
-                <div className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="font-semibold text-foreground text-xs truncate">
-                        4. Predictive Retention
-                      </span>
-                      <ScoreInfoButton 
-                        title="4. Predictive Retention Details"
-                        description={(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
-                      />
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 hover:bg-muted/20 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                      <TrendingUp className="w-3.5 h-3.5" />
                     </div>
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
-                      (candidate.predictiveInsights as any)?.retentionRisk === 'low' 
-                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
-                        : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                    )}>
-                      {(candidate.predictiveInsights as any)?.retentionRisk || 'Standard'} Risk
+                    <span className="font-semibold text-foreground text-xs truncate">
+                      4. Predictive Retention
                     </span>
+                    <ScoreInfoButton 
+                      title="4. Predictive Retention Details"
+                      description={(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
+                    />
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed pl-8">
-                    {(candidate.predictiveInsights as any)?.retentionRiskFactor || "Career trajectory reflects stable engineering transitions."}
-                  </p>
+                  <span className={cn(
+                    "text-[10px] font-bold uppercase px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
+                    (candidate.predictiveInsights as any)?.retentionRisk === 'low' 
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                      : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                  )}>
+                    {(candidate.predictiveInsights as any)?.retentionRisk || 'Standard'} Risk
+                  </span>
                 </div>
               </div>
 
@@ -744,25 +720,26 @@ export function AIMatchAnalysis({
                     </div>
                     <div className="rounded-xl border border-border/70 divide-y divide-border/60 bg-card overflow-hidden shadow-2xs">
                       {PLATFORM_COVERAGE_LAYERS.map((layer) => (
-                        <div key={layer.id} className="p-3 hover:bg-muted/20 transition-colors space-y-1.5">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className={cn("w-2 h-2 rounded-full shrink-0", layer.colorDot)} />
-                              <span className="font-semibold text-foreground text-xs truncate">
-                                {layer.title}
-                              </span>
-                              <ScoreInfoButton 
-                                title={layer.title}
-                                description={layer.description}
-                              />
-                            </div>
-                            <span className="text-[10px] font-mono font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
+                        <div key={layer.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5 hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={cn("w-2 h-2 rounded-full shrink-0", layer.colorDot)} />
+                            <span className="font-semibold text-foreground text-xs truncate">
+                              {layer.title}
+                            </span>
+                            <ScoreInfoButton 
+                              title={layer.title}
+                              description={layer.description}
+                              colorDot={layer.colorDot}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 hidden sm:inline">
+                              {layer.tag}
+                            </span>
+                            <span className="text-[10px] font-mono font-medium text-muted-foreground/80 bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
                               Layer {layer.id}/6
                             </span>
                           </div>
-                          <p className="text-[11px] text-muted-foreground leading-relaxed pl-4">
-                            {layer.description}
-                          </p>
                         </div>
                       ))}
                     </div>
@@ -833,9 +810,10 @@ function AnalysisStep({ step, title, description, status }: AnalysisStepProps) {
 interface ScoreInfoButtonProps {
   title: string;
   description: string;
+  colorDot?: string;
 }
 
-function ScoreInfoButton({ title, description }: ScoreInfoButtonProps) {
+function ScoreInfoButton({ title, description, colorDot }: ScoreInfoButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -850,7 +828,7 @@ function ScoreInfoButton({ title, description }: ScoreInfoButtonProps) {
           }}
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
-          className="inline-flex items-center justify-center p-0.5 rounded-full hover:bg-muted text-muted-foreground/70 hover:text-foreground transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/40"
+          className="inline-flex items-center justify-center p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/40 shrink-0"
           aria-label={`About ${title}`}
           title={description}
         >
@@ -861,13 +839,17 @@ function ScoreInfoButton({ title, description }: ScoreInfoButtonProps) {
         side="top"
         align="center"
         sideOffset={6}
-        className="w-72 p-3 text-xs bg-popover/95 backdrop-blur-sm border border-border shadow-xl z-50 rounded-xl space-y-1.5"
+        className="w-80 p-3.5 text-xs bg-popover/95 backdrop-blur-md border border-border shadow-xl z-50 rounded-xl space-y-1.5 animate-in fade-in-50 zoom-in-95 pointer-events-auto"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
       >
         <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs border-b border-border/60 pb-1">
-          <Info className="w-3.5 h-3.5 text-primary shrink-0" />
-          <span>{title}</span>
+          {colorDot ? (
+            <span className={cn("w-2 h-2 rounded-full shrink-0", colorDot)} />
+          ) : (
+            <Info className="w-3.5 h-3.5 text-primary shrink-0" />
+          )}
+          <span className="truncate">{title}</span>
         </div>
         <p className="text-muted-foreground text-[11px] leading-relaxed font-normal normal-case tracking-normal">
           {description}
@@ -881,36 +863,42 @@ const PLATFORM_COVERAGE_LAYERS = [
   {
     id: 1,
     title: "1. Semantic Vector Similarity (Math)",
+    tag: "1536-dim Cosine",
     colorDot: "bg-blue-500",
     description: "Converts both candidate resume and job description into 1536-dimensional dense embedding vectors, measuring geometric cosine distance to capture lexical context without keyword stuffing bias."
   },
   {
     id: 2,
     title: "2. Contextual Cognitive Reasoning",
+    tag: "Cognitive Context",
     colorDot: "bg-purple-500",
     description: "Examines architectural scope, project impact, system complexity, and transferable engineering proficiencies beyond verbatim title matching."
   },
   {
     id: 3,
     title: "3. Technical Competency & Gap Extraction",
+    tag: "Catalog & Gaps",
     colorDot: "bg-emerald-500",
     description: "Evaluates resume against complete skills catalog, separating verified proficiencies (matched_skills) from unsatisfied job criteria (missing_skills)."
   },
   {
     id: 4,
     title: "4. Seniority Trajectory & Experience Fit",
+    tag: "Tenure & Delta",
     colorDot: "bg-amber-500",
     description: "Analyzes career progression timeline, leadership indicators (Senior, Lead, Staff), and tenure delta relative to target requirements."
   },
   {
     id: 5,
     title: "5. Predictive Retention & Behavioral Risk",
+    tag: "Retention & Risk",
     colorDot: "bg-rose-500",
     description: "Synthesizes interview pass likelihood, offer acceptance rate, onboarding probability, flight risk factors, and joining timeframe estimates."
   },
   {
     id: 6,
     title: "6. Targeted Recruiter Interview Probes",
+    tag: "Adaptive Probes",
     colorDot: "bg-cyan-500",
     description: "Dynamically crafts tailored technical questions to investigate specific detected candidate skill gaps during technical and recruiter screens."
   }
