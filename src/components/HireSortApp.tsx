@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { JobDashboard } from '@/components/flows/JobDashboard';
 import { OnboardingModal } from '@/components/flows/OnboardingModal';
@@ -144,21 +145,136 @@ async function getEmbeddings(text: string, provider: string, key: string): Promi
 // ----------------------------
 
 export function HireSortApp() {
+  const navigate = useNavigate();
+  const params = useParams<{ jobId?: string }>();
+  const [searchParams] = useSearchParams();
+
+  const targetJobId = params.jobId || searchParams.get('jobId');
+
   const [currentView, setCurrentView] = useState('jobs');
-  const [currentScreen, setCurrentScreen] = useState<FlowScreen>('job-dashboard');
+  const [currentScreen, setCurrentScreen] = useState<FlowScreen>(targetJobId ? 'ranked-list' : 'job-dashboard');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [loadingJob, setLoadingJob] = useState<boolean>(Boolean(targetJobId));
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showShortlist, setShowShortlist] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [shortlistCandidates, setShortlistCandidates] = useState<Candidate[]>([]);
 
+  // Sync state with URL parameter /jobs/:jobId or ?jobId=...
+  useEffect(() => {
+    if (!targetJobId) {
+      if (currentScreen !== 'job-dashboard') {
+        setCurrentScreen('job-dashboard');
+        setSelectedJob(null);
+      }
+      setLoadingJob(false);
+      return;
+    }
+
+    if (selectedJob && selectedJob.id === targetJobId) {
+      if (currentScreen !== 'ranked-list') {
+        setCurrentScreen('ranked-list');
+      }
+      setLoadingJob(false);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingJob(true);
+
+    async function loadTargetJob() {
+      // 1. Check in-memory mockJobs first
+      const foundInMock = mockJobs.find((j) => j.id === targetJobId);
+      if (foundInMock) {
+        if (isMounted) {
+          setSelectedJob(foundInMock);
+          setCurrentScreen('ranked-list');
+          setLoadingJob(false);
+        }
+        return;
+      }
+
+      // 2. Fetch from Supabase
+      try {
+        const { data: j, error } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('id', targetJobId)
+          .maybeSingle();
+
+        if (error || !j) {
+          console.warn('Job not found for ID:', targetJobId);
+          if (isMounted) {
+            navigate('/jobs', { replace: true });
+            setLoadingJob(false);
+          }
+          return;
+        }
+
+        const { count } = await supabase
+          .from('candidates')
+          .select('id', { count: 'exact', head: true })
+          .eq('job_id', targetJobId);
+
+        if (!isMounted) return;
+
+        const isExpired = j.expires_at ? new Date(j.expires_at) < new Date() : false;
+        const resolvedStatus = isExpired ? 'inactive' : (j.status || 'active');
+
+        const mappedJob: Job = {
+          id: j.id,
+          title: j.title,
+          department: j.department || 'Engineering',
+          location: j.location || 'Remote',
+          type: j.type || 'full-time',
+          experienceLevel: j.experience_level || undefined,
+          salary: j.salary,
+          description: j.description || '',
+          responsibilities: j.responsibilities || [],
+          requirements: j.requirements || [],
+          niceToHave: j.nice_to_have || j.niceToHave || [],
+          hireSortEnabled: j.hire_sort_enabled ?? j.hireSortEnabled ?? true,
+          aiProcessingStatus: j.ai_processing_status || j.aiProcessingStatus || 'complete',
+          lastRankedAt: j.last_ranked_at || j.lastRankedAt,
+          candidateCount: count || 0,
+          isPublic: j.is_public !== undefined && j.is_public !== null ? Boolean(j.is_public) : true,
+          slug: j.slug,
+          status: resolvedStatus,
+          expiresAt: j.expires_at || undefined,
+          customQuestions: j.custom_questions || [],
+          postedDate: j.created_at ? new Date(j.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          createdBy: j.created_by || null,
+        };
+
+        setSelectedJob(mappedJob);
+        setCurrentScreen('ranked-list');
+      } catch (err) {
+        console.error('Failed to load target job:', err);
+        if (isMounted) {
+          navigate('/jobs', { replace: true });
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingJob(false);
+        }
+      }
+    }
+
+    loadTargetJob();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [targetJobId]);
+
   const handleSelectJob = (job: Job) => {
     setSelectedJob(job);
+    navigate(`/jobs/${job.id}`);
     if (job.hireSortEnabled && job.aiProcessingStatus === 'complete') {
       setCurrentScreen('ranked-list');
     } else if (job.hireSortEnabled && job.aiProcessingStatus === 'processing') {
-      setCurrentScreen('processing');
+      setCurrentScreen('ranked-list');
     } else {
       setCurrentScreen('ranked-list');
     }
@@ -379,6 +495,7 @@ export function HireSortApp() {
 
   const handleFeedbackComplete = () => {
     setShowFeedback(false);
+    navigate('/jobs');
     setCurrentScreen('job-dashboard');
     setSelectedJob(null);
   };
@@ -420,12 +537,24 @@ export function HireSortApp() {
           </div>
         );
       case 'ranked-list':
+        if (loadingJob && !selectedJob) {
+          return (
+            <div className="p-12 flex items-center justify-center min-h-[400px]">
+              <div className="text-center space-y-3">
+                <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+                <p className="text-sm font-medium text-foreground">Loading job and candidates...</p>
+                <p className="text-xs text-muted-foreground">Preparing candidate rankings and evaluations</p>
+              </div>
+            </div>
+          );
+        }
         return (
           <RankedCandidatesList
             onSelectCandidate={handleSelectCandidate}
             onCreateShortlist={handleCreateShortlist}
             selectedJob={selectedJob || undefined}
             onBack={() => {
+              navigate('/jobs');
               setCurrentScreen('job-dashboard');
               setSelectedJob(null);
             }}

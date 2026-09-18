@@ -8,6 +8,7 @@ import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/compone
 import { ResumeViewerModal } from './ResumeViewerModal';
 import { JobDescriptionModal } from './JobDescriptionModal';
 import { AddCandidateModal } from './AddCandidateModal';
+import { analyzeCandidateWithAI } from '@/lib/ai-screening';
 import { 
   ArrowUpDown, 
   GripVertical, 
@@ -19,6 +20,7 @@ import {
   Filter,
   CheckSquare,
   Sparkles,
+  RefreshCw,
   FileText,
   Users,
   Database,
@@ -58,11 +60,14 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
   const [showJDModal, setShowJDModal] = useState(false);
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<CandidateTab>('all');
+  const [isReanalyzingAll, setIsReanalyzingAll] = useState(false);
+  const [reanalyzingProgress, setReanalyzingProgress] = useState<{ current: number; total: number } | null>(null);
+  const [reanalyzingId, setReanalyzingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     async function fetchCandidates() {
-      const targetJobId = selectedJob?.id || passedJob?.id;
+      const targetJobId = selectedJob?.id || (selectedJob as any)?._id;
       if (!targetJobId) {
         setCandidates([]);
         setLoading(false);
@@ -121,7 +126,9 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
                 retentionRisk: pi.retentionRisk ?? (score === 'high' ? 'low' : score === 'medium' ? 'medium' : 'high'),
                 retentionRiskFactor: pi.retentionRiskFactor || (score === 'high' ? 'Strong role alignment' : 'Flight risk based on tenure history'),
                 timeToJoinEstimate: pi.timeToJoinEstimate || (score === 'high' ? '15-30 Days' : '30-45 Days'),
-                assessment: pi.assessment
+                assessment: pi.assessment,
+                isUnprocessed: Boolean(pi.isUnprocessed),
+                error: pi.error || null
               };
             })(),
             aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
@@ -129,6 +136,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             company: (c as any).company || (c.predictive_insights as any)?.company || 'Independent',
             currentRole: (c as any).role_title || (c.predictive_insights as any)?.currentRole || c.current_role || 'Software Engineer',
             resumeText: c.resume_text || c.resumeText || '',
+            resumeUrl: c.resume_url || c.resumeUrl || null,
             source: c.source || (c.email.length % 3 === 0 ? 'talent-pool' : 'applied')
           }));
           setCandidates(mapped);
@@ -143,6 +151,153 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
     }
     fetchCandidates();
   }, [selectedJob]);
+
+  const handleReanalyzeSingleCandidate = async (cand: Candidate) => {
+    if (!selectedJob) return;
+    setReanalyzingId(cand.id);
+    try {
+      const result = await analyzeCandidateWithAI(
+        {
+          id: cand.id,
+          name: cand.name,
+          resumeText: cand.resumeText,
+          resumeUrl: cand.resumeUrl,
+          currentRole: cand.currentRole,
+          company: cand.company
+        },
+        selectedJob
+      );
+
+      if (result && !result.isUnprocessed) {
+        setCandidates(prev => prev.map(c => {
+          if (c.id !== cand.id) return c;
+          return {
+            ...c,
+            aiScore: result.score,
+            cosineSimilarity: result.similarity,
+            matchedSkills: result.matchedSkills,
+            missingSkills: result.missingSkills,
+            evaluationStatus: 'completed',
+            evaluationError: undefined,
+            currentRole: result.currentRole || c.currentRole,
+            company: result.company || c.company,
+            predictiveInsights: {
+              ...(c.predictiveInsights || {} as any),
+              interviewPassProb: result.interviewPassProb,
+              offerAcceptanceProb: result.offerAcceptanceProb,
+              onboardingSuccessProb: result.onboardingSuccessProb,
+              retentionRisk: result.retentionRisk,
+              retentionRiskFactor: result.retentionRiskFactor,
+              timeToJoinEstimate: result.timeToJoinEstimate,
+              assessment: result.assessment,
+              provider: result.provider,
+              model: result.model,
+              executionMode: result.executionMode,
+              isUnprocessed: false,
+              error: null
+            }
+          };
+        }));
+
+        toast({
+          title: "Profile Re-analyzed ✨",
+          description: `${cand.name} evaluated: ${Math.round((result.similarity || 0) * 100)}% match score.`,
+        });
+      } else {
+        toast({
+          title: "Screening Incomplete",
+          description: result?.error || "Could not complete evaluation.",
+          variant: "destructive"
+        });
+      }
+    } catch (err: any) {
+      console.error("Single re-analyze error:", err);
+      toast({
+        title: "Error Re-analyzing Candidate",
+        description: err.message || "Failed to re-screen candidate.",
+        variant: "destructive"
+      });
+    } finally {
+      setReanalyzingId(null);
+    }
+  };
+
+  const handleReanalyzeAllCandidates = async () => {
+    if (!selectedJob || candidates.length === 0 || isReanalyzingAll) return;
+    setIsReanalyzingAll(true);
+    setReanalyzingProgress({ current: 0, total: candidates.length });
+
+    let successCount = 0;
+    try {
+      for (let i = 0; i < candidates.length; i++) {
+        const cand = candidates[i];
+        setReanalyzingProgress({ current: i + 1, total: candidates.length });
+        try {
+          const result = await analyzeCandidateWithAI(
+            {
+              id: cand.id,
+              name: cand.name,
+              resumeText: cand.resumeText,
+              resumeUrl: cand.resumeUrl,
+              currentRole: cand.currentRole,
+              company: cand.company
+            },
+            selectedJob
+          );
+
+          if (result && !result.isUnprocessed) {
+            successCount++;
+            setCandidates(prev => prev.map(c => {
+              if (c.id !== cand.id) return c;
+              return {
+                ...c,
+                aiScore: result.score,
+                cosineSimilarity: result.similarity,
+                matchedSkills: result.matchedSkills,
+                missingSkills: result.missingSkills,
+                evaluationStatus: 'completed',
+                evaluationError: undefined,
+                currentRole: result.currentRole || c.currentRole,
+                company: result.company || c.company,
+                predictiveInsights: {
+                  ...(c.predictiveInsights || {} as any),
+                  interviewPassProb: result.interviewPassProb,
+                  offerAcceptanceProb: result.offerAcceptanceProb,
+                  onboardingSuccessProb: result.onboardingSuccessProb,
+                  retentionRisk: result.retentionRisk,
+                  retentionRiskFactor: result.retentionRiskFactor,
+                  timeToJoinEstimate: result.timeToJoinEstimate,
+                  assessment: result.assessment,
+                  provider: result.provider,
+                  model: result.model,
+                  executionMode: result.executionMode,
+                  isUnprocessed: false,
+                  error: null
+                }
+              };
+            }));
+          }
+        } catch (e) {
+          console.warn(`Error re-analyzing candidate ${cand.name}:`, e);
+        }
+      }
+
+      toast({
+        title: "Batch Re-analysis Complete ✨",
+        description: `Successfully re-analyzed ${successCount} of ${candidates.length} candidates against ${selectedJob.title}.`,
+      });
+    } catch (err: any) {
+      console.error("Batch re-analyze error:", err);
+      toast({
+        title: "Batch Re-analysis Issue",
+        description: err.message || "Failed to complete all re-analyses.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsReanalyzingAll(false);
+      setReanalyzingProgress(null);
+    }
+  };
 
   // Filter candidates by source (applied vs talent pool)
   const { appliedCandidates, talentPoolCandidates } = useMemo(() => {
@@ -278,6 +433,23 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             >
               <CheckSquare className="w-3.5 h-3.5 mr-1" />
               Create Shortlist ({selectedIds.size})
+            </Button>
+          )}
+          {selectedJob && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReanalyzeAllCandidates}
+              disabled={isReanalyzingAll || candidates.length === 0}
+              className="h-8 text-xs px-2.5 sm:px-3 gap-1.5 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors cursor-pointer"
+              title="Re-analyze all candidates against current job requirements"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5 text-primary", isReanalyzingAll && "animate-spin")} />
+              <span>
+                {isReanalyzingAll 
+                  ? (reanalyzingProgress ? `Analyzing (${reanalyzingProgress.current}/${reanalyzingProgress.total})...` : "Analyzing...")
+                  : "Re-analyze All"}
+              </span>
             </Button>
           )}
           <Button
@@ -492,6 +664,8 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             onSelect={() => toggleSelect(candidate.id)}
             onClick={() => onSelectCandidate({ ...candidate, aiRank: index + 1 })}
             onViewResume={() => handleViewResume(candidate)}
+            onReanalyze={() => handleReanalyzeSingleCandidate(candidate)}
+            isReanalyzing={reanalyzingId === candidate.id}
             isAIEnabled={selectedJob?.hireSortEnabled || false}
           />
         ))}
@@ -597,10 +771,12 @@ interface CandidateRowProps {
   onSelect: () => void;
   onClick: () => void;
   onViewResume: () => void;
+  onReanalyze?: () => void;
+  isReanalyzing?: boolean;
   isAIEnabled: boolean;
 }
 
-function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, onViewResume, isAIEnabled }: CandidateRowProps) {
+function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, onViewResume, onReanalyze, isReanalyzing, isAIEnabled }: CandidateRowProps) {
   return (
     <div
       className={cn(
@@ -720,7 +896,25 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
         </div>
 
         {/* Quick Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className={cn(
+          "flex items-center gap-1 transition-opacity",
+          isReanalyzing ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}>
+          {onReanalyze && (
+            <Button 
+              variant="ghost" 
+              size="icon-sm" 
+              title="Re-analyze Candidate with AI"
+              disabled={isReanalyzing}
+              onClick={(e) => {
+                e.stopPropagation();
+                onReanalyze();
+              }}
+              className={cn("hover:text-primary hover:bg-primary/10", isReanalyzing && "text-primary")}
+            >
+              <RefreshCw className={cn("w-4 h-4", isReanalyzing && "animate-spin")} />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon-sm" 

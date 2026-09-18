@@ -367,6 +367,7 @@ export async function analyzeCandidateWithAI(
   }
 
   // 2. If resume text is still missing or short, synthesize from known profile metadata
+  // 2. If resume text is missing, attempt to synthesize from known candidate profile attributes
   if (!resumeText || resumeText.trim().length < 25) {
     const roleStr = candidate.currentRole || candidate.role_title || candidateDbRecord?.role_title || 'Software Professional';
     const companyStr = candidate.company || candidateDbRecord?.company || 'Independent';
@@ -379,17 +380,15 @@ export async function analyzeCandidateWithAI(
     const uniqueSkills = Array.from(new Set(skillsList.filter(Boolean)));
     const customAns = (candidate as any).custom_answers || (candidate as any).customAnswers || candidateDbRecord?.custom_answers || {};
 
-    if (name && name !== 'Empty Applicant' && name !== 'Applicant') {
-      resumeText = `# Candidate Profile: ${name}
+    resumeText = `# Candidate Profile: ${name}
 Role: ${roleStr} at ${companyStr}
 Total Experience: ${expYears} years
 Skills: ${uniqueSkills.length > 0 ? uniqueSkills.join(', ') : roleStr}
 ${Object.entries(customAns).map(([k, v]) => `${k}: ${v}`).join('\n')}`;
 
-      // Persist the synthesized profile back to DB for permanent caching
-      if (candidate.id && !candidateDbRecord?.resume_text) {
-        supabase.from('candidates').update({ resume_text: resumeText }).eq('id', candidate.id).then(() => {});
-      }
+    // Persist the synthesized profile back to DB for permanent caching
+    if (candidate.id && !candidateDbRecord?.resume_text) {
+      supabase.from('candidates').update({ resume_text: resumeText }).eq('id', candidate.id).then(() => {});
     }
   }
 
@@ -444,8 +443,9 @@ ${Object.entries(customAns).map(([k, v]) => `${k}: ${v}`).join('\n')}`;
     return failureResult;
   }
 
-  const selectedProvider = options?.preferredProvider || 
-    (typeof window !== 'undefined' ? localStorage.getItem('ai_provider') : null) || 'auto';
+  const selectedProvider = (typeof options?.preferredProvider === 'string' && options.preferredProvider.length > 0)
+    ? options.preferredProvider
+    : ((typeof window !== 'undefined' ? localStorage.getItem('ai_provider') : null) || 'auto');
 
   const openaiKey = (typeof window !== 'undefined' ? localStorage.getItem('openai_api_key') : null) || import.meta?.env?.VITE_OPENAI_API_KEY;
   const geminiKey = (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null) || import.meta?.env?.VITE_GEMINI_API_KEY;
@@ -690,6 +690,8 @@ Output ONLY valid JSON without markdown wrapping.`;
           provider: result.provider || 'deterministic-ats',
           model: result.model || 'Deterministic ATS Engine (Rule-based NLP & Heuristics)',
           executionMode: result.executionMode || 'deterministic_ats',
+          isUnprocessed: false,
+          error: null,
           evaluatedAt: new Date().toISOString()
         }
       })

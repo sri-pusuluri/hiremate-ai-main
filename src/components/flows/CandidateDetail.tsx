@@ -410,9 +410,13 @@ export function CandidateDetail({
     }
   };
 
-  const handleReanalyze = async (customProvider?: string) => {
+  const handleReanalyze = async (customProviderOrEvent?: any) => {
     setIsReanalyzing(true);
     try {
+      const customProvider = typeof customProviderOrEvent === 'string' && customProviderOrEvent.length > 0 
+        ? customProviderOrEvent 
+        : undefined;
+
       // 1. Fetch fresh resume text and metadata from DB if missing in memory
       let resumeText = candidate.resumeText || (candidate as any).resume_text;
       let roleTitle = candidate.currentRole || (candidate as any).role_title;
@@ -529,8 +533,8 @@ export function CandidateDetail({
             provider: result.provider,
             model: result.model,
             executionMode: result.executionMode,
-            isUnprocessed: result.isUnprocessed,
-            error: result.isUnprocessed ? result.error : undefined
+            isUnprocessed: Boolean(result.isUnprocessed),
+            error: result.isUnprocessed ? result.error : null
           }
         };
 
@@ -881,7 +885,7 @@ export function CandidateDetail({
                   variant="outline"
                   size="sm"
                   className="h-8 text-xs bg-ai-surface hover:bg-ai-surface/80 border-ai-border text-ai-accent"
-                  onClick={handleReanalyze}
+                  onClick={() => handleReanalyze()}
                   disabled={isReanalyzing}
                 >
                   {isReanalyzing ? (
