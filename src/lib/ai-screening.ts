@@ -334,7 +334,7 @@ export async function analyzeCandidateWithAI(
   job: { id: string; title: string; description?: string; requirements?: string[]; responsibilities?: string[] },
   options?: { preferredProvider?: 'openai' | 'gemini' | 'claude' | 'supabase-edge' | 'deterministic-ats' | string }
 ): Promise<AIAnalysisResult> {
-  const name = candidate.name || candidate.full_name || 'Applicant';
+  const name = candidate.name || candidate.full_name || (candidate as any).candidateName || 'Applicant';
   let resumeText = await extractResumeText(
     name, 
     candidate.resume_url || (candidate as any).resumeUrl, 
