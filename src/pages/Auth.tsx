@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { getAppBaseUrl } from '@/lib/app-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Building2, Check, KeyRound, Eye, EyeOff, Zap, Crosshair, Wind } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, ShieldCheck, Briefcase, Building2, Check, KeyRound, Eye, EyeOff, Zap, Crosshair, Wind, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import { isMockMode, enableMockMode, disableMockMode } from '@/integrations/supabase/client';
 import { markInvitationAccepted } from '@/lib/invitations';
@@ -25,7 +24,7 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const { toast } = useToast();
-  
+
   // Falcon Background Video / Image State
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
@@ -76,7 +75,7 @@ export default function Auth() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    
+
     try {
       emailSchema.parse(loginEmail);
       passwordSchema.parse(loginPassword);
@@ -108,12 +107,12 @@ export default function Auth() {
   const handleForgotPassword = async () => {
     setError(null);
     setSuccess(null);
-    
+
     if (!loginEmail) {
       setError('Please enter your email address above first to reset your password.');
       return;
     }
-    
+
     try {
       emailSchema.parse(loginEmail);
     } catch (err) {
@@ -192,11 +191,11 @@ export default function Auth() {
       {/* 1. Full-screen natural sky falcon background spanning 100% of viewport */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {!videoError && (
-          <video 
-            src="/videos/falcon-flying.mp4" 
-            autoPlay 
-            loop 
-            muted 
+          <video
+            src="/videos/falcon-flying.mp4"
+            autoPlay
+            loop
+            muted
             playsInline
             onLoadedData={() => setVideoLoaded(true)}
             onError={() => setVideoError(true)}
@@ -204,9 +203,9 @@ export default function Auth() {
           />
         )}
 
-        <img 
-          src="/images/falcon-sky-cinematic.jpg?v=3" 
-          alt="HireSort Falcon Soaring" 
+        <img
+          src="/images/falcon-sky-cinematic.jpg?v=3"
+          alt="HireSort Falcon Soaring"
           className={`absolute inset-0 w-full h-full object-cover object-left-top sm:object-center animate-falcon-glide scale-105 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-95'}`}
         />
 
@@ -228,10 +227,10 @@ export default function Auth() {
         <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 h-full flex-col justify-between py-4 select-none text-white">
           {/* Exclusive Top Branding on the Sky Hero */}
           <div className="flex items-center">
-            <div className="px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md flex items-center justify-center shadow-xl shadow-black/30 border border-white/40">
-              <img 
-                src="/images/sahab-hiresortai-logo.png" 
-                alt="Sahab Portal" 
+            <div className="rounded-2xl flex items-center justify-center">
+              <img
+                src="/images/sahab-hiresortai-logo-v2.png"
+                alt="Sahab Portal"
                 className="h-10 sm:h-12 w-auto object-contain block select-none"
               />
             </div>
@@ -278,9 +277,9 @@ export default function Auth() {
             {/* Mobile logo fallback */}
             <div className="flex items-center lg:hidden mb-1">
               <div className="px-3 py-1.5 rounded-xl bg-white border border-border/80 flex items-center justify-center shadow-xs">
-                <img 
-                  src="/images/sahab-hiresortai-logo.png" 
-                  alt="Sahab Portal" 
+                <img
+                  src="/images/sahab-hiresortai-logo.png"
+                  alt="Sahab Portal"
                   className="h-8 w-auto object-contain block"
                 />
               </div>
@@ -298,244 +297,182 @@ export default function Auth() {
               </p>
             </div>
 
-              {error && (
-                <Alert variant="destructive" className="py-2 text-xs">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+            {error && (
+              <Alert variant="destructive" className="py-2 text-xs">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-              {success && (
-                <Alert className="py-2 text-xs border-success/50 bg-success/10">
-                  <AlertDescription className="text-success">{success}</AlertDescription>
-                </Alert>
-              )}
+            {success && (
+              <Alert className="py-2 text-xs border-success/50 bg-success/10">
+                <AlertDescription className="text-success">{success}</AlertDescription>
+              </Alert>
+            )}
 
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-3 h-9 bg-muted/60 backdrop-blur-sm">
-                  <TabsTrigger value="login" className="text-xs font-medium">Login</TabsTrigger>
-                  <TabsTrigger value="signup" className="text-xs font-medium">Sign Up</TabsTrigger>
-                </TabsList>
+            {/* Sleek 1-click persona chips */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-primary" />
+                  Demo Credentials
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
+              </div>
 
-                <TabsContent value="login" className="space-y-3.5 mt-0">
-                  {/* Sleek 1-click persona chips */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-foreground flex items-center gap-1.5">
-                        <KeyRound className="w-3.5 h-3.5 text-primary" />
-                        Demo Credentials
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')}
-                        className={`p-2 rounded-xl border text-left transition-all relative ${
-                          loginEmail === 'admin@hiremate.ai'
-                            ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-1 ring-purple-500'
-                            : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-purple-500/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-purple-500" />
-                            SuperAdmin
-                          </span>
-                          {loginEmail === 'admin@hiremate.ai' && <Check className="w-3 h-3 text-purple-500" />}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@hiremate.ai</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleAutofill('admin@commit.com', 'commit123')}
-                        className={`p-2 rounded-xl border text-left transition-all relative ${
-                          loginEmail === 'admin@commit.com'
-                            ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-1 ring-blue-500'
-                            : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-blue-500/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                            <Building2 className="w-3 h-3 text-blue-500" />
-                            Commit Admin
-                          </span>
-                          {loginEmail === 'admin@commit.com' && <Check className="w-3 h-3 text-blue-500" />}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@commit.com</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleAutofill('admin@zool.in', 'zool123')}
-                        className={`p-2 rounded-xl border text-left transition-all relative ${
-                          loginEmail === 'admin@zool.in'
-                            ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500'
-                            : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-emerald-500/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                            <Building2 className="w-3 h-3 text-emerald-500" />
-                            Zool Admin
-                          </span>
-                          {loginEmail === 'admin@zool.in' && <Check className="w-3 h-3 text-emerald-500" />}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@zool.in</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')}
-                        className={`p-2 rounded-xl border text-left transition-all relative ${
-                          loginEmail === 'recruiter@hiremate.ai'
-                            ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
-                            : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-primary/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                            <User className="w-3 h-3 text-primary" />
-                            Recruiter
-                          </span>
-                          {loginEmail === 'recruiter@hiremate.ai' && <Check className="w-3 h-3 text-primary" />}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">recruiter@hiremate.ai</div>
-                      </button>
-                    </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')}
+                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@hiremate.ai'
+                    ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-1 ring-purple-500'
+                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-purple-500/50'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-purple-500" />
+                      SuperAdmin
+                    </span>
+                    {loginEmail === 'admin@hiremate.ai' && <Check className="w-3 h-3 text-purple-500" />}
                   </div>
+                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@hiremate.ai</div>
+                </button>
 
-                  <form onSubmit={handleLogin} className="space-y-3 pt-1">
-                    <div className="space-y-1">
-                      <Label htmlFor="login-email" className="text-xs font-medium">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="name@example.com"
-                          className="pl-9 h-9 text-xs bg-background/70 backdrop-blur-xs border-border/70"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
+                <button
+                  type="button"
+                  onClick={() => handleAutofill('admin@commit.com', 'commit123')}
+                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@commit.com'
+                    ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-1 ring-blue-500'
+                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-blue-500/50'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                      <Building2 className="w-3 h-3 text-blue-500" />
+                      Commit Admin
+                    </span>
+                    {loginEmail === 'admin@commit.com' && <Check className="w-3 h-3 text-blue-500" />}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@commit.com</div>
+                </button>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="login-password" className="text-xs font-medium">Password</Label>
-                        <button
-                          type="button"
-                          onClick={handleForgotPassword}
-                          className="text-[11px] text-primary hover:underline focus:outline-none font-medium"
-                        >
-                          Forgot Password?
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                        <Input
-                          id="login-password"
-                          type={showLoginPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className="pl-9 pr-9 h-9 text-xs font-mono bg-background/70 backdrop-blur-xs border-border/70"
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowLoginPassword(!showLoginPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                        >
-                          {showLoginPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
+                <button
+                  type="button"
+                  onClick={() => handleAutofill('admin@zool.in', 'zool123')}
+                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@zool.in'
+                    ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500'
+                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-emerald-500/50'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                      <Building2 className="w-3 h-3 text-emerald-500" />
+                      Zool Admin
+                    </span>
+                    {loginEmail === 'admin@zool.in' && <Check className="w-3 h-3 text-emerald-500" />}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@zool.in</div>
+                </button>
 
-                    <Button type="submit" className="w-full h-9 text-xs font-semibold shadow-md shadow-primary/20" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                          Signing in...
-                        </>
-                      ) : (
-                        'Sign In'
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
+                <button
+                  type="button"
+                  onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')}
+                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'recruiter@hiremate.ai'
+                    ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
+                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-primary/50'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                      <User className="w-3 h-3 text-primary" />
+                      Recruiter
+                    </span>
+                    {loginEmail === 'recruiter@hiremate.ai' && <Check className="w-3 h-3 text-primary" />}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">recruiter@hiremate.ai</div>
+                </button>
+              </div>
+            </div>
 
-                <TabsContent value="signup" className="space-y-3 mt-0">
-                  <form onSubmit={handleSignup} className="space-y-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="signup-name" className="text-xs font-medium">Full Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                        <Input
-                          id="signup-name"
-                          type="text"
-                          placeholder="Jane Doe"
-                          className="pl-9 h-9 text-xs bg-background/70 backdrop-blur-xs border-border/70"
-                          value={signupName}
-                          onChange={(e) => setSignupName(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="signup-email" className="text-xs font-medium">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="name@company.com"
-                          className="pl-9 h-9 text-xs bg-background/70 backdrop-blur-xs border-border/70"
-                          value={signupEmail}
-                          onChange={(e) => setSignupEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="signup-password" className="text-xs font-medium">Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                        <Input
-                          id="signup-password"
-                          type={showSignupPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className="pl-9 pr-9 h-9 text-xs font-mono bg-background/70 backdrop-blur-xs border-border/70"
-                          value={signupPassword}
-                          onChange={(e) => setSignupPassword(e.target.value)}
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowSignupPassword(!showSignupPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                        >
-                          {showSignupPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-                    <Button type="submit" className="w-full h-9 text-xs font-semibold shadow-md shadow-primary/20" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                          Creating account...
-                        </>
-                      ) : (
-                        'Create Account'
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
+            <form onSubmit={handleLogin} className="space-y-3 pt-1">
+              <div className="space-y-1">
+                <Label htmlFor="login-email" className="text-xs font-medium">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="name@example.com"
+                    className="pl-9 h-9 text-xs bg-background/70 backdrop-blur-xs border-border/70"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="login-password" className="text-xs font-medium">Password</Label>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-[11px] text-primary hover:underline focus:outline-none font-medium"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    id="login-password"
+                    type={showLoginPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pl-9 pr-9 h-9 text-xs font-mono bg-background/70 backdrop-blur-xs border-border/70"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                  >
+                    {showLoginPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full h-9 text-xs font-semibold shadow-md shadow-primary/20" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+
+            {/* Dedicated B2B Company Onboarding CTA */}
+            <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 text-center space-y-2 mt-1">
+              <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-foreground">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                New Organization?
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-tight">
+                Create an autonomous ATS workspace with custom AI screening & 14-day free trial.
+              </p>
+              <Link
+                to="/onboarding"
+                className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-xs font-bold transition-all shadow-2xs"
+              >
+                Create Company Workspace
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
 
             {/* Bottom Status bar */}
             <div className="pt-2.5 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">

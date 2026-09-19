@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import CompanyOnboarding from "./pages/CompanyOnboarding";
 import NotFound from "./pages/NotFound";
 import PublicCareers from "./pages/PublicCareers";
 import PublicJobApplication from "./pages/PublicJobApplication";
@@ -38,6 +39,8 @@ const App = () => (
             <Route path="/settings/tenant" element={<Index initialView="tenant-settings" />} />
             <Route path="/tenant-settings" element={<Index initialView="tenant-settings" />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<CompanyOnboarding />} />
+            <Route path="/signup" element={<CompanyOnboarding />} />
             
             {/* Public ATS Careers Portals & Applications */}
             <Route path="/careers" element={<PublicCareers />} />
