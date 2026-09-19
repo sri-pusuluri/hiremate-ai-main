@@ -376,10 +376,23 @@ export default function UserManagement() {
       const targetClientId = isPlatformInvite
         ? null
         : (isSuperAdmin ? inviteClientId : (activeClient?.id || DEFAULT_ZOOL_CLIENT.id));
+
+      const targetClient = clients.find(c => c.id === targetClientId) || (targetClientId ? activeClient : null);
+      const clientName = targetClientId 
+        ? (targetClient?.name || (targetClientId === DEFAULT_COMMIT_CLIENT.id ? 'Commit' : (targetClientId === DEFAULT_ZOOL_CLIENT.id ? 'Zool Technologies' : 'Client Workspace')))
+        : 'HireSort Platform (Global HQ)';
+
       // Map UI role to valid Postgres app_role ('admin' | 'recruiter')
       const dbRole = (inviteRole === 'client_admin' || inviteRole === 'admin' || inviteRole === 'super_admin') ? 'admin' : 'recruiter';
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email: inviteEmail, role: dbRole, clientId: targetClientId }
+        body: { 
+          email: inviteEmail, 
+          role: inviteRole, 
+          clientId: targetClientId,
+          clientName: clientName,
+          projectName: clientName,
+          inviterName: profile?.name || user?.email || 'HireSort Admin'
+        }
       });
 
       if (error) {
@@ -406,7 +419,7 @@ export default function UserManagement() {
           }
           toast({
             title: 'User Already Registered - Setup Email Sent! ✉️',
-            description: `${inviteEmail} is already registered. A login & password setup email was sent, and direct setup link copied to clipboard.`,
+            description: `${inviteEmail} is already registered. A login & setup email for ${clientName} was sent, and direct setup link copied to clipboard.`,
           });
           setInviteDialogOpen(false);
           setInviteEmail('');
@@ -418,7 +431,7 @@ export default function UserManagement() {
       }
 
       markInvitationPending(inviteEmail);
-      const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(inviteEmail)}&mode=signup`;
+      const directLink = (data as any)?.directLink || `${getAppBaseUrl()}/auth?email=${encodeURIComponent(inviteEmail)}&mode=signup`;
       if (navigator.clipboard) {
         try {
           await navigator.clipboard.writeText(directLink);
@@ -428,19 +441,19 @@ export default function UserManagement() {
       // Audit log invitation
       logAuditEvent({
         clientId: targetClientId || activeClient?.id || 'hiresort-platform-hq',
-        clientName: activeClient?.name || 'Workspace',
+        clientName: clientName,
         userId: user?.id,
         userEmail: user?.email || 'admin@hiresort.ai',
         userRole: role || 'admin',
         action: 'INVITE_USER',
         resourceType: 'user',
         resourceId: inviteEmail,
-        details: { invited_email: inviteEmail, role: dbRole, inviteType }
+        details: { invited_email: inviteEmail, role: dbRole, inviteType, clientName }
       }).catch(() => {});
 
       toast({
-        title: 'Invitation Created! 🎉',
-        description: `Invitation sent to ${inviteEmail}. Direct setup link copied to clipboard.`,
+        title: 'Invitation Sent! 🎉',
+        description: `Invitation sent for ${clientName} to ${inviteEmail}. Direct setup link copied to clipboard.`,
       });
       setInviteDialogOpen(false);
       setInviteEmail('');
@@ -472,11 +485,21 @@ export default function UserManagement() {
     }
   };
 
-  const handleResendInvite = async (email: string, role: string) => {
+  const handleResendInvite = async (email: string, role: string, userClientId?: string | null, userClientName?: string | null) => {
     try {
+      const targetClient = clients.find(c => c.id === userClientId) || activeClient;
+      const clientName = userClientName || targetClient?.name || (userClientId === DEFAULT_COMMIT_CLIENT.id ? 'Commit' : (userClientId ? 'Client Workspace' : 'HireSort Platform'));
+
       const dbRole = (role === 'client_admin' || role === 'super_admin' || role === 'admin') ? 'admin' : 'recruiter';
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email, role: dbRole }
+        body: { 
+          email, 
+          role, 
+          clientId: userClientId,
+          clientName,
+          projectName: clientName,
+          inviterName: profile?.name || user?.email || 'HireSort Admin'
+        }
       });
       
       let isAlreadyRegistered = Boolean((data as any)?.alreadyRegistered);
@@ -501,7 +524,7 @@ export default function UserManagement() {
         }
       }
 
-      const directLink = `${getAppBaseUrl()}/auth?email=${encodeURIComponent(email)}&mode=signup`;
+      const directLink = (data as any)?.directLink || `${getAppBaseUrl()}/auth?email=${encodeURIComponent(email)}&mode=signup`;
       if (navigator.clipboard) {
         try { await navigator.clipboard.writeText(directLink); } catch (e) {}
       }
@@ -509,12 +532,12 @@ export default function UserManagement() {
       if (isAlreadyRegistered) {
         toast({
           title: 'Account Setup Email Sent! ✉️',
-          description: `${email} is already registered in authentication. A login & password setup email was sent, and direct setup link was copied to clipboard.`,
+          description: `${email} is registered. A login & setup email for ${clientName} was sent, and direct setup link copied to clipboard.`,
         });
       } else {
         toast({
           title: 'Invitation Resent! 🎉',
-          description: `A new invitation email was sent to ${email}. Direct setup link copied to clipboard.`,
+          description: `A new invitation email for ${clientName} was sent to ${email}. Direct setup link copied to clipboard.`,
         });
       }
     } catch (error: any) {
@@ -892,6 +915,18 @@ export default function UserManagement() {
                   </span>
                 </div>
               )}
+
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/15 text-[11px] text-muted-foreground">
+                <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span>
+                  The invitation email from <strong className="text-foreground">reply.zool.in</strong> will explicitly specify assignment to{' '}
+                  <strong className="text-foreground">
+                    {inviteType === 'platform'
+                      ? 'HireSort Platform (Global HQ)'
+                      : (clients.find(c => c.id === inviteClientId)?.name || activeClient?.name || 'Commit')}
+                  </strong>.
+                </span>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setInviteDialogOpen(false)} disabled={isInviting}>
@@ -1259,7 +1294,7 @@ export default function UserManagement() {
                             <span>Copy Direct Invite Link</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => handleResendInvite(u.email || '', u.role)}
+                            onClick={() => handleResendInvite(u.email || '', u.role, u.clientId, u.clientName)}
                             className="cursor-pointer gap-2"
                           >
                             <Mail className="w-3.5 h-3.5 text-muted-foreground" />
