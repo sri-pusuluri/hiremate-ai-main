@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { cn, getInitials } from '@/lib/utils';
-import { 
-  Sparkles, 
-  LayoutDashboard, 
-  Briefcase, 
-  Users, 
-  Settings, 
-  UserCog, 
-  LogOut, 
-  Star, 
-  Building2, 
+import {
+  Sparkles,
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  Settings,
+  UserCog,
+  LogOut,
+  Star,
+  Building2,
   Layers,
   ChevronsUpDown,
   Check,
@@ -119,23 +119,23 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
       <div className="p-4 border-b border-sidebar-border shrink-0">
         <div className="flex items-center gap-3">
           <div className="px-2.5 py-1 rounded-xl bg-white/95 dark:bg-card border border-white/20 dark:border-border/80 shadow-xs flex items-center justify-center shrink-0">
-            <img 
-              src="/images/sahab-hiresortai-logo.png" 
-              alt="Sahab Portal" 
+            <img
+              src="/images/sahab-hiresortai-logo.png"
+              alt="Sahab Portal"
               className="h-7 w-auto max-w-[140px] object-contain block"
             />
           </div>
-          <div className="min-w-0 flex-1">
+          {/* <div className="min-w-0 flex-1 hidden">
             <span className="font-bold text-sm leading-none text-sidebar-foreground truncate block">Sahab Portal</span>
             <div className="text-[10px] text-sidebar-foreground/60 font-medium truncate mt-0.5">ATS & GenAI Hiring</div>
-          </div>
+          </div> */}
         </div>
 
         {/* Current Active Tenant Context & Switcher */}
         {isSuperAdmin ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button 
+              <button
                 className="mt-3 w-full p-2 rounded-lg bg-sidebar-accent/50 hover:bg-sidebar-accent border border-sidebar-border flex items-center justify-between transition-colors text-left group cursor-pointer"
                 title="Switch Active Client Workspace"
               >
@@ -266,7 +266,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
               </button>
             </li>
           ))}
-          
+
           {/* Talent Pool */}
           <li>
             <button
@@ -377,9 +377,9 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
             <div className="mt-1">
               <span className={cn(
                 "inline-block px-1.5 py-0.2 text-[9px] font-semibold rounded uppercase tracking-wider",
-                isSuperAdmin 
-                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" 
-                  : isAdmin 
+                isSuperAdmin
+                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                  : isAdmin
                     ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                     : "bg-slate-500/20 text-slate-300 border border-slate-500/30"
               )}>
@@ -388,9 +388,9 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
             </div>
           </div>
         </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="w-full mt-2 h-8 text-xs text-sidebar-foreground/70 hover:bg-white/10 hover:text-white cursor-pointer"
           onClick={() => signOut()}
         >

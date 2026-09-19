@@ -627,9 +627,9 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
             href={`/careers/${client?.slug || 'zool'}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md border border-border bg-background hover:bg-muted text-foreground transition-colors shadow-2xs"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
             Open Careers Portal
           </a>
         </div>
@@ -956,14 +956,14 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               className={cn(
                 "px-2.5 py-0.5 text-xs font-medium rounded-full border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs",
                 job.isPublic
-                  ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 hover:border-blue-400 hover:bg-blue-100/70"
+                  ? "bg-muted/60 text-muted-foreground border-border/80 hover:bg-muted hover:text-foreground"
                   : "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 hover:border-amber-400 hover:bg-amber-100/70"
               )}
               title={job.isPublic ? "Job is published on Careers Portal. Click to set Unpublished (Internal Only)." : "Job is Unpublished (Internal Only). Click to publish to Careers Portal."}
             >
               {job.isPublic ? (
                 <>
-                  <Globe className="w-3 h-3 text-blue-500 shrink-0" />
+                  <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
                   <span>Public Careers</span>
                 </>
               ) : (
@@ -1024,8 +1024,8 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
         {job.experienceLevel && (
           <>
             <span className="text-border/80">•</span>
-            <span className="flex items-center gap-1.5 whitespace-nowrap font-medium text-primary">
-              <GraduationCap className="w-3.5 h-3.5 text-primary" />
+            <span className="flex items-center gap-1.5 whitespace-nowrap font-medium text-muted-foreground">
+              <GraduationCap className="w-3.5 h-3.5 text-muted-foreground" />
               {job.experienceLevel}
             </span>
           </>
@@ -1037,10 +1037,10 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
         </span>
         <span className="text-border/80">•</span>
         <span 
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium"
+          className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/70 font-medium"
           title={`Job Owner / Creator: ${job.creatorName || job.creatorEmail || 'Admin'}`}
         >
-          <UserCheck className="w-3 h-3 text-primary" />
+          <UserCheck className="w-3 h-3 text-muted-foreground" />
           <span>Created by <strong className="font-semibold text-foreground">{job.creatorName || job.creatorEmail || 'Admin'}</strong></span>
         </span>
         {job.expiresAt && (
@@ -1086,10 +1086,10 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               e.stopPropagation();
               onEdit();
             }}
-            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-primary/10 gap-1.5 px-2.5"
+            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2.5"
             title="Edit Job Details, Owner & Screening Questions"
           >
-            <Pencil className="w-3.5 h-3.5 text-primary" />
+            <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
             <span>Edit</span>
           </Button>
 
@@ -1107,34 +1107,19 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
             <span>Embed & Share</span>
           </Button>
 
-          {job.hireSortEnabled ? (
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 gap-1.5 px-2.5 font-normal"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEnableHireSort();
-              }}
-              title="Re-run AI candidate screening"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-ai-accent" />
-              <span>Re-enable Sahab Portal AI</span>
-            </Button>
-          ) : (
-            <Button 
-              variant="ai" 
-              size="sm"
-              className="h-7 text-xs gap-1.5 px-2.5"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEnableHireSort();
-              }}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Enable Sahab Portal AI</span>
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="h-7 text-xs border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2.5 font-normal shadow-2xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEnableHireSort();
+            }}
+            title="Re-run AI candidate screening"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>{job.hireSortEnabled ? "Re-enable Sahab Portal AI" : "Enable Sahab Portal AI"}</span>
+          </Button>
 
           <Button 
             variant="ghost" 
@@ -1146,7 +1131,7 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
             className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 px-2"
             title="Delete Job"
           >
-            <Trash2 className="w-3.5 h-3.5 text-destructive/80" />
+            <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
             <span>Delete</span>
           </Button>
         </div>
