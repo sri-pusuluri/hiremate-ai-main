@@ -388,87 +388,89 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
 
   return (
     <div className="p-4 sm:p-5 animate-fade-in">
-      {/* Compact Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
-        <div className="flex items-center flex-wrap gap-2 min-w-0">
-          {onBack && (
-            <button 
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-2.5 py-1.5 rounded-md border border-border/50 transition-colors cursor-pointer shrink-0"
-              title="Back to Jobs"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Jobs</span>
-            </button>
-          )}
-          {onBack && <div className="h-4 w-px bg-border/60 hidden sm:block" />}
-          
-          <div className="flex items-center gap-1.5 shrink-0">
-            <h2 className="text-xl font-bold tracking-tight text-foreground">Candidates</h2>
-            {selectedJob?.hireSortEnabled && <AIBadge />}
+      {/* Header Bar: 2 Distinct Clean Lines */}
+      <div className="space-y-1.5 mb-3.5">
+        {/* Line 1: Primary Navigation, Title & Top Action Buttons */}
+        <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {onBack && (
+              <button 
+                onClick={onBack}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-2.5 py-1.5 rounded-md border border-border/50 transition-colors cursor-pointer shrink-0"
+                title="Back to Jobs"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Jobs</span>
+              </button>
+            )}
+            {onBack && <div className="h-4 w-px bg-border/60" />}
+            
+            <div className="flex items-center gap-2 shrink-0">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">Candidates</h2>
+              {selectedJob?.hireSortEnabled && <AIBadge />}
+            </div>
           </div>
 
-          <span className="text-muted-foreground/40 text-xs hidden sm:inline">•</span>
-
-          {selectedJob && (
-            <div className="flex items-center flex-wrap gap-1.5 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground/90 truncate max-w-[200px] sm:max-w-xs md:max-w-sm" title={selectedJob.title}>
-                {selectedJob.title}
-              </span>
-              <span className="text-muted-foreground/60">•</span>
-              <span>{candidates.length} total candidates</span>
-              <span className="text-muted-foreground/60">•</span>
-              <span>{sortedCandidates.length} shown</span>
-              <button 
-                onClick={() => setShowJDModal(true)}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-full border border-primary/20 transition-all cursor-pointer shadow-2xs ml-0.5"
-                title="View Job Description, Responsibilities & Requirements"
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedIds.size > 0 && (
+              <Button 
+                variant="ai-primary"
+                size="sm"
+                className="h-8 text-xs px-3"
+                onClick={() => onCreateShortlist(selectedCandidates)}
               >
-                <FileText className="w-3 h-3" />
-                View JD
-              </button>
-            </div>
-          )}
+                <CheckSquare className="w-3.5 h-3.5 mr-1" />
+                Create Shortlist ({selectedIds.size})
+              </Button>
+            )}
+            {selectedJob && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReanalyzeAllCandidates}
+                disabled={isReanalyzingAll || candidates.length === 0}
+                className="h-8 text-xs px-2.5 sm:px-3 gap-1.5 border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Re-analyze all candidates against current job requirements"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5 text-muted-foreground", isReanalyzingAll && "animate-spin text-primary")} />
+                <span>
+                  {isReanalyzingAll 
+                    ? (reanalyzingProgress ? `Analyzing (${reanalyzingProgress.current}/${reanalyzingProgress.total})...` : "Analyzing...")
+                    : "Re-analyze All"}
+                </span>
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => setShowAddCandidateModal(true)}
+              className="h-8 text-xs px-3 gap-1.5 shadow-sm"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Add Candidate
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-          {selectedIds.size > 0 && (
-            <Button 
-              variant="ai-primary"
-              size="sm"
-              className="h-8 text-xs px-3"
-              onClick={() => onCreateShortlist(selectedCandidates)}
+        {/* Line 2: Active Job Context & Candidate Counts Sub-bar */}
+        {selectedJob && (
+          <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground pl-0.5">
+            <span className="font-semibold text-foreground/90 truncate max-w-lg" title={selectedJob.title}>
+              {selectedJob.title}
+            </span>
+            <span className="text-muted-foreground/50">•</span>
+            <span>{candidates.length} total candidates</span>
+            <span className="text-muted-foreground/50">•</span>
+            <span>{sortedCandidates.length} shown</span>
+            <button 
+              onClick={() => setShowJDModal(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-2 py-0.5 rounded-md border border-border/60 transition-all cursor-pointer shadow-2xs ml-0.5"
+              title="View Job Description, Responsibilities & Requirements"
             >
-              <CheckSquare className="w-3.5 h-3.5 mr-1" />
-              Create Shortlist ({selectedIds.size})
-            </Button>
-          )}
-          {selectedJob && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReanalyzeAllCandidates}
-              disabled={isReanalyzingAll || candidates.length === 0}
-              className="h-8 text-xs px-2.5 sm:px-3 gap-1.5 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors cursor-pointer"
-              title="Re-analyze all candidates against current job requirements"
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5 text-primary", isReanalyzingAll && "animate-spin")} />
-              <span>
-                {isReanalyzingAll 
-                  ? (reanalyzingProgress ? `Analyzing (${reanalyzingProgress.current}/${reanalyzingProgress.total})...` : "Analyzing...")
-                  : "Re-analyze All"}
-              </span>
-            </Button>
-          )}
-          <Button
-            size="sm"
-            onClick={() => setShowAddCandidateModal(true)}
-            className="h-8 text-xs px-3 gap-1.5 shadow-sm"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            Add Candidate
-          </Button>
-        </div>
+              <FileText className="w-3 h-3 text-muted-foreground" />
+              View JD
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedJob?.aiProcessingStatus === 'processing' && (
