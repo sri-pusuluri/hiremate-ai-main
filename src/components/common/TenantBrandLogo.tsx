@@ -27,8 +27,14 @@ export const getResolvedTenantLogo = (
   }
 
   const s = (slug || name || '').toLowerCase();
+  const isSahab = s.includes('sahab') || s.includes('platform');
   const isZool = s.includes('zool');
   const isCommit = s.includes('commit') || s.includes('comm-it');
+
+  if (isSahab) {
+    if (variant === 'icon') return '/images/sahab-icon.png';
+    return '/images/sahab-hiresortai-logo-2.png';
+  }
 
   if (isZool) {
     if (variant === 'icon') return '/logos/zool-icon.png';
@@ -82,6 +88,7 @@ export default function TenantBrandLogo({
   const effectiveThemeColor = themeColor || client?.themeColor || '#2563eb';
 
   const s = (effectiveSlug || effectiveName).toLowerCase();
+  const isSahab = s.includes('sahab') || s.includes('platform');
   const isZool = s.includes('zool');
   const isCommit = s.includes('commit') || s.includes('comm-it');
 
@@ -91,7 +98,31 @@ export default function TenantBrandLogo({
   // If there's an explicit custom logo url that isn't one of our internal paths
   const hasCustomLogo = effectiveLogoUrl && 
     !effectiveLogoUrl.startsWith('/logos/') && 
+    !effectiveLogoUrl.startsWith('/images/') && 
     effectiveLogoUrl.trim().length > 0;
+
+  // 0. Official Sahab Portal Brand Logo
+  if (isSahab && !imageError) {
+    const useIcon = !useFullVariant && (size === 'xs' || size === 'sm');
+    return (
+      <div 
+        className={cn(
+          "relative shrink-0 flex items-center justify-center transition-transform duration-200 overflow-hidden",
+          useFullVariant ? fullSizeClasses[size] : sizeClasses[size],
+          showBorder && "border border-border/80 rounded-xl px-2 py-1 bg-white/95 dark:bg-card/95 shadow-sm",
+          className
+        )}
+      >
+        <img
+          src={useIcon ? "/images/sahab-icon.png" : "/images/sahab-hiresortai-logo-2.png"}
+          alt={alt || `${effectiveName} Logo`}
+          className="w-full h-full object-contain"
+          onError={() => setImageError(true)}
+          loading="eager"
+        />
+      </div>
+    );
+  }
 
   // 1. Explicit Custom Logo
   if (hasCustomLogo && !imageError) {

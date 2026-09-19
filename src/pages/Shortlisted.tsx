@@ -537,7 +537,7 @@ export default function Shortlisted() {
             <Star className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-foreground font-medium mb-1">No shortlisted candidates yet</p>
             <p className="text-sm text-muted-foreground">
-              Enable HireSortAi on your jobs to get candidate recommendations
+              Enable Sahab Portal AI on your jobs to get candidate recommendations
             </p>
           </div>
         )}

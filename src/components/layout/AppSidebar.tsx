@@ -117,13 +117,17 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
     <aside className="w-64 shrink-0 min-w-[16rem] bg-sidebar text-sidebar-foreground flex flex-col h-screen max-h-screen border-r border-sidebar-border select-none overflow-hidden">
       {/* Logo & Tenant Context */}
       <div className="p-4 border-b border-sidebar-border shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <span className="text-sidebar-primary-foreground font-bold text-sm">HS</span>
+        <div className="flex items-center gap-3">
+          <div className="h-9 px-2.5 py-1 rounded-xl bg-white/95 dark:bg-card border border-white/20 dark:border-border/80 shadow-xs flex items-center justify-center shrink-0">
+            <img 
+              src="/images/sahab-hiresortai-logo-2.png" 
+              alt="Sahab Portal" 
+              className="h-6 w-auto max-w-[140px] object-contain"
+            />
           </div>
-          <div>
-            <span className="font-semibold text-lg leading-none">HireSortAi</span>
-            <div className="text-[10px] text-sidebar-foreground/60 font-medium">ATS & GenAI Hiring</div>
+          <div className="min-w-0 flex-1">
+            <span className="font-bold text-sm leading-none text-sidebar-foreground truncate block">Sahab Portal</span>
+            <div className="text-[10px] text-sidebar-foreground/60 font-medium truncate mt-0.5">ATS & GenAI Hiring</div>
           </div>
         </div>
 
@@ -142,7 +146,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
                         <Globe className="w-3 h-3" />
                       </div>
                       <span className="truncate text-xs font-semibold text-sidebar-foreground group-hover:text-primary transition-colors">
-                        HireSort Platform
+                        Sahab Platform HQ
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -185,7 +189,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
                     <Globe className="w-3 h-3" />
                   </div>
                   <div className="truncate">
-                    <div className="text-xs font-semibold">HireSort Platform HQ</div>
+                    <div className="text-xs font-semibold">Sahab Platform HQ</div>
                     <div className="text-[10px] text-muted-foreground">Global Overview & All Tenants</div>
                   </div>
                 </div>

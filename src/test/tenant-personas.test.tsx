@@ -8,7 +8,7 @@ import {
 describe('Multi-Tenant Persona Architecture', () => {
   it('defines distinct platform and tenant workspace constants', () => {
     expect(HIRESORT_PLATFORM_CLIENT.id).toBe('hiresort-platform-hq');
-    expect(HIRESORT_PLATFORM_CLIENT.name).toBe('HireSort Platform HQ');
+    expect(HIRESORT_PLATFORM_CLIENT.name).toBe('Sahab Portal Platform HQ');
     
     expect(DEFAULT_ZOOL_CLIENT.id).toBe('00000000-0000-0000-0000-000000000001');
     expect(DEFAULT_ZOOL_CLIENT.name).toBe('Zool');

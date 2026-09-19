@@ -688,7 +688,7 @@ export default function ClientManagement() {
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1.5">
-                  ⚡ <strong>Auto-Sync Push:</strong> When you add, edit, or close a job inside HireSortAi, the embedded list on the client's website will update immediately in real-time.
+                  ⚡ <strong>Auto-Sync Push:</strong> When you add, edit, or close a job inside Sahab Portal, the embedded list on the client's website will update immediately in real-time.
                 </p>
               </div>
             </div>

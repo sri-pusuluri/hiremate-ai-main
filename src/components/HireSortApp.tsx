@@ -529,7 +529,7 @@ export function HireSortApp() {
       case 'edge-states':
         return { title: 'Edge States', subtitle: 'Handling exceptional scenarios' };
       default:
-        return { title: 'HireSortAi', subtitle: '' };
+        return { title: 'Sahab Portal', subtitle: '' };
     }
   };
 

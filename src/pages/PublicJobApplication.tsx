@@ -1277,7 +1277,7 @@ export default function PublicJobApplication() {
               </>
             )}
           </div>
-          <p>© {new Date().getFullYear()} {client.name}. Powered by HireSort AI Enterprise ATS.</p>
+          <p>© {new Date().getFullYear()} {client.name}. Powered by Sahab Portal Enterprise ATS.</p>
           <div className="flex items-center gap-4 text-xs">
             <Link to={`/careers/${client.slug}`} className="hover:underline text-foreground">
               All Open Positions

@@ -29,7 +29,7 @@ export function OnboardingModal({ jobTitle, candidateCount, isReenabling = false
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-foreground">
-                  {isReenabling ? 'Re-enable HireSortAi' : 'Enable HireSortAi'}
+                  {isReenabling ? 'Re-enable Sahab Portal AI' : 'Enable Sahab Portal AI'}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-0.5">For: {jobTitle}</p>
               </div>
@@ -46,14 +46,14 @@ export function OnboardingModal({ jobTitle, candidateCount, isReenabling = false
         {/* Content */}
         <div className="p-6">
           <p className="text-foreground mb-6">
-            HireSortAi will {isReenabling ? 're-analyze' : 'analyze'} your <span className="font-semibold">{candidateCount} candidates</span> and 
+            Sahab Portal AI will {isReenabling ? 're-analyze' : 'analyze'} your <span className="font-semibold">{candidateCount} candidates</span> and 
             {isReenabling ? ' update their rankings' : ' rank them'} based on how well they match your job description.
           </p>
 
           {/* Trust Messaging - What AI does */}
           <div className="space-y-4 mb-6">
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-              What HireSortAi does
+              What Sahab Portal AI does
             </h3>
             
             <div className="space-y-3">
@@ -78,7 +78,7 @@ export function OnboardingModal({ jobTitle, candidateCount, isReenabling = false
           {/* Trust Messaging - What AI does NOT do */}
           <div className="bg-muted rounded-lg p-4 mb-6">
             <h3 className="text-sm font-semibold text-foreground mb-2">
-              What HireSortAi does NOT do
+              What Sahab Portal AI does NOT do
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
@@ -113,7 +113,7 @@ export function OnboardingModal({ jobTitle, candidateCount, isReenabling = false
             </Button>
             <Button variant="ai-primary" onClick={onEnable} className="flex-1">
               <Sparkles className="w-4 h-4" />
-              {isReenabling ? 'Re-enable HireSortAi' : 'Enable HireSortAi'}
+              {isReenabling ? 'Re-enable Sahab Portal AI' : 'Enable Sahab Portal AI'}
             </Button>
           </div>
         </div>

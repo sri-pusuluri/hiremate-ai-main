@@ -11,9 +11,10 @@ export type AppRole = 'super_admin' | 'admin' | 'client_admin' | 'recruiter';
 
 export const HIRESORT_PLATFORM_CLIENT: ClientTenant = {
   id: 'hiresort-platform-hq',
-  name: 'HireSort Platform HQ',
+  name: 'Sahab Portal Platform HQ',
   slug: 'platform',
-  themeColor: '#7c3aed',
+  logoUrl: '/images/sahab-hiresortai-logo-2.png',
+  themeColor: '#003ad9',
   subscriptionTier: 'enterprise',
 };
 

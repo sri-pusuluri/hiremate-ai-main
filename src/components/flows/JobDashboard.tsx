@@ -1119,7 +1119,7 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               title="Re-run AI candidate screening"
             >
               <Sparkles className="w-3.5 h-3.5 text-ai-accent" />
-              <span>Re-enable HireSortAi</span>
+              <span>Re-enable Sahab Portal AI</span>
             </Button>
           ) : (
             <Button 
@@ -1132,7 +1132,7 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               }}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Enable HireSortAi</span>
+              <span>Enable Sahab Portal AI</span>
             </Button>
           )}
 

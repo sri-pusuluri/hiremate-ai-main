@@ -378,7 +378,7 @@ export default function EmbedJobWidget() {
 
           <div className="text-center pt-2">
             <span className="text-[10px] text-muted-foreground">
-              Powered by HireSort AI • Application Tracking System
+              Powered by Sahab Portal • Application Tracking System
             </span>
           </div>
         </CardContent>

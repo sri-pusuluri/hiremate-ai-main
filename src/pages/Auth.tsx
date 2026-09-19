@@ -228,12 +228,16 @@ export default function Auth() {
         <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 h-full flex-col justify-between py-4 select-none text-white">
           {/* Exclusive Top Branding on the Sky Hero */}
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-primary flex items-center justify-center shadow-lg shadow-blue-500/30 border border-white/20">
-              <span className="text-white font-black text-lg tracking-tight">HS</span>
+            <div className="h-11 px-3 py-1.5 rounded-2xl bg-white/95 backdrop-blur-md flex items-center justify-center shadow-lg shadow-black/20 border border-white/30">
+              <img 
+                src="/images/sahab-hiresortai-logo-2.png" 
+                alt="Sahab Portal" 
+                className="h-7 w-auto object-contain"
+              />
             </div>
             <div>
               <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5 drop-shadow-md">
-                HireSortAi
+                Sahab Portal
               </span>
               <span className="text-xs text-slate-300 block font-medium tracking-wide">
                 Autonomous Talent Intelligence
@@ -281,11 +285,15 @@ export default function Auth() {
           <div className="w-full max-w-md rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl shadow-black/30 p-6 sm:p-7 flex flex-col gap-3.5 overflow-hidden">
             {/* Mobile logo fallback */}
             <div className="flex items-center gap-2.5 lg:hidden">
-              <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-                <span className="text-primary-foreground font-bold text-xs">HS</span>
+              <div className="h-9 px-2.5 py-1 rounded-xl bg-card border border-border/80 flex items-center justify-center shadow-xs">
+                <img 
+                  src="/images/sahab-hiresortai-logo-2.png" 
+                  alt="Sahab Portal" 
+                  className="h-6 w-auto object-contain"
+                />
               </div>
               <div>
-                <h2 className="text-xs font-bold text-foreground leading-tight">HireSortAi</h2>
+                <h2 className="text-xs font-bold text-foreground leading-tight">Sahab Portal</h2>
                 <p className="text-[10px] text-muted-foreground">Enterprise ATS Platform</p>
               </div>
             </div>

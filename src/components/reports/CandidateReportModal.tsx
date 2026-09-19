@@ -213,8 +213,12 @@ export function CandidateReportModal({
 
             {/* Document Print Header (Only visible in Print) */}
             <div className="hidden print:flex items-center justify-between pb-3 border-b border-slate-300">
-              <div className="flex items-center gap-2">
-                <div className="font-black text-lg text-slate-900">HireSort AI</div>
+              <div className="flex items-center gap-2.5">
+                <img 
+                  src="/images/sahab-hiresortai-logo-2.png" 
+                  alt="Sahab Portal" 
+                  className="h-6 w-auto object-contain"
+                />
                 <span className="text-xs text-slate-500">• Candidate Executive Evaluation Dossier</span>
               </div>
               <div className="text-right text-[11px] text-slate-500">
@@ -495,7 +499,7 @@ export function CandidateReportModal({
               <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-primary" />
-                  <span>Verified by <strong>HireSort AI Engine</strong></span>
+                  <span>Verified by <strong>Sahab Portal AI Engine</strong></span>
                 </div>
                 <div className="font-mono text-[11px]">
                   Candidate ID: {candidate.id.substring(0, 12)}...
@@ -508,7 +512,7 @@ export function CandidateReportModal({
 
             {/* Document Print Footer */}
             <div className="hidden print:block text-center pt-4 text-[10px] text-slate-400 border-t border-slate-200">
-              CONFIDENTIAL • For hiring panel and authorized personnel review only. Generated automatically via HireSort AI ATS.
+              CONFIDENTIAL • For hiring panel and authorized personnel review only. Generated automatically via Sahab Portal ATS.
             </div>
 
           </div>

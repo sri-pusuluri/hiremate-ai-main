@@ -516,7 +516,7 @@ export default function PublicCareers() {
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-medium uppercase tracking-wider px-1">
             <span>Open Opportunities ({filteredJobs.length})</span>
-            <span>Powered by HireSort AI</span>
+            <span>Powered by Sahab Portal</span>
           </div>
 
           {filteredJobs.map((job) => (
@@ -669,7 +669,7 @@ export default function PublicCareers() {
                 </>
               )}
             </div>
-            <p>© {new Date().getFullYear()} {client.name}. Multi-Tenant ATS powered by HireSort AI.</p>
+            <p>© {new Date().getFullYear()} {client.name}. Multi-Tenant ATS powered by Sahab Portal.</p>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Careers Portal</span>
               <span>•</span>

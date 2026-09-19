@@ -345,7 +345,7 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-foreground">Your Company's Active Job Openings</h3>
-            <p className="text-xs text-muted-foreground">Manage active roles and view candidates screened by HireSortAi</p>
+            <p className="text-xs text-muted-foreground">Manage active roles and view candidates screened by Sahab Portal</p>
           </div>
           <Button 
             variant="outline" 
