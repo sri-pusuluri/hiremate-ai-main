@@ -118,11 +118,11 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
       {/* Logo & Tenant Context */}
       <div className="p-4 border-b border-sidebar-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="h-9 px-2.5 py-1 rounded-xl bg-white/95 dark:bg-card border border-white/20 dark:border-border/80 shadow-xs flex items-center justify-center shrink-0">
+          <div className="px-2.5 py-1 rounded-xl bg-white/95 dark:bg-card border border-white/20 dark:border-border/80 shadow-xs flex items-center justify-center shrink-0">
             <img 
-              src="/images/sahab-hiresortai-logo-2-contrast.png" 
+              src="/images/sahab-hiresortai-logo-2.png" 
               alt="Sahab Portal" 
-              className="h-6 w-auto max-w-[140px] object-contain"
+              className="h-6 w-auto max-w-[140px] object-contain block"
             />
           </div>
           <div className="min-w-0 flex-1">

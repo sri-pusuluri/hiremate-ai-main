@@ -13,7 +13,7 @@ export const HIRESORT_PLATFORM_CLIENT: ClientTenant = {
   id: 'hiresort-platform-hq',
   name: 'Sahab Portal Platform HQ',
   slug: 'platform',
-  logoUrl: '/images/sahab-hiresortai-logo-2-contrast.png',
+  logoUrl: '/images/sahab-hiresortai-logo-2.png',
   themeColor: '#003ad9',
   subscriptionTier: 'enterprise',
 };
