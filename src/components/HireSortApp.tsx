@@ -195,6 +195,23 @@ export function HireSortApp() {
         return;
       }
 
+      // 1b. Check localStorage mock jobs cache
+      try {
+        const rawMock = localStorage.getItem('hiremate_mock_jobs');
+        if (rawMock) {
+          const parsed = JSON.parse(rawMock);
+          const foundStored = parsed.find((j: any) => j.id === targetJobId);
+          if (foundStored) {
+            if (isMounted) {
+              setSelectedJob(foundStored);
+              setCurrentScreen('ranked-list');
+              setLoadingJob(false);
+            }
+            return;
+          }
+        }
+      } catch (e) {}
+
       // 2. Fetch from Supabase
       try {
         const { data: j, error } = await supabase
@@ -204,9 +221,8 @@ export function HireSortApp() {
           .maybeSingle();
 
         if (error || !j) {
-          console.warn('Job not found for ID:', targetJobId);
+          console.warn('Job not found in Supabase for ID:', targetJobId);
           if (isMounted) {
-            navigate('/jobs', { replace: true });
             setLoadingJob(false);
           }
           return;
@@ -545,6 +561,25 @@ export function HireSortApp() {
                 <p className="text-sm font-medium text-foreground">Loading job and candidates...</p>
                 <p className="text-xs text-muted-foreground">Preparing candidate rankings and evaluations</p>
               </div>
+            </div>
+          );
+        }
+        if (!selectedJob) {
+          return (
+            <div className="p-12 text-center max-w-md mx-auto my-12 bg-card border border-border rounded-xl space-y-4">
+              <h3 className="font-semibold text-lg text-foreground">Job Details Unavailable</h3>
+              <p className="text-sm text-muted-foreground">
+                Could not load the requested job. It may have been archived or removed.
+              </p>
+              <Button 
+                onClick={() => { 
+                  navigate('/jobs'); 
+                  setCurrentScreen('job-dashboard'); 
+                  setSelectedJob(null); 
+                }}
+              >
+                Back to Jobs
+              </Button>
             </div>
           );
         }
