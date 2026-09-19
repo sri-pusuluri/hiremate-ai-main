@@ -230,7 +230,7 @@ export default function Auth() {
           <div className="flex items-center">
             <div className="px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md flex items-center justify-center shadow-xl shadow-black/30 border border-white/40">
               <img 
-                src="/images/sahab-hiresortai-logo-2-contrast-original.png" 
+                src="/images/sahab-hiresortai-logo.png" 
                 alt="Sahab Portal" 
                 className="h-10 sm:h-12 w-auto object-contain block select-none"
               />
@@ -279,7 +279,7 @@ export default function Auth() {
             <div className="flex items-center lg:hidden mb-1">
               <div className="px-3 py-1.5 rounded-xl bg-white border border-border/80 flex items-center justify-center shadow-xs">
                 <img 
-                  src="/images/sahab-hiresortai-logo-2-contrast-original.png" 
+                  src="/images/sahab-hiresortai-logo.png" 
                   alt="Sahab Portal" 
                   className="h-8 w-auto object-contain block"
                 />

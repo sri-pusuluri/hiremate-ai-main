@@ -215,7 +215,7 @@ export function CandidateReportModal({
             <div className="hidden print:flex items-center justify-between pb-3 border-b border-slate-300">
               <div className="flex items-center gap-2.5">
                 <img 
-                  src="/images/sahab-hiresortai-logo-2-contrast-original.png" 
+                  src="/images/sahab-hiresortai-logo.png" 
                   alt="Sahab Portal" 
                   className="h-7 w-auto object-contain block"
                 />

@@ -33,7 +33,7 @@ export const getResolvedTenantLogo = (
 
   if (isSahab) {
     if (variant === 'icon') return '/images/sahab-icon.png';
-    return '/images/sahab-hiresortai-logo-2-contrast-original.png';
+    return '/images/sahab-hiresortai-logo.png';
   }
 
   if (isZool) {
@@ -114,7 +114,7 @@ export default function TenantBrandLogo({
         )}
       >
         <img
-          src={useIcon ? "/images/sahab-icon.png" : "/images/sahab-hiresortai-logo-2-contrast-original.png"}
+          src={useIcon ? "/images/sahab-icon.png" : "/images/sahab-hiresortai-logo.png"}
           alt={alt || `${effectiveName} Logo`}
           className="w-full h-full object-contain"
           onError={() => setImageError(true)}
