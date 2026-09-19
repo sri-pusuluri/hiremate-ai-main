@@ -983,24 +983,24 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
         </div>
 
         {/* Right: Candidate Count & Primary Action CTA */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <div 
             onClick={onSelect}
-            className="flex items-center gap-2 px-3 py-1.5 bg-muted/60 hover:bg-muted border border-border/70 rounded-lg cursor-pointer transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-muted/50 hover:bg-muted border border-border/70 rounded-md cursor-pointer transition-colors"
             title="Total applied candidates"
           >
-            <Users className="w-4 h-4 text-primary" />
-            <span className="text-base font-bold text-foreground">{job.candidateCount}</span>
-            <span className="text-xs text-muted-foreground">candidates</span>
+            <Users className="w-3.5 h-3.5 text-primary" />
+            <span className="text-sm font-bold text-foreground">{job.candidateCount}</span>
+            <span className="text-[11px] text-muted-foreground">candidates</span>
           </div>
 
           <Button 
             onClick={onSelect}
             size="sm"
-            className="gap-1.5 font-medium shadow-xs"
+            className="h-7 px-2.5 text-xs gap-1 font-medium shadow-2xs cursor-pointer"
           >
             <span>View Candidates</span>
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
@@ -1058,9 +1058,9 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
       </div>
 
       {/* 3. Footer Bar: AI Status & Utility Actions */}
-      <div className="border-t border-border/60 pt-3 flex items-center justify-between flex-wrap gap-2.5">
+      <div className="border-t border-border/60 pt-2.5 flex items-center justify-between flex-wrap gap-2">
         {/* Left: AI Status & View JD */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           {getAIStatusDisplay()}
           <span className="text-border/80">•</span>
           <Button 
@@ -1070,15 +1070,15 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               e.stopPropagation();
               onViewJD();
             }}
-            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2 cursor-pointer"
+            className="h-6 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted gap-1 px-1.5 cursor-pointer font-normal"
           >
-            <FileText className="w-3.5 h-3.5 text-primary" />
+            <FileText className="w-3 h-3 text-muted-foreground" />
             <span>View JD</span>
           </Button>
         </div>
 
         {/* Right: Secondary Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <Button 
             variant="ghost" 
             size="sm"
@@ -1086,10 +1086,10 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               e.stopPropagation();
               onEdit();
             }}
-            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2.5"
+            className="h-6 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted gap-1 px-2 cursor-pointer font-normal"
             title="Edit Job Details, Owner & Screening Questions"
           >
-            <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+            <Pencil className="w-3 h-3 text-muted-foreground" />
             <span>Edit</span>
           </Button>
 
@@ -1100,24 +1100,24 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               e.stopPropagation();
               onEmbed();
             }}
-            className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2.5"
+            className="h-6 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted gap-1 px-2 cursor-pointer font-normal"
             title="Embed widget or share public link"
           >
-            <Code2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <Code2 className="w-3 h-3 text-muted-foreground" />
             <span>Embed & Share</span>
           </Button>
 
           <Button 
             variant="outline" 
             size="sm"
-            className="h-7 text-xs border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 px-2.5 font-normal shadow-2xs"
+            className="h-6 text-[11px] border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted gap-1 px-2 font-normal shadow-2xs cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onEnableHireSort();
             }}
             title="Re-run AI candidate screening"
           >
-            <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+            <Sparkles className="w-3 h-3 text-muted-foreground" />
             <span>{job.hireSortEnabled ? "Re-enable Sahab Portal AI" : "Enable Sahab Portal AI"}</span>
           </Button>
 
@@ -1128,10 +1128,10 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
               e.stopPropagation();
               onDelete();
             }}
-            className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 px-2"
+            className="h-6 text-[11px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1 px-1.5 cursor-pointer font-normal"
             title="Delete Job"
           >
-            <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+            <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
             <span>Delete</span>
           </Button>
         </div>
