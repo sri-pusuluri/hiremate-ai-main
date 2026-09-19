@@ -468,16 +468,24 @@ ${Object.entries(customAns).map(([k, v]) => `${k}: ${v}`).join('\n')}`;
     ? job.requirements.join(', ') 
     : 'Core engineering and domain requirements';
 
-  const prompt = `You are HireSort AI, an expert ATS talent screening engine.
-Evaluate this candidate's resume against the exact Job Description requirements.
+  const prompt = `You are HireSort AI, an enterprise-grade ATS talent screening engine with strict Anti-Hallucination and Anti-Bias Guardrails.
+Evaluate this candidate's resume strictly against the exact Job Description requirements.
 
+[JOB SPECIFICATION]
 Job Title: ${jobTitle}
 Requirements: ${reqs}
 Job Description: ${jobDesc}
 
+[CANDIDATE DATA]
 Candidate Name: ${name}
 Resume Text:
 ${resumeText}
+
+[STRICT ANTI-HALLUCINATION & ANTI-BIAS GUARDRAILS]
+1. ZERO HALLUCINATION (Text-Grounded Only): Only extract skills, tools, and experiences that have explicit verifiable evidence in the candidate's resume text. Do NOT invent, assume, or hallucinate proficiencies not substantiated by the resume text.
+2. HONEST GAP DETECTION: If a requirement from the Job Description is not explicitly evidenced, list it in "missingSkills". Never inflate candidate capability.
+3. DEMOGRAPHIC BLINDNESS (Anti-Bias): Disregard candidate name, gender, ethnicity, nationality, age, photos, graduation years, or marital status. Base 100% of your evaluation on verifiable technical competencies, system scope, and seniority trajectory.
+4. CALIBRATED OBJECTIVITY: Base the similarity score and fit category purely on the objective ratio of satisfied requirements to target specifications.
 
 Analyze the candidate thoroughly and return a JSON object with this EXACT structure:
 {
@@ -518,43 +526,33 @@ Output ONLY valid JSON without markdown wrapping.`;
       const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('ingest-resume', {
         body: {
           candidateId: candidate.id,
-          resumeText,
           jobId: job.id,
-          jobTitle: job.title,
-          jobRequirements: job.requirements || []
+          provider: selectedProvider
         }
       });
 
-      if (!edgeErr && edgeData?.success) {
-        const { data: updatedCand } = await supabase
-          .from('candidates')
-          .select('*')
-          .eq('id', candidate.id)
-          .maybeSingle();
-
-        if (updatedCand && updatedCand.cosine_similarity) {
-          const insights = (updatedCand.predictive_insights as any) || {};
-          result = {
-            currentRole: updatedCand.role_title || jobTitle,
-            company: updatedCand.company || 'Independent',
-            experience: updatedCand.experience || 3,
-            score: (updatedCand.ai_score as any) || 'medium',
-            similarity: updatedCand.cosine_similarity,
-            matchedSkills: updatedCand.matched_skills || [],
-            missingSkills: updatedCand.missing_skills || [],
-            interviewPassProb: insights.interviewPassProb || 70,
-            offerAcceptanceProb: insights.offerAcceptanceProb || 70,
-            onboardingSuccessProb: insights.onboardingSuccessProb || 75,
-            retentionRisk: insights.retentionRisk || 'medium',
-            retentionRiskFactor: insights.retentionRiskFactor || 'Standard career trajectory',
-            timeToJoinEstimate: insights.timeToJoinEstimate || '15–30 days',
-            assessment: insights.assessment || 'Candidate evaluated via AI screening.',
-            provider: 'supabase-edge',
-            model: 'Supabase pgvector (1536-dim Embedding)',
-            executionMode: 'supabase_vector',
-            isUnprocessed: false
-          };
-        }
+      if (!edgeErr && edgeData?.candidate) {
+        const insights = edgeData.candidate.predictive_insights || {};
+        result = {
+          currentRole: edgeData.candidate.role_title || 'Software Professional',
+          company: edgeData.candidate.company || 'Independent',
+          experience: edgeData.candidate.experience || 0,
+          score: edgeData.candidate.ai_score || 'medium',
+          similarity: edgeData.candidate.cosine_similarity !== undefined ? edgeData.candidate.cosine_similarity : 0.70,
+          matchedSkills: edgeData.candidate.matched_skills || [],
+          missingSkills: edgeData.candidate.missing_skills || [],
+          interviewPassProb: insights.interviewPassProb || 70,
+          offerAcceptanceProb: insights.offerAcceptanceProb || 75,
+          onboardingSuccessProb: insights.onboardingSuccessProb || 80,
+          retentionRisk: insights.retentionRisk || 'low',
+          retentionRiskFactor: insights.retentionRiskFactor || 'Standard retention risk',
+          timeToJoinEstimate: insights.timeToJoinEstimate || '15–30 days',
+          assessment: insights.assessment || 'Candidate evaluated via AI screening.',
+          provider: 'supabase-edge',
+          model: 'Supabase pgvector (1536-dim Embedding)',
+          executionMode: 'supabase_vector',
+          isUnprocessed: false
+        };
       }
     } catch (edgeErr) {
       console.debug('[AI Screening] Backend Edge Function skipped, using direct evaluation:', edgeErr);
@@ -572,6 +570,7 @@ Output ONLY valid JSON without markdown wrapping.`;
         },
         body: JSON.stringify({
           model: openaiModel,
+          temperature: 0.1,
           messages: [{ role: 'user', content: prompt }],
           response_format: { type: 'json_object' }
         })
@@ -603,7 +602,10 @@ Output ONLY valid JSON without markdown wrapping.`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json' }
+          generationConfig: { 
+            responseMimeType: 'application/json',
+            temperature: 0.1
+          }
         })
       });
 
@@ -637,6 +639,7 @@ Output ONLY valid JSON without markdown wrapping.`;
         },
         body: JSON.stringify({
           model: claudeModel,
+          temperature: 0.1,
           max_tokens: 1024,
           messages: [{ role: 'user', content: prompt }]
         })

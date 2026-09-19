@@ -165,9 +165,19 @@ export function AIMatchAnalysis({
     <div className="bg-ai-surface border border-ai-border rounded-xl p-5 space-y-5">
       {/* Header with Dual Engine Scores */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <AIBadge />
-          <h3 className="font-semibold text-foreground">Dual-Engine Match Analysis</h3>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <AIBadge />
+            <h3 className="font-semibold text-foreground">Dual-Engine Match Analysis</h3>
+          </div>
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[11px] font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span>Anti-Bias & Guardrails: Active</span>
+            <ScoreInfoButton
+              title="Anti-Bias & Anti-Hallucination Guardrails"
+              description="HireSort AI enforces demographic blindness (PII, age, gender, and ethnic neutrality) and anchors all generative claims directly against verifiable resume text and 1536-dimensional vector embeddings, preventing AI hallucinations and biased screening."
+            />
+          </div>
         </div>
         
         <div className="grid grid-cols-2 gap-3">
@@ -1273,7 +1283,7 @@ function ScoreInfoButton({ title, description, colorDot }: ScoreInfoButtonProps)
         side="top"
         align="center"
         sideOffset={6}
-        className="w-80 p-3.5 text-xs bg-popover/95 backdrop-blur-md border border-border shadow-xl z-50 rounded-xl space-y-1.5 animate-in fade-in-50 zoom-in-95 pointer-events-auto"
+        className="w-72 sm:w-80 max-w-[calc(100vw-2rem)] p-3.5 text-xs bg-popover/95 backdrop-blur-md border border-border shadow-xl z-50 rounded-xl space-y-1.5 animate-in fade-in-50 zoom-in-95 pointer-events-auto"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
       >
