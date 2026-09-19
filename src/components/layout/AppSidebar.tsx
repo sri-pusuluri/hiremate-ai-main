@@ -120,7 +120,7 @@ export function AppSidebar({ currentView, onNavigate }: SidebarProps) {
         <div className="flex items-center gap-3">
           <div className="h-9 px-2.5 py-1 rounded-xl bg-white/95 dark:bg-card border border-white/20 dark:border-border/80 shadow-xs flex items-center justify-center shrink-0">
             <img 
-              src="/images/sahab-hiresortai-logo-2.png" 
+              src="/images/sahab-hiresortai-logo-2-contrast.png" 
               alt="Sahab Portal" 
               className="h-6 w-auto max-w-[140px] object-contain"
             />

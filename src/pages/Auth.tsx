@@ -230,7 +230,7 @@ export default function Auth() {
           <div className="flex items-center gap-3">
             <div className="h-11 px-3 py-1.5 rounded-2xl bg-white/95 backdrop-blur-md flex items-center justify-center shadow-lg shadow-black/20 border border-white/30">
               <img 
-                src="/images/sahab-hiresortai-logo-2.png" 
+                src="/images/sahab-hiresortai-logo-2-contrast.png" 
                 alt="Sahab Portal" 
                 className="h-7 w-auto object-contain"
               />
@@ -287,7 +287,7 @@ export default function Auth() {
             <div className="flex items-center gap-2.5 lg:hidden">
               <div className="h-9 px-2.5 py-1 rounded-xl bg-card border border-border/80 flex items-center justify-center shadow-xs">
                 <img 
-                  src="/images/sahab-hiresortai-logo-2.png" 
+                  src="/images/sahab-hiresortai-logo-2-contrast.png" 
                   alt="Sahab Portal" 
                   className="h-6 w-auto object-contain"
                 />
