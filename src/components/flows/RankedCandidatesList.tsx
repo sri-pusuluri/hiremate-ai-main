@@ -17,6 +17,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ChevronRight,
+  ChevronDown,
   Filter,
   CheckSquare,
   Sparkles,
@@ -327,6 +328,10 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
     return c.aiScore === filterMode;
   });
 
+  const strongCount = useMemo(() => currentCandidates.filter(c => c.aiScore === 'high').length, [currentCandidates]);
+  const potentialCount = useMemo(() => currentCandidates.filter(c => c.aiScore === 'medium').length, [currentCandidates]);
+  const lowCount = useMemo(() => currentCandidates.filter(c => c.aiScore === 'low').length, [currentCandidates]);
+
   const sortedCandidates = [...filteredCandidates].sort((a, b) => {
     // Pinned candidates always on top
     if (a.isPinned && !b.isPinned) return -1;
@@ -570,61 +575,47 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
           </div>
         </div>
 
-        {/* Sort & Filter Controls */}
+        {/* Sort & Filter Controls - Compact Dropdowns */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs">
-          {/* Sort Controls */}
-          <div className="flex items-center gap-1">
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-1.5">
             <span className="text-[11px] font-medium text-muted-foreground mr-0.5">Sort by:</span>
-            <div className="flex items-center gap-0.5">
-              {selectedJob?.hireSortEnabled && (
-                <SortButton 
-                  active={sortMode === 'ai-rank'} 
-                  onClick={() => setSortMode('ai-rank')}
-                  icon={<Sparkles className="w-3 h-3 text-ai-accent" />}
-                >
-                  AI Rank
-                </SortButton>
-              )}
-              <SortButton 
-                active={sortMode === 'experience'} 
-                onClick={() => setSortMode('experience')}
+            <div className="relative inline-flex items-center">
+              <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 pointer-events-none" />
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as SortMode)}
+                aria-label="Sort candidates"
+                className="text-xs bg-card border border-border/80 rounded-md pl-7 pr-7 py-1 h-7 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-border transition-colors appearance-none shadow-2xs"
               >
-                Experience
-              </SortButton>
-              <SortButton 
-                active={sortMode === 'date'} 
-                onClick={() => setSortMode('date')}
-              >
-                Date Applied
-              </SortButton>
-              <SortButton 
-                active={sortMode === 'name'} 
-                onClick={() => setSortMode('name')}
-              >
-                Name
-              </SortButton>
+                {selectedJob?.hireSortEnabled && <option value="ai-rank">✨ AI Rank</option>}
+                <option value="experience">Experience</option>
+                <option value="date">Date Applied</option>
+                <option value="name">Name</option>
+              </select>
+              <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2 pointer-events-none" />
             </div>
           </div>
 
-          {/* Filter Controls */}
+          {/* Filter Dropdown */}
           {selectedJob?.hireSortEnabled && (
             <>
               <div className="h-4 w-px bg-border/70 hidden sm:block" />
-              <div className="flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5 text-muted-foreground/70" />
-                <div className="flex items-center gap-0.5">
-                  <FilterButton active={filterMode === 'all'} onClick={() => setFilterMode('all')}>
-                    All
-                  </FilterButton>
-                  <FilterButton active={filterMode === 'high'} onClick={() => setFilterMode('high')} color="success">
-                    Strong
-                  </FilterButton>
-                  <FilterButton active={filterMode === 'medium'} onClick={() => setFilterMode('medium')} color="warning">
-                    Potential
-                  </FilterButton>
-                  <FilterButton active={filterMode === 'low'} onClick={() => setFilterMode('low')}>
-                    Low
-                  </FilterButton>
+              <div className="flex items-center gap-1.5">
+                <div className="relative inline-flex items-center">
+                  <Filter className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 pointer-events-none" />
+                  <select
+                    value={filterMode}
+                    onChange={(e) => setFilterMode(e.target.value as FilterMode)}
+                    aria-label="Filter candidates by match tier"
+                    className="text-xs bg-card border border-border/80 rounded-md pl-7 pr-7 py-1 h-7 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-border transition-colors appearance-none shadow-2xs"
+                  >
+                    <option value="all">All Matches ({currentCandidates.length})</option>
+                    <option value="high">Strong Match ({strongCount})</option>
+                    <option value="medium">Potential Match ({potentialCount})</option>
+                    <option value="low">Low Match ({lowCount})</option>
+                  </select>
+                  <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2 pointer-events-none" />
                 </div>
               </div>
             </>
