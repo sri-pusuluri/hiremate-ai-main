@@ -18,8 +18,6 @@ import {
   CheckCircle,
   ExternalLink,
   Users,
-  Eye,
-  ArrowUpRight,
   Clock,
   UploadCloud,
   FileText,
@@ -27,6 +25,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import TenantBrandLogo from '@/components/common/TenantBrandLogo';
+import { stripMarkdownToPlainText } from '@/lib/job-parser';
 import {
   Dialog,
   DialogContent,
@@ -51,9 +50,6 @@ export default function PublicCareers() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState<string>('all');
-  const [candidatesData, setCandidatesData] = useState<any[]>([]);
-  const [inspectingJob, setInspectingJob] = useState<Job | null>(null);
-  const [showApplicantsModal, setShowApplicantsModal] = useState(false);
 
   // Quick Apply Modal State
   const [quickApplyJob, setQuickApplyJob] = useState<Job | null>(null);
@@ -125,12 +121,12 @@ export default function PublicCareers() {
           console.warn('Jobs query warning:', jobsError);
         }
 
-        // 3. Optionally fetch candidate counts (in try-catch so permission errors never crash page)
+        // 3. Optionally fetch candidate counts (anonymized, no PII loaded on public routes)
         let candsData: any[] = [];
         try {
           let candQuery = supabase
             .from('candidates')
-            .select('id, full_name, email, job_id, created_at, status, pipeline_stage, experience');
+            .select('id, job_id');
 
           if (clientData?.id) {
             candQuery = candQuery.eq('client_id', clientData.id);
@@ -139,7 +135,6 @@ export default function PublicCareers() {
           const { data: resCands } = await candQuery;
           if (resCands) {
             candsData = resCands;
-            setCandidatesData(resCands);
           }
         } catch (candErr) {
           console.debug('Candidate count optional fetch skipped:', candErr);
@@ -552,7 +547,7 @@ export default function PublicCareers() {
                     </div>
 
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {job.description}
+                      {stripMarkdownToPlainText(job.description) || job.description}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-1">
@@ -580,35 +575,17 @@ export default function PublicCareers() {
                         Posted {job.postedDate}
                       </span>
 
-                      {/* Applicant Count Badge */}
+                      {/* Urgency / Active Status Badge (Candidate privacy protected: no PII or applicant identities leaked) */}
                       {job.candidateCount > 0 ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-medium text-[11px]">
+                        <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-medium text-[11px]">
                           <Users className="w-3 h-3" />
-                          {job.candidateCount} {job.candidateCount === 1 ? 'applicant' : 'applicants'}
+                          Actively Reviewing Applications
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium text-[11px]">
+                        <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium text-[11px]">
                           <Sparkles className="w-3 h-3" />
                           Be an early applicant
                         </span>
-                      )}
-
-                      {/* Recruiter / Client View Applicants Button */}
-                      {job.candidateCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setInspectingJob(job);
-                            setShowApplicantsModal(true);
-                          }}
-                          className="flex items-center gap-1 text-primary hover:underline font-medium cursor-pointer"
-                          title="View applied candidates"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          View Applied ({job.candidateCount})
-                        </button>
                       )}
                     </div>
                   </div>
@@ -701,75 +678,6 @@ export default function PublicCareers() {
           </div>
         </footer>
       )}
-      {/* Applied Candidates Modal for Client Listing */}
-      <Dialog open={showApplicantsModal} onOpenChange={setShowApplicantsModal}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <div className="flex items-center justify-between pr-6">
-              <div>
-                <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  Applied Candidates
-                </DialogTitle>
-                <DialogDescription className="text-xs">
-                  {inspectingJob?.title} • {candidatesData.filter(c => c.job_id === inspectingJob?.id).length} total applications received
-                </DialogDescription>
-              </div>
-              <a
-                href="/jobs"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-medium text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20"
-              >
-                Open in HireSort ATS
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 divide-y divide-border">
-            {candidatesData.filter(c => c.job_id === inspectingJob?.id).length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-xs">
-                No candidates have applied to this role yet.
-              </div>
-            ) : (
-              candidatesData
-                .filter(c => c.job_id === inspectingJob?.id)
-                .map((cand, idx) => (
-                  <div key={cand.id || idx} className="pt-2.5 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center text-xs">
-                        {cand.full_name?.charAt(0) || 'C'}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{cand.full_name}</p>
-                        <p className="text-muted-foreground text-xs">{cand.email || 'applicant@email.com'}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="text-muted-foreground text-[11px]">
-                        Applied {cand.created_at ? new Date(cand.created_at).toLocaleDateString() : 'Recently'}
-                      </span>
-                      <Badge variant="outline" className="text-[10px] capitalize bg-muted font-medium">
-                        {cand.status || cand.pipeline_stage || 'Applied'}
-                      </Badge>
-                      <a
-                        href="/jobs"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline font-medium text-xs flex items-center gap-0.5"
-                      >
-                        Evaluate
-                        <ArrowUpRight className="w-3 h-3" />
-                      </a>
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Quick Apply Candidate Application Modal with Confirmed File Text Parsing */}
       <Dialog open={!!quickApplyJob} onOpenChange={(open) => { if (!open) setQuickApplyJob(null); }}>

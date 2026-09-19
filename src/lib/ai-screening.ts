@@ -9,6 +9,10 @@ export interface AIAnalysisResult {
   similarity: number | null; // 0.0 to 1.0, or null if unprocessed/failed
   matchedSkills: string[];
   missingSkills: string[];
+  coreSkills?: string[];
+  secondarySkills?: string[];
+  missingCoreSkills?: string[];
+  missingSecondarySkills?: string[];
   interviewPassProb: number;
   offerAcceptanceProb: number;
   onboardingSuccessProb: number;
@@ -114,8 +118,79 @@ export async function extractResumeText(
 }
 
 /**
- * Deterministic, explainable ATS evaluation engine.
- * Matches candidate's actual resume against target Job Description requirements.
+ * Smart Domain & Skill Tiering Classifier.
+ * Categorizes job requirements into Core Role-Defining Skills (75% weight)
+ * vs Secondary / Cross-Functional / Nice-to-Have Skills (15% additive bonus).
+ */
+export function classifyJobSkills(
+  jobTitle: string,
+  skills: string[],
+  niceToHaveText: string = ''
+): { coreSkills: string[]; secondarySkills: string[] } {
+  const lowerTitle = (jobTitle || '').toLowerCase();
+  const lowerNice = (niceToHaveText || '').toLowerCase();
+
+  const isDesignRole = /ui\/ux|ux\/ui|product\s+design|graphic|visual\s+design|web\s+design|designer/i.test(lowerTitle);
+  const isWordPressRole = /wordpress|wp\b/i.test(lowerTitle);
+  const isBackendRole = /backend|api|server|database|devops|cloud|system|data\s+engineer|python\s+developer/i.test(lowerTitle);
+  const isFrontendRole = /frontend|front-end|react\s+developer|angular\s+developer|web\s+developer/i.test(lowerTitle);
+
+  const coreSkills: string[] = [];
+  const secondarySkills: string[] = [];
+
+  for (const skill of skills) {
+    const sLower = skill.toLowerCase();
+
+    // Priority 1: If explicitly mentioned in "Nice to Have" or preferred section
+    if (lowerNice.includes(sLower)) {
+      secondarySkills.push(skill);
+      continue;
+    }
+
+    // Priority 2: Domain-specific cross-functional rules
+    if (isDesignRole) {
+      // Core UI/UX design capabilities
+      if (/ui\/ux|figma|design\s+system|product\s+design|wirefram|prototyp|user\s+research|interaction\s+design|accessibility|wcag/i.test(sLower)) {
+        coreSkills.push(skill);
+      } else {
+        // Coding frameworks (HTML5/CSS3, React, Next.js, Angular, Tailwind CSS, etc.) are secondary bonuses for a designer
+        secondarySkills.push(skill);
+      }
+    } else if (isWordPressRole) {
+      if (/wordpress|php|mysql|custom\s+theme|custom\s+plugin|gutenberg|acf|woocommerce/i.test(sLower)) {
+        coreSkills.push(skill);
+      } else {
+        secondarySkills.push(skill);
+      }
+    } else if (isBackendRole) {
+      if (/node|express|sql|postgres|mongo|redis|api|aws|docker|kubernetes|system\s+design|python|java|microservices/i.test(sLower)) {
+        coreSkills.push(skill);
+      } else {
+        secondarySkills.push(skill);
+      }
+    } else if (isFrontendRole) {
+      if (/javascript|typescript|react|next|angular|html|css|tailwind|vue|redux/i.test(sLower)) {
+        coreSkills.push(skill);
+      } else {
+        secondarySkills.push(skill);
+      }
+    } else {
+      coreSkills.push(skill);
+    }
+  }
+
+  // Safety Fallback: Ensure at least one core skill exists
+  if (coreSkills.length === 0 && skills.length > 0) {
+    coreSkills.push(...skills.slice(0, 3));
+    secondarySkills.push(...skills.slice(3));
+  }
+
+  return { coreSkills, secondarySkills };
+}
+
+/**
+ * Deterministic, explainable ATS evaluation engine with Multi-Tiered Competency Weighting.
+ * Evaluates candidate resumes prioritizing core domain capabilities over peripheral bonus tools.
  */
 export function evaluateResumeDeterministically(input: {
   candidateName: string;
@@ -127,6 +202,8 @@ export function evaluateResumeDeterministically(input: {
     description?: string;
     requirements?: string[];
     responsibilities?: string[];
+    niceToHave?: string[];
+    nice_to_have?: string[];
   };
 }): AIAnalysisResult {
   const { candidateName, resumeText, job } = input;
@@ -146,7 +223,7 @@ export function evaluateResumeDeterministically(input: {
         score: 'low',
         similarity: null,
         matchedSkills: [],
-        missingSkills: ['Resume content missing or unparseable'],
+        missingSkills: job.requirements || [],
         interviewPassProb: 15,
         offerAcceptanceProb: 30,
         onboardingSuccessProb: 20,
@@ -163,42 +240,57 @@ export function evaluateResumeDeterministically(input: {
   const cleanResume = effectiveResumeText.toLowerCase();
   const jobFullText = `${job.title} ${job.description || ''} ${(job.requirements || []).join(' ')} ${(job.responsibilities || []).join(' ')}`.toLowerCase();
 
+  // Extract explicit Nice to Have text from JD if available
+  const niceToHaveText = `${(job.niceToHave || job.nice_to_have || []).join(' ')} ${
+    (job.description || '').match(/##\s*nice\s+to\s+have[\s\S]*?(?=##|$)/i)?.[0] || ''
+  }`.toLowerCase();
+
   // 2. Identify skills required by this specific Job Description
-  const requiredSkills: string[] = [];
+  const rawRequiredSkills: string[] = [];
   for (const skill of SKILL_CATALOG) {
     const isRequired = skill.patterns.some(p => p.test(jobFullText));
-    if (isRequired && !requiredSkills.includes(skill.label)) {
-      requiredSkills.push(skill.label);
+    if (isRequired && !rawRequiredSkills.includes(skill.label)) {
+      rawRequiredSkills.push(skill.label);
     }
   }
 
   // Ensure at least core baseline skills from requirements exist
-  if (requiredSkills.length === 0 && Array.isArray(job.requirements) && job.requirements.length > 0) {
+  if (rawRequiredSkills.length === 0 && Array.isArray(job.requirements) && job.requirements.length > 0) {
     for (const req of job.requirements) {
-      if (req.length < 35) requiredSkills.push(req.trim());
+      if (req.length < 35) rawRequiredSkills.push(req.trim());
     }
   }
 
-  // 3. Match candidate skills against required skills
-  const matchedSkills: string[] = [];
-  const missingSkills: string[] = [];
+  // 3. Classify into Core Skills vs Secondary / Nice-to-Have Skills
+  const { coreSkills, secondarySkills } = classifyJobSkills(job.title, rawRequiredSkills, niceToHaveText);
 
-  for (const skill of requiredSkills) {
+  const checkSkill = (skill: string) => {
     const catalogItem = SKILL_CATALOG.find(c => c.label === skill);
-    const hasSkill = catalogItem 
+    return catalogItem
       ? catalogItem.patterns.some(p => p.test(cleanResume))
       : cleanResume.includes(skill.toLowerCase());
+  };
 
-    if (hasSkill) {
-      matchedSkills.push(skill);
-    } else {
-      missingSkills.push(skill);
-    }
+  const matchedCoreSkills: string[] = [];
+  const missingCoreSkills: string[] = [];
+  for (const skill of coreSkills) {
+    if (checkSkill(skill)) matchedCoreSkills.push(skill);
+    else missingCoreSkills.push(skill);
   }
+
+  const matchedSecondarySkills: string[] = [];
+  const missingSecondarySkills: string[] = [];
+  for (const skill of secondarySkills) {
+    if (checkSkill(skill)) matchedSecondarySkills.push(skill);
+    else missingSecondarySkills.push(skill);
+  }
+
+  const matchedSkills = [...matchedCoreSkills, ...matchedSecondarySkills];
+  const missingSkills = [...missingCoreSkills, ...missingSecondarySkills];
 
   // 4. Extract experience years from resume
   let candidateExperience = 3; // fallback default
-  const expMatch = resumeText.match(/(\d+)\+?\s*(?:years?|yrs?)(?:\s+of)?\s+(?:experience|building|engineering|working)/i) 
+  const expMatch = resumeText.match(/(\d+)\+?\s*(?:years?|yrs?)(?:\s+of)?\s+(?:experience|building|engineering|working|designing)/i) 
     || resumeText.match(/(\d+)\s*(?:years?|yrs?)/i);
   if (expMatch && expMatch[1]) {
     const parsedExp = parseInt(expMatch[1], 10);
@@ -233,16 +325,35 @@ export function evaluateResumeDeterministically(input: {
     hasPrimarySpecialization = /\bangular\b/i.test(cleanResume) && /\bnode\b/i.test(cleanResume);
   }
 
-  // 6. Calculate Honest Semantic Similarity Percentage (0.00 to 1.00)
-  const totalSkillsCount = Math.max(requiredSkills.length, 1);
-  const skillRatio = matchedSkills.length / totalSkillsCount;
+  // 6. Calculate Honest Multi-Tiered Semantic Similarity Percentage (0.00 to 1.00)
+  // Core ratio determines up to 70% of score
+  const coreRatio = coreSkills.length > 0 ? (matchedCoreSkills.length / coreSkills.length) : 1.0;
+
+  // Seniority ratio determines up to 20%
   const expRatio = Math.min(1.0, candidateExperience / Math.max(targetExperience, 1));
 
-  let rawSimilarity = (skillRatio * 0.75) + (expRatio * 0.25);
+  // Secondary skills provide an ADDITIVE BONUS (up to +10%) - lack of secondary skills never heavily penalizes!
+  const bonusBoost = secondarySkills.length > 0
+    ? Math.min(0.10, (matchedSecondarySkills.length / secondarySkills.length) * 0.10)
+    : 0.04;
 
-  // If primary required specialization is completely absent, candidate is a low fit
-  if (!hasPrimarySpecialization) {
-    rawSimilarity = Math.min(rawSimilarity, 0.32);
+  // Role title alignment adds +5%
+  let roleTitleBonus = 0;
+  const lowerTitle = (job.title || '').toLowerCase();
+  const lowerCurrent = (input.currentRole || '').toLowerCase();
+  if (lowerTitle && lowerCurrent) {
+    if ((lowerTitle.includes('designer') && lowerCurrent.includes('designer')) ||
+        (lowerTitle.includes('wordpress') && lowerCurrent.includes('wordpress')) ||
+        (lowerTitle.includes('developer') && lowerCurrent.includes('developer'))) {
+      roleTitleBonus = 0.05;
+    }
+  }
+
+  let rawSimilarity = (coreRatio * 0.70) + (expRatio * 0.20) + bonusBoost + roleTitleBonus;
+
+  // If primary required specialization is completely absent (e.g. backend dev with 0 design skills applying for UI/UX)
+  if (!hasPrimarySpecialization || (coreSkills.length > 0 && matchedCoreSkills.length === 0)) {
+    rawSimilarity = Math.min(rawSimilarity, 0.28);
   }
 
   // Bound similarity between honest ranges (0.15 to 0.96)
@@ -291,12 +402,16 @@ export function evaluateResumeDeterministically(input: {
 
   // 10. Construct Recruiter Assessment Summary
   let assessment = '';
-  if (!hasPrimarySpecialization) {
-    assessment = `${candidateName} has ${candidateExperience} years of software experience but lacks core ${job.title} competencies (missing ${missingSkills.slice(0, 3).join(', ')}). Match is low due to fundamental domain misalignment.`;
+  if (!hasPrimarySpecialization || (coreSkills.length > 0 && matchedCoreSkills.length === 0)) {
+    assessment = `${candidateName} has ${candidateExperience} years of software experience but lacks core ${job.title} competencies (missing ${missingCoreSkills.slice(0, 3).join(', ') || missingSkills.slice(0, 3).join(', ')}). Match is low due to fundamental domain misalignment.`;
   } else if (score === 'high') {
-    assessment = `Strong match: ${candidateName} brings ${candidateExperience} years of relevant experience, satisfying ${matchedSkills.length} of ${requiredSkills.length} key requirements including ${matchedSkills.slice(0, 3).join(', ')}.`;
+    if (missingCoreSkills.length === 0 && missingSecondarySkills.length > 0) {
+      assessment = `Strong domain match: ${candidateName} brings ${candidateExperience} years of verified experience with 100% core alignment in ${matchedCoreSkills.slice(0, 3).join(', ')}. Missing secondary cross-functional tools (${missingSecondarySkills.slice(0, 3).join(', ')}) are non-critical bonuses and do not impede primary role qualification.`;
+    } else {
+      assessment = `Strong match: ${candidateName} brings ${candidateExperience} years of relevant experience, satisfying ${matchedSkills.length} key requirements including ${matchedSkills.slice(0, 3).join(', ')}.`;
+    }
   } else {
-    assessment = `Moderate fit: Candidate matches ${matchedSkills.length} requirements (${matchedSkills.slice(0, 2).join(', ')}), but has gaps in ${missingSkills.slice(0, 2).join(', ')}.`;
+    assessment = `Moderate fit: Candidate matches ${matchedCoreSkills.length} of ${coreSkills.length} core requirements (${matchedCoreSkills.slice(0, 2).join(', ') || matchedSkills.slice(0, 2).join(', ')}), with gaps in ${missingCoreSkills.slice(0, 2).join(', ') || missingSkills.slice(0, 2).join(', ')}.`;
   }
 
   return {
@@ -307,6 +422,10 @@ export function evaluateResumeDeterministically(input: {
     similarity,
     matchedSkills,
     missingSkills,
+    coreSkills,
+    secondarySkills,
+    missingCoreSkills,
+    missingSecondarySkills,
     interviewPassProb,
     offerAcceptanceProb,
     onboardingSuccessProb,
@@ -464,16 +583,23 @@ ${Object.entries(customAns).map(([k, v]) => `${k}: ${v}`).join('\n')}`;
 
   const jobTitle = job.title || 'Software Engineer';
   const jobDesc = job.description || 'Modern software development role.';
-  const reqs = Array.isArray(job.requirements) && job.requirements.length > 0 
-    ? job.requirements.join(', ') 
-    : 'Core engineering and domain requirements';
+  const niceToHaveRaw = (job as any).niceToHave || (job as any).nice_to_have || [];
+  const { coreSkills: promptCore, secondarySkills: promptSec } = classifyJobSkills(
+    jobTitle,
+    job.requirements || [],
+    niceToHaveRaw.join(' ')
+  );
 
-  const prompt = `You are HireSort AI, an enterprise-grade ATS talent screening engine with strict Anti-Hallucination and Anti-Bias Guardrails.
-Evaluate this candidate's resume strictly against the exact Job Description requirements.
+  const coreReqs = promptCore.length > 0 ? promptCore.join(', ') : (Array.isArray(job.requirements) ? job.requirements.join(', ') : 'Core domain requirements');
+  const secReqs = promptSec.length > 0 ? promptSec.join(', ') : 'Cross-functional tools and bonus frameworks';
+
+  const prompt = `You are HireSort AI, an enterprise-grade ATS talent screening engine with strict Anti-Hallucination, Anti-Bias, and Multi-Tiered Competency Guardrails.
+Evaluate this candidate's resume against the Job Description requirements.
 
 [JOB SPECIFICATION]
 Job Title: ${jobTitle}
-Requirements: ${reqs}
+Core Requirements (Primary - 75% Weight): ${coreReqs}
+Secondary / Nice-to-Have (Bonus - 15% Weight): ${secReqs}
 Job Description: ${jobDesc}
 
 [CANDIDATE DATA]
@@ -481,11 +607,14 @@ Candidate Name: ${name}
 Resume Text:
 ${resumeText}
 
-[STRICT ANTI-HALLUCINATION & ANTI-BIAS GUARDRAILS]
-1. ZERO HALLUCINATION (Text-Grounded Only): Only extract skills, tools, and experiences that have explicit verifiable evidence in the candidate's resume text. Do NOT invent, assume, or hallucinate proficiencies not substantiated by the resume text.
-2. HONEST GAP DETECTION: If a requirement from the Job Description is not explicitly evidenced, list it in "missingSkills". Never inflate candidate capability.
-3. DEMOGRAPHIC BLINDNESS (Anti-Bias): Disregard candidate name, gender, ethnicity, nationality, age, photos, graduation years, or marital status. Base 100% of your evaluation on verifiable technical competencies, system scope, and seniority trajectory.
-4. CALIBRATED OBJECTIVITY: Base the similarity score and fit category purely on the objective ratio of satisfied requirements to target specifications.
+[STRICT SCREENING GUARDRAILS]
+1. MULTI-TIERED COMPETENCY WEIGHTING:
+   - Base 80% of your evaluation on CORE DOMAIN REQUIREMENTS (${coreReqs}) and verified seniority trajectory.
+   - Treat secondary/cross-functional skills (${secReqs}) strictly as an additive bonus.
+   - Do NOT heavily penalize a domain specialist (e.g. a UI/UX Designer) for lacking peripheral software developer tools (e.g. React, Next.js, or Angular). If their core domain capabilities and experience are exceptional, they must receive a High/Strong match rating (85%+).
+2. ZERO HALLUCINATION (Text-Grounded Only): Only extract skills, tools, and experiences that have explicit verifiable evidence in the candidate's resume text. Do NOT invent, assume, or hallucinate proficiencies not substantiated by the resume text.
+3. HONEST GAP DETECTION: If a requirement from the Job Description is not explicitly evidenced, list it in "missingSkills". Never inflate candidate capability.
+4. DEMOGRAPHIC BLINDNESS (Anti-Bias): Disregard candidate name, gender, ethnicity, nationality, age, photos, graduation years, or marital status. Base 100% of your evaluation on verifiable technical competencies, system scope, and seniority trajectory.
 
 Analyze the candidate thoroughly and return a JSON object with this EXACT structure:
 {

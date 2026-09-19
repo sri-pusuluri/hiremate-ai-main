@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Candidate, Job } from '@/types/hiresort';
+import { classifyJobSkills } from '@/lib/ai-screening';
 import { AIBadge } from '@/components/ui/ai-badges';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -103,11 +104,50 @@ export function AIMatchAnalysis({
       : (typeof window !== 'undefined' ? localStorage.getItem('openai_model') || 'gpt-4o-mini' : 'gpt-4o-mini')
   );
 
+  // Multi-Tiered Skills Classification
+  const { coreSkills, secondarySkills } = useMemo(() => {
+    return classifyJobSkills(
+      job?.title || '',
+      [...(candidate.matchedSkills || []), ...(candidate.missingSkills || [])],
+      (job as any)?.niceToHave?.join(' ') || ''
+    );
+  }, [job?.title, candidate.matchedSkills, candidate.missingSkills, job]);
+
+  const matchedCoreSkills = useMemo(() => {
+    return (candidate.coreSkills && candidate.coreSkills.length > 0)
+      ? (candidate.matchedSkills || []).filter(s => candidate.coreSkills?.includes(s))
+      : (candidate.matchedSkills || []).filter(s => coreSkills.includes(s));
+  }, [candidate.coreSkills, candidate.matchedSkills, coreSkills]);
+
+  const missingCoreSkills = useMemo(() => {
+    return (candidate.missingCoreSkills && candidate.missingCoreSkills.length > 0)
+      ? candidate.missingCoreSkills
+      : (candidate.missingSkills || []).filter(s => coreSkills.includes(s));
+  }, [candidate.missingCoreSkills, candidate.missingSkills, coreSkills]);
+
+  const matchedSecondarySkills = useMemo(() => {
+    return (candidate.secondarySkills && candidate.secondarySkills.length > 0)
+      ? (candidate.matchedSkills || []).filter(s => candidate.secondarySkills?.includes(s))
+      : (candidate.matchedSkills || []).filter(s => secondarySkills.includes(s));
+  }, [candidate.secondarySkills, candidate.matchedSkills, secondarySkills]);
+
+  const missingSecondarySkills = useMemo(() => {
+    return (candidate.missingSecondarySkills && candidate.missingSecondarySkills.length > 0)
+      ? candidate.missingSecondarySkills
+      : (candidate.missingSkills || []).filter(s => secondarySkills.includes(s) || !coreSkills.includes(s));
+  }, [candidate.missingSecondarySkills, candidate.missingSkills, secondarySkills, coreSkills]);
+
   // Calculate match scores
   const totalRequiredSkills = job?.requirements?.length || 6;
   const matchedCount = isUnranked ? 0 : (candidate.matchedSkills?.length || 0);
   const missingCount = isUnranked ? 0 : (candidate.missingSkills?.length || 0);
-  const skillMatchPercentage = isUnranked ? null : Math.round((matchedCount / (matchedCount + missingCount || 1)) * 100);
+  
+  const coreMatchPercentage = coreSkills.length > 0
+    ? Math.round((matchedCoreSkills.length / coreSkills.length) * 100)
+    : 100;
+
+  const rawSkillPercentage = isUnranked ? null : Math.round((matchedCount / (matchedCount + missingCount || 1)) * 100);
+  const skillMatchPercentage = isUnranked ? null : (coreSkills.length > 0 ? coreMatchPercentage : rawSkillPercentage);
   
   // Experience match calculation
   const requiredExp = 5; // Default from JD
@@ -313,8 +353,8 @@ export function AIMatchAnalysis({
                 className="h-2 mb-2"
               />
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{isUnranked ? "Pending analysis" : `${matchedCount} matched`}</span>
-                <span>{isUnranked ? "" : `${missingCount} gaps`}</span>
+                <span>{isUnranked ? "Pending analysis" : `${matchedCoreSkills.length} of ${coreSkills.length || matchedCount} core matched`}</span>
+                <span>{isUnranked ? "" : (missingCoreSkills.length === 0 ? "0 core gaps" : `${missingCoreSkills.length} core gaps`)}</span>
               </div>
             </div>
 
@@ -369,23 +409,65 @@ export function AIMatchAnalysis({
               </div>
             ) : null}
 
-            {/* Missing Skills */}
+            {/* Missing Skills with Multi-Tiered Distinction */}
             {candidate.missingSkills && candidate.missingSkills.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Not Found in Resume ({missingCount})</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs pb-0.5 border-b border-border/40">
+                  <span className="font-semibold text-foreground">Not Found in Resume ({missingCount})</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {missingCoreSkills.length === 0 ? '0 core gaps' : `${missingCoreSkills.length} core missing`}
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {candidate.missingSkills.map((skill) => (
-                    <span 
-                      key={skill}
-                      className="px-2.5 py-1 bg-muted text-muted-foreground text-sm rounded-md border border-border"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+
+                {missingCoreSkills.length > 0 ? (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-4 h-4 text-rose-500" />
+                      <span className="text-sm font-semibold text-rose-600 dark:text-rose-400">
+                        Core Requirements Missing ({missingCoreSkills.length})
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {missingCoreSkills.map((skill) => (
+                        <span 
+                          key={skill}
+                          className="px-2.5 py-1 bg-rose-500/10 text-rose-700 dark:text-rose-300 text-sm rounded-md border border-rose-500/20 font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>100% Core Role Requirements Satisfied</span>
+                  </div>
+                )}
+
+                {missingSecondarySkills.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Secondary / Nice-to-Have ({missingSecondarySkills.length})
+                      </span>
+                      <span className="text-[11px] text-muted-foreground/80 font-normal">
+                        (Additive bonus • does not penalize score)
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {missingSecondarySkills.map((skill) => (
+                        <span 
+                          key={skill}
+                          className="px-2.5 py-0.5 bg-muted/80 text-muted-foreground text-xs rounded-md border border-border"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -438,11 +520,15 @@ export function AIMatchAnalysis({
                       </div>
                       <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap",
-                        matchedCount >= 3 
+                        missingCoreSkills.length === 0 && matchedCoreSkills.length > 0
                           ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
-                          : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                          : (matchedCoreSkills.length >= 2 
+                            ? "bg-blue-500/10 text-blue-600 border-blue-500/20" 
+                            : "bg-rose-500/10 text-rose-500 border-rose-500/20")
                       )}>
-                        {matchedCount >= 3 ? "Verified Primary Stack" : "Stack Gaps Detected"}
+                        {missingCoreSkills.length === 0 && matchedCoreSkills.length > 0 
+                          ? "Verified Primary Stack (100% Core)" 
+                          : (matchedCoreSkills.length >= 2 ? "High Core Overlap" : "Stack Gaps Detected")}
                       </span>
                     </div>
 
@@ -457,11 +543,13 @@ export function AIMatchAnalysis({
                         </span>
                         <ScoreInfoButton 
                           title="2. Competency Coverage Details"
-                          description={`Matches ${matchedCount} explicit skills requested in the job description across technical specifications.`}
+                          description={coreSkills.length > 0 
+                            ? `Matches ${matchedCoreSkills.length} of ${coreSkills.length} core requirements (${coreMatchPercentage}%). Secondary bonus tools (${matchedSecondarySkills.length}/${secondarySkills.length || 1}) provide supplementary boost.`
+                            : `Matches ${matchedCount} explicit skills requested in the job description across technical specifications.`}
                         />
                       </div>
                       <span className="text-[10px] font-mono font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 shrink-0 whitespace-nowrap">
-                        {matchedCount} / {matchedCount + missingCount} ({skillMatchPercentage}%)
+                        {matchedCount} / {matchedCount + missingCount} ({rawSkillPercentage}%){coreSkills.length > 0 ? ` • Core: ${matchedCoreSkills.length}/${coreSkills.length}` : ''}
                       </span>
                     </div>
 

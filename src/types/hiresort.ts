@@ -20,6 +20,10 @@ export interface Candidate {
   cosineSimilarity?: number; // Cosine similarity between JD and resume embeddings (0-1)
   matchedSkills?: string[];
   missingSkills?: string[];
+  coreSkills?: string[];
+  secondarySkills?: string[];
+  missingCoreSkills?: string[];
+  missingSecondarySkills?: string[];
   experienceAlignment?: string;
   aiExplanation?: string;
   evaluationStatus?: 'completed' | 'pending' | 'failed';

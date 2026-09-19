@@ -90,6 +90,41 @@ export function assembleJobDescription(job?: Partial<Job> | null): string {
 }
 
 /**
+ * Strips markdown symbols, headers, bold markers, and common boilerplate
+ * to return a clean, plain-text summary suitable for preview cards.
+ */
+export function stripMarkdownToPlainText(markdown?: string, maxLength?: number): string {
+  if (!markdown) return '';
+  let clean = markdown
+    // Remove markdown headers: # Title -> ""
+    .replace(/^#{1,6}\s+.*$/gm, '')
+    // Remove bold/italics: **text** -> text, *text* -> text, __text__ -> text
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+    // Remove inline links: [text](url) -> text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove images: ![alt](url) -> ""
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+    // Remove blockquotes: > text -> text
+    .replace(/^\s*>\s+/gm, '')
+    // Remove bullet points / list markers: * item, - item, + item, 1. item -> item
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Replace multiple spaces and newlines with a single space
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // If text was preceded by "Job Description: ...", clean any leftover prefixes
+  clean = clean.replace(/^(job description:?|overview:?|summary:?)\s*/i, '');
+
+  if (maxLength && clean.length > maxLength) {
+    return clean.slice(0, maxLength).trim() + '...';
+  }
+  return clean;
+}
+
+/**
  * Parses a Markdown job description into an array of sections in the exact sequential order
  * they appear in the author's document, preserving subsections, tables, and lists.
  */
