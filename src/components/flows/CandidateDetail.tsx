@@ -31,7 +31,8 @@ import {
   TrendingUp,
   UserCheck,
   ExternalLink,
-  Save
+  Save,
+  Printer
 } from 'lucide-react';
 import { parseCandidateResume } from '@/lib/resume-parser';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +45,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { logAuditEvent } from '@/lib/audit-logger';
 import { CandidateInterviewHistory } from '@/components/interviews/CandidateInterviewHistory';
+import { CandidateReportModal } from '@/components/reports/CandidateReportModal';
 
 interface CandidateDetailProps {
   candidate: Candidate;
@@ -75,6 +77,7 @@ export function CandidateDetail({
   const [job, setJob] = useState<Job | undefined>(initialJob);
   const [feedback, setFeedback] = useState<'good' | 'poor' | null>(initialCandidate.recruiterFeedback || null);
   const [showResumeModal, setShowResumeModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const { toast } = useToast();
   const savedLinkedIn = (initialCandidate as any)?.custom_answers?.linkedin_url || 
     (initialCandidate.predictiveInsights as any)?.linkedinUrl || 
@@ -613,13 +616,26 @@ export function CandidateDetail({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2"
-            title="Close drawer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReportModal(true)}
+              className="h-8 text-xs gap-1.5 px-2.5 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 cursor-pointer shadow-2xs font-semibold"
+              title="Generate Executive Evaluation Report & PDF Dossier"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="hidden sm:inline">Executive</span> Report
+            </Button>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Close drawer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content - Scrollable */}
@@ -1017,6 +1033,16 @@ export function CandidateDetail({
             <Button 
               variant="outline" 
               size="sm" 
+              onClick={() => setShowReportModal(true)} 
+              className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer border-primary/30 text-primary hover:bg-primary/5 gap-1.5 font-semibold"
+              title="Export Candidate Dossier & PDF Report"
+            >
+              <Printer className="w-3.5 h-3.5 text-primary" />
+              Report Dossier
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
               onClick={() => setShowResumeModal(true)} 
               className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer"
             >
@@ -1055,6 +1081,14 @@ export function CandidateDetail({
         candidate={candidate}
         open={showResumeModal}
         onOpenChange={setShowResumeModal}
+      />
+
+      {/* Executive Report Dossier Modal */}
+      <CandidateReportModal
+        candidate={candidate}
+        job={job}
+        open={showReportModal}
+        onOpenChange={setShowReportModal}
       />
     </>
   );

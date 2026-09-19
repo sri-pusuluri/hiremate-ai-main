@@ -28,10 +28,12 @@ import {
   Clock,
   Info,
   ExternalLink,
-  UserPlus
+  UserPlus,
+  Printer
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { CandidateReportModal } from '@/components/reports/CandidateReportModal';
 import {
   Tooltip,
   TooltipContent,
@@ -58,6 +60,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [resumeCandidate, setResumeCandidate] = useState<Candidate | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
+  const [reportCandidate, setReportCandidate] = useState<Candidate | null>(null);
   const [showJDModal, setShowJDModal] = useState(false);
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<CandidateTab>('all');
@@ -655,6 +658,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             onSelect={() => toggleSelect(candidate.id)}
             onClick={() => onSelectCandidate({ ...candidate, aiRank: index + 1 })}
             onViewResume={() => handleViewResume(candidate)}
+            onViewReport={() => setReportCandidate(candidate)}
             onReanalyze={() => handleReanalyzeSingleCandidate(candidate)}
             isReanalyzing={reanalyzingId === candidate.id}
             isAIEnabled={selectedJob?.hireSortEnabled || false}
@@ -698,6 +702,14 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
         candidate={resumeCandidate}
         open={showResumeModal}
         onOpenChange={setShowResumeModal}
+      />
+
+      {/* Candidate Executive Report Dossier Modal */}
+      <CandidateReportModal
+        candidate={reportCandidate}
+        job={selectedJob}
+        open={Boolean(reportCandidate)}
+        onOpenChange={(open) => !open && setReportCandidate(null)}
       />
 
       {/* JD Modal */}
@@ -762,12 +774,13 @@ interface CandidateRowProps {
   onSelect: () => void;
   onClick: () => void;
   onViewResume: () => void;
+  onViewReport?: () => void;
   onReanalyze?: () => void;
   isReanalyzing?: boolean;
   isAIEnabled: boolean;
 }
 
-function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, onViewResume, onReanalyze, isReanalyzing, isAIEnabled }: CandidateRowProps) {
+function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, onViewResume, onViewReport, onReanalyze, isReanalyzing, isAIEnabled }: CandidateRowProps) {
   return (
     <div
       className={cn(
@@ -906,6 +919,18 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
               <RefreshCw className={cn("w-4 h-4", isReanalyzing && "animate-spin")} />
             </Button>
           )}
+          <Button 
+            variant="ghost" 
+            size="icon-sm" 
+            title="Executive Dossier & PDF Report"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewReport?.();
+            }}
+            className="text-primary hover:text-primary hover:bg-primary/10"
+          >
+            <Printer className="w-4 h-4" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon-sm" 
