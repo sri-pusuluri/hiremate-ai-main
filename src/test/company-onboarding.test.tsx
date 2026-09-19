@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import Auth from '../pages/Auth';
 import CompanyOnboarding from '../pages/CompanyOnboarding';
+import NotFound from '../pages/NotFound';
 import { AuthProvider } from '../hooks/useAuth';
 
 // Mock Supabase client
@@ -68,6 +69,24 @@ describe('Company Onboarding & Streamlined Auth Flow', () => {
     expect(screen.getByLabelText(/Work Email Address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Continue/i })).toBeInTheDocument();
+  });
+
+  it('correctly matches /onboarding route and does not fall through to 404 NotFound', () => {
+    render(
+      <MemoryRouter initialEntries={['/onboarding']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<CompanyOnboarding />} />
+            <Route path="/signup" element={<CompanyOnboarding />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText(/Oops! Page not found/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Create your Company Workspace/i)).toBeInTheDocument();
   });
 
   it('advances through Step 1 to Step 2 (Company Details) and Step 3 (AI Strategy)', async () => {
