@@ -586,9 +586,9 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
   }
 
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-4 sm:p-5 animate-fade-in">
       {/* Public Careers Portal Quick Bar at Top */}
-      <div className="mb-5 p-3.5 sm:p-4 rounded-xl border border-border bg-card/60 shadow-xs flex items-center justify-between flex-wrap gap-3">
+      <div className="mb-3.5 p-3 sm:p-3.5 rounded-xl border border-border bg-card/60 shadow-xs flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Globe className="w-4.5 h-4.5" />
@@ -636,7 +636,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       </div>
 
       {/* Toolbar: Filter Tabs on the left, Sync & Post buttons on the right */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-4">
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/60">
           <Button
@@ -729,7 +729,7 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
           </div>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {jobs
             .filter(j => {
               const isExp = j.expiresAt ? new Date(j.expiresAt) < new Date() : false;
@@ -910,7 +910,7 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
 
   return (
     <div className={cn(
-      "bg-card border rounded-xl p-5 hover:shadow-card-hover hover:border-primary/40 transition-all duration-200 group flex flex-col justify-between gap-3.5",
+      "bg-card border rounded-xl p-4 hover:shadow-card-hover hover:border-primary/40 transition-all duration-200 group flex flex-col justify-between gap-3",
       isActive ? "border-border shadow-2xs" : "border-border/60 opacity-90 bg-muted/20"
     )}>
       {/* 1. Top Header Row: Role Title, Status, Badges & Candidates CTA */}

@@ -36,6 +36,7 @@ import {
   FileText,
   Database,
   Plus,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -347,10 +348,10 @@ export default function Candidates() {
   };
 
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-4 sm:p-5 animate-fade-in">
       {/* Actions & Filters Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           {selectedJob 
             ? `${filteredCandidates.length} candidates matching "${selectedJob.title}"`
             : `${filteredCandidates.length} candidates across all positions`
@@ -358,21 +359,22 @@ export default function Candidates() {
         </p>
         <div className="flex items-center gap-2">
           {selectedJob && (
-            <Badge variant="secondary" className="px-3 py-1">
+            <Badge variant="secondary" className="px-2.5 py-0.5 text-xs">
               Filtering: {selectedJob.title}
             </Badge>
           )}
           <Button 
             variant="outline" 
             size="sm"
+            className="h-8 text-xs"
             onClick={handleExportCSV}
           >
-            <Download className="w-4 h-4 mr-1.5" />
+            <Download className="w-3.5 h-3.5 mr-1.5" />
             Export ({filteredCandidates.length})
           </Button>
           <Button 
             size="sm"
-            className="h-9 text-xs gap-1.5 shadow-sm"
+            className="h-8 text-xs gap-1.5 shadow-sm"
             onClick={() => setShowAddCandidateModal(true)}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -382,37 +384,37 @@ export default function Candidates() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-6 bg-muted/50 rounded-lg p-1 w-fit">
+      <div className="flex items-center gap-1.5 mb-4 bg-muted/50 rounded-lg p-1 w-fit">
         <button
           onClick={() => setActiveTab('all')}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
             activeTab === 'all'
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
           All Candidates
-          <Badge variant="secondary" className="ml-1 bg-background/50">
+          <Badge variant="secondary" className="ml-1 bg-background/50 text-[11px] px-1.5 py-0">
             {candidateCounts.all}
           </Badge>
         </button>
         <button
           onClick={() => setActiveTab('applied')}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
             activeTab === 'applied'
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <FileText className="w-4 h-4" />
+          <FileText className="w-3.5 h-3.5" />
           Applied
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="flex items-center cursor-help" onClick={(e) => e.stopPropagation()}>
-                  <Info className="w-3.5 h-3.5 opacity-50 hover:opacity-100" />
+                  <Info className="w-3 h-3 opacity-50 hover:opacity-100" />
                 </span>
               </TooltipTrigger>
               <TooltipContent className="max-w-[200px] text-center">
@@ -420,20 +422,20 @@ export default function Candidates() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <Badge variant="secondary" className="ml-1 bg-background/50">
+          <Badge variant="secondary" className="ml-1 bg-background/50 text-[11px] px-1.5 py-0">
             {candidateCounts.applied}
           </Badge>
         </button>
         <button
           onClick={() => setActiveTab('talent-pool')}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
             activeTab === 'talent-pool'
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <Database className="w-4 h-4" />
+          <Sparkles className="w-3.5 h-3.5" />
           Talent Pool
           <TooltipProvider>
             <Tooltip>
@@ -447,20 +449,20 @@ export default function Candidates() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <Badge variant="secondary" className="ml-1 bg-background/50">
+          <Badge variant="secondary" className="ml-1 bg-background/50 text-[11px] px-1.5 py-0">
             {candidateCounts.talentPool}
           </Badge>
         </button>
       </div>
 
       {/* Filters Bar */}
-      <Card className="p-4 mb-6">
-        <div className="flex items-center gap-4">
+      <Card className="p-3 mb-4">
+        <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               placeholder="Search by name, email, company..."
-              className="pl-10"
+              className="pl-9 h-8 text-xs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -468,8 +470,8 @@ export default function Candidates() {
           
           {/* Job Filter */}
           <Select value={filterJob} onValueChange={setFilterJob}>
-            <SelectTrigger className="w-[200px]">
-              <Briefcase className="w-4 h-4 mr-2" />
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <Briefcase className="w-3.5 h-3.5 mr-1.5" />
               <SelectValue placeholder="Filter by Job" />
             </SelectTrigger>
             <SelectContent>
@@ -480,9 +482,10 @@ export default function Candidates() {
             </SelectContent>
           </Select>
           
+          {/* AI Score Filter */}
           <Select value={filterScore} onValueChange={setFilterScore}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="w-4 h-4 mr-2" />
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
               <SelectValue placeholder="AI Score" />
             </SelectTrigger>
             <SelectContent>
@@ -495,7 +498,7 @@ export default function Candidates() {
 
           {/* Pipeline Stage Filter */}
           <Select value={filterStage} onValueChange={setFilterStage}>
-            <SelectTrigger className="w-[170px]">
+            <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder="Pipeline Stage" />
             </SelectTrigger>
             <SelectContent>
@@ -507,28 +510,23 @@ export default function Candidates() {
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button variant="outline" size="sm">
-            <SlidersHorizontal className="w-4 h-4" />
-            More Filters
-          </Button>
         </div>
       </Card>
 
       {/* Candidates Table */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xs">
         <table className="w-full">
           <thead className="bg-muted/50 border-b border-border">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Candidate</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Applied For</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Current Role</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Experience</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Location</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Pipeline Stage</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">AI Score</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Applied</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground"></th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Candidate</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Applied For</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Current Role</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Experience</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Location</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pipeline Stage</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Score</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Applied</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -541,55 +539,55 @@ export default function Candidates() {
                 )}
                 onClick={() => setSelectedCandidate(candidate)}
               >
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-primary">
+                <td className="px-3.5 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-primary">
                         {getInitials(candidate.name)}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{candidate.name}</p>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <p className="font-medium text-xs text-foreground">{candidate.name}</p>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Mail className="w-3 h-3" />
                         {candidate.email}
                       </p>
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm font-medium text-foreground">
+                <td className="px-3.5 py-2.5">
+                  <p className="text-xs font-medium text-foreground">
                     {candidate.jobId ? jobMap[candidate.jobId]?.title || 'Unknown Job' : 'Not specified'}
                   </p>
                   {candidate.jobId && jobMap[candidate.jobId] && (
-                    <p className="text-xs text-muted-foreground">{jobMap[candidate.jobId].department}</p>
+                    <p className="text-[11px] text-muted-foreground">{jobMap[candidate.jobId].department}</p>
                   )}
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   <div>
-                    <p className="text-sm text-foreground">{candidate.currentRole}</p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <p className="text-xs text-foreground">{candidate.currentRole}</p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                       <Briefcase className="w-3 h-3" />
                       {candidate.company}
                     </p>
                   </div>
                 </td>
-                <td className="px-4 py-4">
-                  <Badge variant="secondary">{candidate.experience} years</Badge>
+                <td className="px-3.5 py-2.5">
+                  <Badge variant="secondary" className="text-xs py-0 px-2">{candidate.experience} yrs</Badge>
                 </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <td className="px-3.5 py-2.5">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     {candidate.location}
                   </p>
                 </td>
-                <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                <td className="px-3.5 py-2.5" onClick={(e) => e.stopPropagation()}>
                   <Select 
                     value={candidate.pipelineStage || 'applied'} 
                     onValueChange={(val) => handleStageChange(candidate.id, val)}
                   >
                     <SelectTrigger className={cn(
-                      "h-7 text-xs font-semibold px-2 py-0 border rounded-md w-[130px]",
+                      "h-6.5 text-xs font-semibold px-2 py-0 border rounded-md w-[125px]",
                       candidate.pipelineStage === 'offered' && "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800",
                       candidate.pipelineStage === 'interviewing' && "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
                       candidate.pipelineStage === 'ai_screened' && "bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800",
@@ -607,12 +605,12 @@ export default function Candidates() {
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   {candidate.jobId && jobMap[candidate.jobId]?.hireSortEnabled && candidate.aiScore && candidate.aiScore !== 'pending' ? (
                     <div className="flex items-center gap-2">
                       {candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && (
                         <span className={cn(
-                          "text-sm font-bold tabular-nums",
+                          "text-xs font-bold tabular-nums",
                           candidate.cosineSimilarity >= 0.8 && "text-success",
                           candidate.cosineSimilarity >= 0.5 && candidate.cosineSimilarity < 0.8 && "text-warning",
                           candidate.cosineSimilarity < 0.5 && "text-muted-foreground"
@@ -623,25 +621,26 @@ export default function Candidates() {
                       <RelevanceLabel score={candidate.aiScore} />
                     </div>
                   ) : (
-                    <span className="text-sm text-muted-foreground">--</span>
+                    <span className="text-xs text-muted-foreground">--</span>
                   )}
                 </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <td className="px-3.5 py-2.5">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {candidate.appliedDate}
                   </p>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   <Button 
                     variant="ghost" 
                     size="sm"
+                    className="h-7 px-2 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleViewCandidate(candidate);
                     }}
                   >
-                    <Eye className="w-4 h-4 mr-1" />
+                    <Eye className="w-3.5 h-3.5 mr-1" />
                     View
                   </Button>
                 </td>

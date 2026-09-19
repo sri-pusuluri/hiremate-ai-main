@@ -44,32 +44,32 @@ export function TopBar({ title, subtitle }: TopBarProps) {
   const isPlatformMode = !client || client.id === 'hiresort-platform-hq';
 
   return (
-    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+    <header className="h-13 sm:h-14 border-b border-border bg-card px-4 sm:px-5 flex items-center justify-between gap-3 shrink-0">
+      <div className="min-w-0 flex-1 pr-2">
+        <h1 className="text-base sm:text-lg font-bold text-foreground truncate leading-tight">{title}</h1>
         {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
+          <p className="text-xs text-muted-foreground truncate hidden md:block mt-0.5">{subtitle}</p>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Active Tenant / Platform Context Indicator */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/40 text-xs text-foreground">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Active Tenant / Platform Context Indicator - No wrapping breaks */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-muted/40 text-xs text-foreground shrink-0 whitespace-nowrap select-none">
           {isPlatformMode ? (
             <>
-              <Globe className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              <span className="font-semibold text-purple-700 dark:text-purple-300">HireSort Platform HQ</span>
-              <span className="text-muted-foreground">(Global)</span>
+              <Globe className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+              <span className="font-semibold text-purple-700 dark:text-purple-300 whitespace-nowrap">HireSort Platform HQ</span>
+              <span className="text-muted-foreground text-[11px] whitespace-nowrap">(Global)</span>
             </>
           ) : (
             <>
-              <span className="font-semibold text-foreground">{client?.name || 'Zool'}</span>
-              <span className="text-muted-foreground text-[11px]">({client?.slug || 'zool'})</span>
+              <span className="font-semibold text-foreground whitespace-nowrap">{client?.name || 'Zool'}</span>
+              <span className="text-muted-foreground text-[11px] whitespace-nowrap">({client?.slug || 'zool'})</span>
             </>
           )}
         </div>
 
-        {/* Database Connection / Mock Mode Indicator */}
+        {/* Database Connection / Mock Mode Indicator - No wrapping breaks */}
         {isMockMode() ? (
           <button
             type="button"
@@ -77,29 +77,29 @@ export function TopBar({ title, subtitle }: TopBarProps) {
               disableMockMode();
               window.location.reload();
             }}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[11px] font-semibold hover:bg-amber-500/20 transition-colors cursor-pointer shadow-2xs"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[11px] font-semibold hover:bg-amber-500/20 transition-colors cursor-pointer shadow-2xs shrink-0 whitespace-nowrap"
             title="Local offline mock mode is active. Click to switch to live Supabase Cloud database."
           >
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span>Mock Mode (Click for Live DB)</span>
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+            <span className="whitespace-nowrap">Mock Mode (Click for Live DB)</span>
           </button>
         ) : (
           <div 
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium shrink-0 whitespace-nowrap select-none"
             title="Connected to live Supabase Cloud database"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Live DB</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="whitespace-nowrap font-medium">Live DB</span>
           </div>
         )}
 
         {/* Search */}
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="relative hidden xl:block shrink-0">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search candidates, jobs..."
-            className="h-9 w-60 pl-9 pr-4 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-8 w-44 lg:w-52 pl-8 pr-3 rounded-lg border border-input bg-background text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
 
@@ -108,11 +108,11 @@ export function TopBar({ title, subtitle }: TopBarProps) {
           variant="outline" 
           size="sm" 
           onClick={() => navigate('/workflow')}
-          className="h-8 px-2.5 text-xs gap-1.5 border-purple-500/30 bg-purple-500/5 text-purple-700 dark:text-purple-300 hover:bg-purple-500/10 cursor-pointer"
+          className="h-7.5 px-2 text-xs gap-1 border-purple-500/30 bg-purple-500/5 text-purple-700 dark:text-purple-300 hover:bg-purple-500/10 cursor-pointer shrink-0 whitespace-nowrap"
           title="System Workflow & Blueprint"
         >
-          <Compass className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-          <span className="hidden sm:inline">Workflow</span>
+          <Compass className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+          <span className="hidden md:inline">Workflow</span>
         </Button>
 
         {/* Quick Help & Docs Drawer */}
@@ -120,16 +120,16 @@ export function TopBar({ title, subtitle }: TopBarProps) {
           variant="outline" 
           size="sm" 
           onClick={() => setShowHelpDrawer(true)}
-          className="h-8 px-2.5 text-xs gap-1.5 border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300 hover:bg-blue-500/10 cursor-pointer"
+          className="h-7.5 px-2 text-xs gap-1 border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300 hover:bg-blue-500/10 cursor-pointer shrink-0 whitespace-nowrap"
           title="Open Help & Knowledge Base"
         >
-          <LifeBuoy className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-          <span className="hidden sm:inline">Help & Docs</span>
+          <LifeBuoy className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+          <span className="hidden md:inline">Help & Docs</span>
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon-sm" title="Notifications">
-          <Bell className="w-5 h-5" />
+        <Button variant="ghost" size="icon-sm" className="h-7.5 w-7.5 shrink-0" title="Notifications">
+          <Bell className="w-4 h-4" />
         </Button>
       </div>
 

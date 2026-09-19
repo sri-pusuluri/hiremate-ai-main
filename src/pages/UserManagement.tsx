@@ -768,10 +768,10 @@ export default function UserManagement() {
   }
 
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-4 sm:p-5 animate-fade-in">
       {/* Actions Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           {filteredUsers.length} team {filteredUsers.length === 1 ? 'member' : 'members'} with workspace access
         </p>
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
@@ -949,18 +949,18 @@ export default function UserManagement() {
 
       {/* Stats */}
       <div className={cn(
-        "grid gap-4 mb-6",
+        "grid gap-3 mb-4",
         pendingUsers.length > 0 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-3"
       )}>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-primary" />
+          <CardContent className="p-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="w-4.5 h-4.5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{users.length}</p>
-                <p className="text-sm text-muted-foreground">Total Accounts</p>
+                <p className="text-xl font-bold">{users.length}</p>
+                <p className="text-xs text-muted-foreground">Total Accounts</p>
               </div>
             </div>
           </CardContent>
@@ -969,14 +969,14 @@ export default function UserManagement() {
           className={isSuperAdmin ? "cursor-pointer hover:border-purple-300 transition-colors" : ""} 
           onClick={() => isSuperAdmin && setMemberTypeTab('platform')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-purple-600" />
+          <CardContent className="p-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                <Shield className="w-4.5 h-4.5 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{platformUsers.length}</p>
-                <p className="text-sm text-muted-foreground">Platform HQ Team</p>
+                <p className="text-xl font-bold">{platformUsers.length}</p>
+                <p className="text-xs text-muted-foreground">Platform HQ Team</p>
               </div>
             </div>
           </CardContent>
@@ -985,16 +985,16 @@ export default function UserManagement() {
           className={isSuperAdmin ? "cursor-pointer hover:border-blue-300 transition-colors" : ""} 
           onClick={() => isSuperAdmin && handleTabChange('clients')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-blue-600" />
+          <CardContent className="p-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                <Building2 className="w-4.5 h-4.5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold">
                   {isViewingSpecificTenant ? users.filter(u => u.clientId === activeClient?.id).length : clientUsers.length}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {isViewingSpecificTenant ? `${activeClient?.name} Members` : 'Client Workspace Members'}
                 </p>
                 {isViewingSpecificTenant && (
@@ -1130,30 +1130,30 @@ export default function UserManagement() {
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {filteredUsers.map((u) => (
                 <div 
                   key={u.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <span className="text-lg font-bold text-primary">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-primary">
                         {getInitials(u.full_name)}
                       </span>
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-foreground">{u.full_name || 'Unknown'}</p>
+                        <p className="font-medium text-xs sm:text-sm text-foreground">{u.full_name || 'Unknown'}</p>
                         {u.id === user?.id && (
-                          <Badge variant="secondary" className="text-xs">You</Badge>
+                          <Badge variant="secondary" className="text-[10px] py-0 px-1.5">You</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Mail className="w-3 h-3" />
                         {u.email}
                       </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                         <Calendar className="w-3 h-3" />
                         Joined {new Date(u.created_at).toLocaleDateString()}
                       </p>

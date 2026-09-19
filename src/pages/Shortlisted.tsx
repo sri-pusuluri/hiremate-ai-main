@@ -321,22 +321,22 @@ export default function Shortlisted() {
   };
 
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-4 sm:p-5 animate-fade-in">
       {/* Unified Toolbar: Search & Job Filter on Left, Count & Actions on Right */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3 flex-1 w-full sm:w-auto max-w-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-4">
+        <div className="flex items-center gap-2.5 flex-1 w-full sm:w-auto max-w-xl">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               placeholder="Search shortlisted candidates..."
-              className="pl-9 h-9 text-xs"
+              className="pl-9 h-8 text-xs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
           <Select value={filterJob} onValueChange={setFilterJob}>
-            <SelectTrigger className="w-[180px] sm:w-[200px] h-9 text-xs">
+            <SelectTrigger className="w-[180px] sm:w-[200px] h-8 text-xs">
               <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
               <SelectValue placeholder="Filter by Job" />
             </SelectTrigger>
@@ -349,14 +349,14 @@ export default function Shortlisted() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           <p className="text-xs text-muted-foreground hidden md:block mr-1">
             {filteredCandidates.length} {filteredCandidates.length === 1 ? 'candidate' : 'candidates'} ready
           </p>
           <Button 
             variant="outline" 
             size="sm" 
-            className="h-9 text-xs gap-1.5"
+            className="h-8 text-xs gap-1.5"
             onClick={handleExportCSV}
           >
             <Download className="w-3.5 h-3.5" />
@@ -364,7 +364,7 @@ export default function Shortlisted() {
           </Button>
           <Button 
             size="sm" 
-            className="h-9 text-xs gap-1.5 shadow-sm"
+            className="h-8 text-xs gap-1.5 shadow-sm"
             onClick={handleShareWithHiringManager}
           >
             <Send className="w-3.5 h-3.5" />
@@ -374,61 +374,61 @@ export default function Shortlisted() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card className="p-4">
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <Card className="p-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-ai-surface flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-ai-surface flex items-center justify-center shrink-0">
               <AIBadge size="sm" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-xl font-bold text-foreground">
                 {candidates.filter(c => c.aiScore === 'high').length}
               </p>
-              <p className="text-sm text-muted-foreground">AI Suggested</p>
+              <p className="text-xs text-muted-foreground">AI Suggested</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Star className="w-5 h-5 text-primary" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Star className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-xl font-bold text-foreground">
                 {candidates.filter(c => c.isPinned).length}
               </p>
-              <p className="text-sm text-muted-foreground">Recruiter Picks</p>
+              <p className="text-xs text-muted-foreground">Recruiter Picks</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-success" />
+            <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+              <Briefcase className="w-4 h-4 text-success" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-xl font-bold text-foreground">
                 {jobs.filter(j => j.hireSortEnabled).length}
               </p>
-              <p className="text-sm text-muted-foreground">Active Jobs</p>
+              <p className="text-xs text-muted-foreground">Active Jobs</p>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Candidates Table */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xs">
         <table className="w-full">
           <thead className="bg-muted/50 border-b border-border">
              <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground w-16">Rank</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Candidate</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Applied For</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Current Role</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Match</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Source</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Added</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground"></th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-14">Rank</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Candidate</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Applied For</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Current Role</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Match</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Source</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Added</th>
+              <th className="text-left px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -441,46 +441,46 @@ export default function Shortlisted() {
                 )}
                 onClick={() => handleViewCandidate(candidate)}
               >
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   <RankBadge rank={startIndex + index + 1} score={candidate.aiScore || 'low'} />
                 </td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-primary">
+                <td className="px-3.5 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-primary">
                         {getInitials(candidate.name)}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{candidate.name}</p>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <p className="font-medium text-xs text-foreground">{candidate.name}</p>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Mail className="w-3 h-3" />
                         {candidate.email}
                       </p>
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm font-medium text-foreground">
+                <td className="px-3.5 py-2.5">
+                  <p className="text-xs font-medium text-foreground">
                     {candidate.jobId ? jobMap[candidate.jobId]?.title || 'Unknown Job' : 'Not specified'}
                   </p>
                   {candidate.jobId && jobMap[candidate.jobId] && (
-                    <p className="text-xs text-muted-foreground">{jobMap[candidate.jobId].department}</p>
+                    <p className="text-[11px] text-muted-foreground">{jobMap[candidate.jobId].department}</p>
                   )}
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   <div>
-                    <p className="text-sm text-foreground">{candidate.currentRole}</p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <p className="text-xs text-foreground">{candidate.currentRole}</p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                       <Briefcase className="w-3 h-3" />
                       {candidate.company}
                     </p>
                   </div>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   <div className="flex items-center gap-2">
                     <span className={cn(
-                      "text-sm font-bold tabular-nums",
+                      "text-xs font-bold tabular-nums",
                       candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.8 && "text-success",
                       candidate.cosineSimilarity !== null && candidate.cosineSimilarity !== undefined && candidate.cosineSimilarity >= 0.5 && candidate.cosineSimilarity < 0.8 && "text-warning",
                       (candidate.cosineSimilarity === null || candidate.cosineSimilarity === undefined || candidate.cosineSimilarity < 0.5) && "text-muted-foreground"
@@ -492,37 +492,38 @@ export default function Shortlisted() {
                     <RelevanceLabel score={candidate.aiScore || 'low'} />
                   </div>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   {candidate.aiScore === 'high' ? (
                     <Badge 
                       variant="secondary"
-                      className="bg-primary/10 text-primary border-0 gap-1"
+                      className="bg-primary/10 text-primary border-0 gap-1 text-[11px] py-0 px-1.5"
                     >
                       <Sparkles className="w-3 h-3" />
                       AI
                     </Badge>
                   ) : (
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-[11px] py-0 px-1.5">
                       Recruiter Pick
                     </Badge>
                   )}
                 </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <td className="px-3.5 py-2.5">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {candidate.appliedDate}
                   </p>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3.5 py-2.5">
                   <Button 
                     variant="ghost" 
                     size="sm"
+                    className="h-7 px-2 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleViewCandidate(candidate);
                     }}
                   >
-                    <Eye className="w-4 h-4 mr-1" />
+                    <Eye className="w-3.5 h-3.5 mr-1" />
                     View
                   </Button>
                 </td>

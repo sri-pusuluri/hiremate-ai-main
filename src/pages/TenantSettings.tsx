@@ -596,9 +596,9 @@ export default function TenantSettings() {
   const webhookUrl = `${getAppBaseUrl()}/api/v1/webhooks/ats/${slug}`;
 
   return (
-    <div className="p-6 space-y-5 max-w-6xl animate-fade-in">
+    <div className="p-4 sm:p-5 space-y-4 max-w-6xl animate-fade-in">
       {/* Public Careers Portal Quick Bar at Top */}
-      <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-card/60 shadow-xs flex items-center justify-between flex-wrap gap-3">
+      <div className="p-3 sm:p-3.5 rounded-xl border border-border bg-card/60 shadow-xs flex items-center justify-between flex-wrap gap-2.5">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Globe className="w-4.5 h-4.5" />
@@ -646,7 +646,7 @@ export default function TenantSettings() {
       </div>
 
       {/* Workspace Actions Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Workspace Settings & Enterprise Config
@@ -686,7 +686,7 @@ export default function TenantSettings() {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-muted p-1 rounded-lg flex flex-wrap h-auto gap-1">
           <TabsTrigger value="api" onClick={() => handleTabChange('api')} className="gap-1.5 text-xs">
             <Key className="w-3.5 h-3.5 text-amber-500" />

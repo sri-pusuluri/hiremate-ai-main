@@ -300,10 +300,10 @@ export default function ClientManagement() {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in max-w-7xl">
+    <div className="p-4 sm:p-5 space-y-4 animate-fade-in max-w-7xl">
       {/* Top Actions */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           {clients.length} registered client tenants with isolated workspace partitions and custom branding
         </p>
 
@@ -318,57 +318,58 @@ export default function ClientManagement() {
             });
             setIsCreateOpen(true);
           }}
-          className="gap-2 shadow-sm"
+          size="sm"
+          className="gap-1.5 shadow-sm h-8 text-xs"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           Add New Tenant
         </Button>
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Tenants</CardTitle>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="border-border shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-1.5 space-y-0 p-3.5">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Total Tenants</CardTitle>
             <Building2 className="w-4 h-4 text-primary" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{clients.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Isolated workspace partitions</p>
+          <CardContent className="p-3.5 pt-0">
+            <div className="text-xl font-bold">{clients.length}</div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Isolated workspace partitions</p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Subscriptions</CardTitle>
+        <Card className="border-border shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-1.5 space-y-0 p-3.5">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Active Subscriptions</CardTitle>
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-3.5 pt-0">
+            <div className="text-xl font-bold">
               {clients.filter(c => c.subscriptionTier === 'pro' || c.subscriptionTier === 'enterprise').length}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Pro & Enterprise plans</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Pro & Enterprise plans</p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Careers Portals</CardTitle>
+        <Card className="border-border shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-1.5 space-y-0 p-3.5">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Careers Portals</CardTitle>
             <ExternalLink className="w-4 h-4 text-blue-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{clients.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Public branded landing pages</p>
+          <CardContent className="p-3.5 pt-0">
+            <div className="text-xl font-bold">{clients.length}</div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Public branded landing pages</p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-sm bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-primary">Current Active Workspace</CardTitle>
+        <Card className="border-border shadow-xs bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <CardHeader className="flex flex-row items-center justify-between pb-1.5 space-y-0 p-3.5">
+            <CardTitle className="text-xs font-medium text-primary">Current Active Workspace</CardTitle>
             <Sparkles className="w-4 h-4 text-primary" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-foreground flex items-center gap-2">
+          <CardContent className="p-3.5 pt-0">
+            <div className="text-lg font-bold text-foreground flex items-center gap-2">
               {activeClient?.slug === 'zool' || activeClient?.name?.toLowerCase() === 'zool' ? (
                 <TenantBrandLogo client={activeClient} variant="full" size="sm" showBorder={false} />
               ) : (
@@ -378,7 +379,7 @@ export default function ClientManagement() {
                 </>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               Slug: /{activeClient?.slug || 'zool'}
             </p>
           </CardContent>
@@ -386,29 +387,29 @@ export default function ClientManagement() {
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input 
             placeholder="Search clients by name or slug..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-8 text-xs"
           />
         </div>
       </div>
 
       {/* Client Tenant Table / List */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden shadow-sm">
+      <div className="border border-border rounded-xl bg-card overflow-hidden shadow-2xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-xs text-left">
             <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
               <tr>
-                <th className="px-6 py-4">Client Tenant</th>
-                <th className="px-6 py-4">Careers Portal URL</th>
-                <th className="px-6 py-4">Plan / Tier</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-3.5 py-2.5">Client Tenant</th>
+                <th className="px-3.5 py-2.5">Careers Portal URL</th>
+                <th className="px-3.5 py-2.5">Plan / Tier</th>
+                <th className="px-3.5 py-2.5">Status</th>
+                <th className="px-3.5 py-2.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -418,9 +419,9 @@ export default function ClientManagement() {
 
                 return (
                   <tr key={client.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <TenantBrandLogo client={client} size="md" />
+                    <td className="px-3.5 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <TenantBrandLogo client={client} size="sm" />
                         <div>
                           <div className="font-semibold text-foreground flex items-center gap-2">
                             {client.name}
@@ -430,45 +431,45 @@ export default function ClientManagement() {
                               </Badge>
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground">ID: {client.id.substring(0, 8)}...</div>
+                          <div className="text-[11px] text-muted-foreground">ID: {client.id.substring(0, 8)}...</div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-3.5 py-2.5">
                       <a 
                         href={`/careers/${client.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-mono bg-primary/5 px-2.5 py-1 rounded-md border border-primary/15"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-mono bg-primary/5 px-2 py-0.5 rounded-md border border-primary/15"
                       >
                         /careers/{client.slug}
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-3.5 py-2.5">
                       {getTierBadge(client.subscriptionTier)}
                     </td>
 
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                    <td className="px-3.5 py-2.5">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-full">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         Live & Ready
                       </span>
                     </td>
 
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-3.5 py-2.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         {/* Embed Widget Button */}
                         <Button 
                           variant="ghost" 
                           size="sm"
                           onClick={() => setEmbedModalClient(client)}
                           title="Generate website embed snippet"
-                          className="text-muted-foreground hover:text-foreground"
+                          className="text-muted-foreground hover:text-foreground h-7 px-2 text-xs"
                         >
-                          <Code2 className="w-4 h-4 mr-1" />
+                          <Code2 className="w-3.5 h-3.5 mr-1" />
                           Embed
                         </Button>
 
@@ -476,6 +477,7 @@ export default function ClientManagement() {
                         <Button 
                           variant="outline" 
                           size="sm"
+                          className="h-7 px-2 text-xs"
                           onClick={() => openEditModal(client)}
                         >
                           <Edit className="w-3.5 h-3.5 mr-1" />
@@ -487,6 +489,7 @@ export default function ClientManagement() {
                           <Button 
                             variant="default" 
                             size="sm"
+                            className="h-7 px-2 text-xs"
                             onClick={() => {
                               setClient(client);
                               toast({
