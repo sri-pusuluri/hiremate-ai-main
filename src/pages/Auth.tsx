@@ -248,24 +248,24 @@ export default function Auth() {
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-lg drop-shadow-sm font-normal">
-              High-velocity multi-tenant candidate screening, AI resume synthesis, and deep talent ranking with aerodynamic precision.
+              Autonomous multi-tenant candidate screening, AI resume synthesis, and deep talent ranking with enterprise precision.
             </p>
 
             <div className="grid grid-cols-3 gap-3 pt-2">
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm">
                 <div className="text-[11px] text-slate-300 font-medium">Screening Speed</div>
-                <div className="text-lg font-extrabold text-white mt-0.5">389 km/h</div>
-                <div className="text-[10px] text-slate-300">Peak Velocity</div>
+                <div className="text-lg font-extrabold text-white mt-0.5">&lt; 2.0s</div>
+                <div className="text-[10px] text-slate-300">Avg. Per Candidate</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm">
-                <div className="text-[11px] text-slate-300 font-medium">Signal Match</div>
-                <div className="text-lg font-extrabold text-white mt-0.5">99.4%</div>
-                <div className="text-[10px] text-slate-300">High-Relevance ATS</div>
+                <div className="text-[11px] text-slate-300 font-medium">Match Accuracy</div>
+                <div className="text-lg font-extrabold text-white mt-0.5">95.4%</div>
+                <div className="text-[10px] text-slate-300">Semantic Skill Fit</div>
               </div>
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm">
-                <div className="text-[11px] text-slate-300 font-medium">Tenant Silos</div>
-                <div className="text-lg font-extrabold text-white mt-0.5">Zero Leak</div>
-                <div className="text-[10px] text-slate-300">Data Isolation</div>
+                <div className="text-[11px] text-slate-300 font-medium">Data Privacy</div>
+                <div className="text-lg font-extrabold text-white mt-0.5">100%</div>
+                <div className="text-[10px] text-slate-300">Tenant Isolation</div>
               </div>
             </div>
           </div>
