@@ -202,15 +202,15 @@ export function AIMatchAnalysis({
   }
 
   return (
-    <div className="bg-ai-surface border border-ai-border rounded-xl p-5 space-y-5">
+    <div className="bg-ai-surface border border-ai-border rounded-xl p-3.5 space-y-3.5">
       {/* Header with Dual Engine Scores */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <AIBadge />
-            <h3 className="font-semibold text-foreground">Dual-Engine Match Analysis</h3>
+            <h3 className="font-semibold text-foreground text-sm">Dual-Engine Match Analysis</h3>
           </div>
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[11px] font-medium">
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-medium">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <span>Anti-Bias & Guardrails: Active</span>
             <ScoreInfoButton
@@ -220,8 +220,8 @@ export function AIMatchAnalysis({
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card border border-border rounded-lg p-3 flex flex-col justify-center items-center">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="bg-card border border-border rounded-lg p-2 flex flex-col justify-center items-center">
             <div className="flex items-center gap-1 justify-center mb-1">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Semantic Math Score
@@ -240,7 +240,7 @@ export function AIMatchAnalysis({
             <span className="text-[10px] text-muted-foreground mt-1">Strict Vector Distance</span>
           </div>
           
-          <div className="bg-card border border-border rounded-lg p-3 flex flex-col justify-center items-center">
+          <div className="bg-card border border-border rounded-lg p-2 flex flex-col justify-center items-center">
             <div className="flex items-center gap-1 justify-center mb-1">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 LLM Fit Score

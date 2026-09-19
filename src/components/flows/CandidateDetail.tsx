@@ -569,9 +569,9 @@ export function CandidateDetail({
   return (
     <>
       <div className="fixed inset-y-0 right-0 w-full max-w-xl sm:max-w-2xl bg-card border-l border-border shadow-dropdown z-40 flex flex-col animate-slide-in-right">
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-border">
-          <div className="flex items-start gap-4">
+        {/* Header - Compact */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Avatar */}
             {(() => {
               const avatarStyles = [
@@ -586,50 +586,49 @@ export function CandidateDetail({
               return (
                 <div 
                   className={cn(
-                    "w-14 h-14 rounded-full border flex items-center justify-center shrink-0 shadow-2xs cursor-pointer transition-all hover:scale-105 active:scale-95 select-none",
+                    "w-10 h-10 rounded-full border flex items-center justify-center shrink-0 shadow-2xs cursor-pointer transition-all hover:scale-105 active:scale-95 select-none",
                     currentStyle
                   )}
                   title="Click to toggle profile icon color"
                   onClick={() => setAvatarColorIndex(prev => prev + 1)}
                 >
-                  <span className="text-xl font-bold tracking-tight">
+                  <span className="text-sm font-bold tracking-tight">
                     {getInitials(candidate.name)}
                   </span>
                 </div>
               );
             })()}
 
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-xl font-semibold text-foreground">{candidate.name}</h2>
-                {effectiveAIEnabled && <RankBadge rank={candidate.aiRank || 0} score={candidate.aiScore || 'low'} />}
-              </div>
-              <p className="text-muted-foreground">
-                {(candidate.currentRole && candidate.currentRole !== 'Unspecified') ? candidate.currentRole : ((candidate as any).role_title || 'Software Engineer')} at {(candidate.company && candidate.company !== 'Unknown') ? candidate.company : 'Independent'}
-              </p>
-              <div className="flex items-center gap-2 mt-2">
-                {effectiveAIEnabled && <RelevanceLabel score={candidate.aiScore || 'low'} />}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base sm:text-lg font-bold text-foreground leading-tight truncate">{candidate.name}</h2>
+                {effectiveAIEnabled && <RankBadge rank={candidate.aiRank || 0} score={candidate.aiScore || 'low'} className="w-5 h-5 text-xs" />}
+                {effectiveAIEnabled && <RelevanceLabel score={candidate.aiScore || 'low'} className="text-[11px] py-0.5 px-2" />}
                 {candidate.isPinned && <OverrideIndicator type="pinned" />}
                 {candidate.isBoosted && <OverrideIndicator type="boosted" />}
               </div>
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                {(candidate.currentRole && candidate.currentRole !== 'Unspecified') ? candidate.currentRole : ((candidate as any).role_title || 'Software Engineer')} at {(candidate.company && candidate.company !== 'Unknown') ? candidate.company : 'Independent'}
+              </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-accent transition-colors"
+            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2"
+            title="Close drawer"
           >
-            <X className="w-5 h-5 text-muted-foreground" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Quick Info */}
-          <div className="grid grid-cols-2 gap-4 mb-5">
+        <div className="flex-1 overflow-y-auto px-5 py-3.5">
+          {/* Quick Info - Compact 4-column strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3.5 p-2 rounded-lg bg-muted/40 border border-border/60">
             <InfoItem icon={Briefcase} label="Experience" value={`${candidate.experience} years`} />
-            <InfoItem icon={MapPin} label="Location" value={candidate.location} />
-            <InfoItem icon={Calendar} label="Applied" value={candidate.appliedDate} />
+            <InfoItem icon={MapPin} label="Location" value={candidate.location || 'Remote'} />
+            <InfoItem icon={Calendar} label="Applied" value={candidate.appliedDate || 'Recent'} />
             <InfoItem icon={Mail} label="Email" value={candidate.email} />
           </div>
 
@@ -639,7 +638,7 @@ export function CandidateDetail({
             const history = (parsed?.experience && parsed.experience.length > 0) ? parsed.experience : null;
 
             return (
-              <div className="bg-card border border-border rounded-xl p-4 mb-5 shadow-2xs">
+              <div className="bg-card border border-border rounded-xl p-3.5 mb-3.5 shadow-2xs">
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/60">
                   <div className="flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-primary" />
@@ -694,15 +693,15 @@ export function CandidateDetail({
           {/* View Resume Button */}
           <Button
             variant="outline"
-            className="w-full mb-6"
+            className="w-full mb-3.5 h-8.5 text-xs"
             onClick={() => setShowResumeModal(true)}
           >
-            <FileText className="w-4 h-4 mr-2" />
+            <FileText className="w-3.5 h-3.5 mr-2" />
             View Full Resume & Parsing Breakdown
           </Button>
 
           {/* LinkedIn Profile Sync Card */}
-          <div className="bg-ai-surface border border-ai-border rounded-xl p-4 mb-6 space-y-3">
+          <div className="bg-ai-surface border border-ai-border rounded-xl p-3.5 mb-3.5 space-y-2.5">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Linkedin className="w-5 h-5 text-[#0077B5]" />
               LinkedIn Profile Sync (Scraper Integration)
@@ -1069,13 +1068,13 @@ interface InfoItemProps {
 
 function InfoItem({ icon: Icon, label, value }: InfoItemProps) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-        <Icon className="w-4 h-4 text-muted-foreground" />
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="w-6 h-6 rounded-md bg-background border border-border/60 flex items-center justify-center shrink-0">
+        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
       </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm text-foreground">{value}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none font-medium">{label}</p>
+        <p className="text-xs font-semibold text-foreground truncate mt-0.5" title={value}>{value}</p>
       </div>
     </div>
   );
