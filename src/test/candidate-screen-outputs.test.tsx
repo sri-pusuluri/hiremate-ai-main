@@ -69,15 +69,15 @@ describe('Candidate Screen Output Captures', () => {
 
     // Matched skills count & items
     expect(screen.getByText(/Skills Found in Resume \(7\)/i)).toBeDefined();
-    expect(screen.getByText(/✓ WordPress Core/i)).toBeDefined();
-    expect(screen.getByText(/✓ Custom Themes/i)).toBeDefined();
-    expect(screen.getByText(/✓ Gutenberg Blocks/i)).toBeDefined();
+    expect(screen.getAllByText(/✓ WordPress Core/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/✓ Custom Themes/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/✓ Gutenberg Blocks/i).length).toBeGreaterThanOrEqual(1);
 
     // Missing skills count & items
     expect(screen.getByText(/Not Found in Resume \(3\)/i)).toBeDefined();
-    expect(screen.getByText('Vue.js')).toBeDefined();
-    expect(screen.getByText('Redis')).toBeDefined();
-    expect(screen.getByText('AWS')).toBeDefined();
+    expect(screen.getAllByText(/Vue\.js/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Redis/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/AWS/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it('captures all 5 screening coverage dimensions and interview exploration probes', () => {
@@ -101,7 +101,7 @@ describe('Candidate Screen Output Captures', () => {
 
     // Dimension 4: Predictive Retention
     expect(screen.getByText(/4\. Predictive Retention/i)).toBeDefined();
-    expect(screen.getByText(/LOW Risk/i)).toBeDefined();
+    expect(screen.getAllByText(/LOW Risk/i).length).toBeGreaterThanOrEqual(1);
 
     // Dimension 5: Suggested Interview Probe Questions
     expect(screen.getByText(/Suggested Interview Probe Questions/i)).toBeDefined();

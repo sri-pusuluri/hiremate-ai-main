@@ -65,11 +65,14 @@ describe('AIMatchAnalysis Dual-Engine Two-Tab Layout', () => {
     render(<AIMatchAnalysis candidate={testCandidate} job={testJob} />);
 
     // Tab 1 trigger
-    expect(screen.getByText(/1\. Semantic Math \(Vectors\)/i)).toBeDefined();
+    expect(screen.getByText(/1\. Semantic Math/i)).toBeDefined();
     expect(screen.getAllByText('88%').length).toBeGreaterThanOrEqual(2);
 
     // Tab 2 trigger
-    expect(screen.getByText(/2\. LLM Recruiter \(Cognitive\)/i)).toBeDefined();
+    expect(screen.getByText(/2\. LLM Recruiter/i)).toBeDefined();
+
+    // Tab 3 trigger
+    expect(screen.getByText(/3\. Comparison/i)).toBeDefined();
   });
 
   it('contains vector metrics and skills inside Semantic Math tab', () => {
@@ -82,10 +85,10 @@ describe('AIMatchAnalysis Dual-Engine Two-Tab Layout', () => {
     // Skills & experience
     expect(screen.getByText('Skills Match')).toBeDefined();
     expect(screen.getByText('Skills Found in Resume (4)')).toBeDefined();
-    expect(screen.getByText('✓ React')).toBeDefined();
-    expect(screen.getByText('✓ TypeScript')).toBeDefined();
+    expect(screen.getAllByText(/React/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/TypeScript/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Not Found in Resume (2)')).toBeDefined();
-    expect(screen.getByText('GraphQL')).toBeDefined();
+    expect(screen.getAllByText(/GraphQL/i).length).toBeGreaterThanOrEqual(1);
 
     // Multi-dimensional screening coverage
     expect(screen.getByText(/Full Screening Coverage Dimensions/i)).toBeDefined();
@@ -118,5 +121,29 @@ describe('AIMatchAnalysis Dual-Engine Two-Tab Layout', () => {
     // Click Re-screen
     fireEvent.click(rescreenBtn);
     expect(handleReanalyze).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders side-by-side comparative diff with green matches and red gaps in Comparison tab', () => {
+    render(<AIMatchAnalysis candidate={testCandidate} job={testJob} />);
+
+    // Header & consensus badge
+    expect(screen.getByText('Dual-Engine Comparative Diff')).toBeDefined();
+    expect(screen.getAllByText(/Consensus/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Green = Agreement/i)).toBeDefined();
+    expect(screen.getByText(/Red = Discrepancy/i)).toBeDefined();
+
+    // Left vs Right Panel Titles
+    expect(screen.getAllByText(/Left: Semantic Math \(Vectors\)/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Right: LLM Recruiter \(Cognitive\)/i).length).toBeGreaterThanOrEqual(1);
+
+    // Dimensions
+    expect(screen.getByText(/1\. Score & Fit Verdict/i)).toBeDefined();
+    expect(screen.getByText(/Harmonized Agreement/i)).toBeDefined();
+    expect(screen.getByText(/2\. Skill Extraction & Alias Matrix/i)).toBeDefined();
+    expect(screen.getByText(/3\. Experience & Seniority Calibration/i)).toBeDefined();
+    expect(screen.getByText(/4\. Retention & Behavioral Stability/i)).toBeDefined();
+
+    // Actionable Recruiter Guidance
+    expect(screen.getByText(/🎯 Recruiter Action Plan: Resolving Engine Discrepancies/i)).toBeDefined();
   });
 });

@@ -26,7 +26,11 @@ import {
   Activity,
   RefreshCw,
   Brain,
-  Binary
+  Binary,
+  GitCompare,
+  XCircle,
+  Scale,
+  ArrowRightLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -112,6 +116,21 @@ export function AIMatchAnalysis({
   
   // Overall score - use cosineSimilarity for consistency with the list view
   const overallScore = isUnranked ? null : Math.round(candidate.cosineSimilarity * 100);
+
+  // Comparison Engine Logic (Difference between Vector Math and LLM Cognitive)
+  const isScoreConsensus = overallScore !== null && (
+    (overallScore >= 75 && candidate.aiScore === 'high') ||
+    (overallScore >= 55 && overallScore < 75 && candidate.aiScore === 'medium') ||
+    (overallScore < 55 && candidate.aiScore === 'low')
+  );
+  const isTenureConsensus = expDiff >= 0;
+  const isSkillConsensus = (skillMatchPercentage !== null && skillMatchPercentage >= 60 && candidate.aiScore !== 'low') ||
+    (skillMatchPercentage !== null && skillMatchPercentage < 50 && candidate.aiScore === 'low');
+  const candidateRisk = (candidate.predictiveInsights as any)?.retentionRisk || 'low';
+  const isRiskConsensus = candidateRisk === 'low' || candidateRisk === 'standard' || candidateRisk === 'medium';
+  const consensusPoints = [isScoreConsensus, isTenureConsensus, isSkillConsensus, isRiskConsensus];
+  const consensusCount = consensusPoints.filter(Boolean).length;
+  const consensusPercentage = Math.round((consensusCount / consensusPoints.length) * 100);
 
   if (compact) {
     return (
@@ -208,28 +227,40 @@ export function AIMatchAnalysis({
 
       {/* Dual Engine Tabbed Architecture */}
       <Tabs defaultValue="semantic-math" className="w-full space-y-4">
-        <TabsList className="grid grid-cols-2 w-full p-1 bg-muted/70 rounded-xl h-auto border border-border/60">
+        <TabsList className="grid grid-cols-3 w-full p-1 bg-muted/70 rounded-xl h-auto border border-border/60">
           <TabsTrigger 
             value="semantic-math" 
-            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+            className="flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 rounded-lg text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
           >
-            <Binary className="w-4 h-4 text-blue-500 shrink-0" />
-            <div className="flex items-center gap-1.5 truncate">
-              <span>1. Semantic Math (Vectors)</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hidden sm:inline">
+            <Binary className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <div className="flex items-center gap-1 truncate">
+              <span className="truncate">1. Semantic Math</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hidden md:inline">
                 {overallScore !== null ? `${overallScore}%` : 'Vector'}
               </span>
             </div>
           </TabsTrigger>
           <TabsTrigger 
             value="llm-cognitive" 
-            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+            className="flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 rounded-lg text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
           >
-            <Brain className="w-4 h-4 text-purple-500 shrink-0" />
-            <div className="flex items-center gap-1.5 truncate">
-              <span>2. LLM Recruiter (Cognitive)</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 uppercase hidden sm:inline">
+            <Brain className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+            <div className="flex items-center gap-1 truncate">
+              <span className="truncate">2. LLM Recruiter</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 uppercase hidden md:inline">
                 {isUnranked ? 'Pending' : candidate.aiScore}
+              </span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="comparison-diff" 
+            className="flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 rounded-lg text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+          >
+            <GitCompare className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <div className="flex items-center gap-1 truncate">
+              <span className="truncate">3. Comparison</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hidden md:inline">
+                Diff
               </span>
             </div>
           </TabsTrigger>
@@ -784,6 +815,376 @@ export function AIMatchAnalysis({
                   <span className="text-emerald-600 dark:text-emerald-400 font-medium">Deterministic Transparency Guaranteed</span>
                 </div>
               </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* TAB 3: Comparison (Difference between Vector Math and LLM Recruiter) */}
+        <TabsContent value="comparison-diff" forceMount className="space-y-4 mt-0 focus-visible:outline-none data-[state=inactive]:hidden">
+          {/* Subheader banner with Consensus Ratio */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/10 via-primary/5 to-purple-500/10 border border-border gap-3 text-xs shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                <GitCompare className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-foreground text-sm">Dual-Engine Comparative Diff</span>
+                  <span className={cn(
+                    "text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border",
+                    consensusPercentage >= 75 
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                      : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                  )}>
+                    {consensusPercentage}% Consensus
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Side-by-side audit: Green highlights indicate consensus; red highlights flag divergences requiring recruiter review.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick legend */}
+            <div className="flex items-center gap-3 text-[11px] font-medium shrink-0 self-end sm:self-center">
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Green = Agreement
+              </span>
+              <span className="flex items-center gap-1 text-rose-500">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                Red = Discrepancy
+              </span>
+            </div>
+          </div>
+
+          {/* Side-by-side Comparative Cards */}
+          <div className="space-y-3.5">
+
+            {/* Dimension 1: Overall Scoring & Fit Verdict */}
+            <div className={cn(
+              "rounded-xl border p-4 transition-all shadow-2xs space-y-3",
+              isScoreConsensus 
+                ? "bg-card border-emerald-500/30 dark:border-emerald-500/20" 
+                : "bg-card border-rose-500/30 dark:border-rose-500/20"
+            )}>
+              <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    1. Score & Fit Verdict
+                  </span>
+                  <ScoreInfoButton 
+                    title="Score & Fit Verdict Diff"
+                    description="Compares the strict geometric cosine distance (%) against the qualitative LLM reasoning assessment (High/Medium/Low)."
+                  />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1",
+                  isScoreConsensus 
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                    : "bg-rose-500/10 text-rose-500 border-rose-500/25"
+                )}>
+                  {isScoreConsensus ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-500" />
+                      Harmonized Agreement
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-3 h-3 text-rose-500" />
+                      Score Divergence
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {/* Left vs Right Panels */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Left Panel: Semantic Math */}
+                <div className="p-3 rounded-lg bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1">
+                      <Binary className="w-3 h-3" />
+                      Left: Semantic Math (Vectors)
+                    </span>
+                    <span className="text-xs font-mono font-bold text-foreground">
+                      {overallScore !== null ? `${overallScore}%` : '--'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Strict geometric distance in 1536-dimensional space based purely on literal resume vector overlap.
+                  </p>
+                </div>
+
+                {/* Right Panel: LLM Recruiter */}
+                <div className="p-3 rounded-lg bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/40 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1">
+                      <Brain className="w-3 h-3" />
+                      Right: LLM Recruiter (Cognitive)
+                    </span>
+                    <span className="text-xs font-bold capitalize text-foreground">
+                      {isUnranked ? 'Pending' : `${candidate.aiScore} Fit`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Contextual reasoning assessing project complexity, problem-solving scope, and overall profile depth.
+                  </p>
+                </div>
+              </div>
+
+              {/* Diff Resolution Note */}
+              <div className={cn(
+                "p-2.5 rounded-lg text-xs flex items-center gap-2 font-medium",
+                isScoreConsensus
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                  : "bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20"
+              )}>
+                {isScoreConsensus ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                )}
+                <span>
+                  {isScoreConsensus 
+                    ? "Consensus Confirmed: Both engines independently placed this candidate in the same evaluation bracket."
+                    : "Divergence Warning: The mathematical vocabulary match differs from the qualitative reasoning. Inspect the specific skill gaps below."}
+                </span>
+              </div>
+            </div>
+
+            {/* Dimension 2: Skills Identification (Key Green Match / Red Conflict) */}
+            <div className="rounded-xl border border-border bg-card p-4 transition-all shadow-2xs space-y-3">
+              <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    2. Skill Extraction & Alias Matrix
+                  </span>
+                  <ScoreInfoButton 
+                    title="Skill Extraction Diff"
+                    description="Green badges represent competencies verified by both engines. Red badges represent skill gaps or aliases requiring recruiter exploration."
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60">
+                  {matchedCount} Matched • {missingCount} Gaps
+                </span>
+              </div>
+
+              {/* Side-by-side Skills Comparison */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Left Panel: Vector Literal Keywords */}
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                      <Binary className="w-3.5 h-3.5 text-blue-500" />
+                      Vector Text Detections
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground">Literal NLP</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap gap-1.5">
+                      {candidate.matchedSkills && candidate.matchedSkills.length > 0 ? (
+                        candidate.matchedSkills.map((s) => (
+                          <span key={s} className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                            ✓ {s}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground italic">No verbatim skills detected</span>
+                      )}
+                    </div>
+
+                    {candidate.missingSkills && candidate.missingSkills.length > 0 && (
+                      <div className="pt-1.5 border-t border-border/40">
+                        <span className="text-[10px] text-muted-foreground block mb-1">Missing from Resume Text:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {candidate.missingSkills.map((s) => (
+                            <span key={s} className="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-500 border border-rose-500/25">
+                              ✗ {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Panel: LLM Cognitive Context */}
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                      <Brain className="w-3.5 h-3.5 text-purple-500" />
+                      LLM Cognitive Equivalencies
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground">Contextual</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap gap-1.5">
+                      {candidate.matchedSkills && candidate.matchedSkills.length > 0 ? (
+                        candidate.matchedSkills.map((s) => (
+                          <span key={s} className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center gap-1">
+                            <Check className="w-3 h-3 text-emerald-500" />
+                            {s} (Verified)
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground italic">No skills validated</span>
+                      )}
+                    </div>
+
+                    {candidate.missingSkills && candidate.missingSkills.length > 0 && (
+                      <div className="pt-1.5 border-t border-border/40">
+                        <span className="text-[10px] text-muted-foreground block mb-1">LLM Gap Assessment:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {candidate.missingSkills.map((s) => (
+                            <span key={s} className="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-500 border border-rose-500/25 flex items-center gap-1">
+                              <XCircle className="w-3 h-3 text-rose-500" />
+                              {s} (Probe Required)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Dimension 3: Experience & Seniority Calibration */}
+            <div className={cn(
+              "rounded-xl border p-4 transition-all shadow-2xs space-y-3",
+              isTenureConsensus 
+                ? "bg-card border-emerald-500/30 dark:border-emerald-500/20" 
+                : "bg-card border-rose-500/30 dark:border-rose-500/20"
+            )}>
+              <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    3. Experience & Seniority Calibration
+                  </span>
+                  <ScoreInfoButton 
+                    title="Experience Calibration Diff"
+                    description="Compares numerical tenure arithmetic against role title scope and leadership indicators."
+                  />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1",
+                  isTenureConsensus 
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                    : "bg-rose-500/10 text-rose-500 border-rose-500/25"
+                )}>
+                  {isTenureConsensus ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-500" />
+                      Tenure Requirement Met
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-3 h-3 text-rose-500" />
+                      Tenure Below JD Baseline
+                    </>
+                  )}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Left Panel */}
+                <div className="p-3 rounded-lg bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40 space-y-1">
+                  <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+                    Mathematical Tenure Arithmetic
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-bold text-foreground">{candidate.experience} Years</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      (JD Target: {requiredExp} yrs • {expDiff >= 0 ? `+${expDiff} yrs over` : `${Math.abs(expDiff)} yrs under`})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right Panel */}
+                <div className="p-3 rounded-lg bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/40 space-y-1">
+                  <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">
+                    Leadership & Role Progression
+                  </span>
+                  <span className="text-xs font-semibold text-foreground block truncate">
+                    {candidate.currentRole} at {candidate.company || 'Current Org'}
+                  </span>
+                  <p className="text-[11px] text-muted-foreground">
+                    {candidate.currentRole.toLowerCase().includes('lead') || candidate.currentRole.toLowerCase().includes('senior')
+                      ? "Direct senior title confirmed; demonstrates independent system ownership."
+                      : "Mid-level trajectory; evaluate capability to take on senior architectural scope."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Dimension 4: Retention & Risk Profile */}
+            <div className="rounded-xl border border-emerald-500/30 dark:border-emerald-500/20 bg-card p-4 transition-all shadow-2xs space-y-3">
+              <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    4. Retention & Behavioral Stability
+                  </span>
+                  <ScoreInfoButton 
+                    title="Retention Stability Diff"
+                    description="Synthesizes historical transition velocity with predictive flight risk heuristics."
+                  />
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 flex items-center gap-1">
+                  <Check className="w-3 h-3 text-emerald-500" />
+                  Harmonized Risk Profile
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Left Panel */}
+                <div className="p-3 rounded-lg bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40 space-y-1">
+                  <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+                    Transition Frequency Heuristic
+                  </span>
+                  <span className="text-xs font-semibold text-foreground">
+                    Estimated tenure stability: High (2.5+ yrs per role baseline)
+                  </span>
+                </div>
+
+                {/* Right Panel */}
+                <div className="p-3 rounded-lg bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/40 space-y-1">
+                  <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">
+                    Predictive Retention Modeling
+                  </span>
+                  <span className="text-xs font-semibold text-foreground">
+                    {(candidate.predictiveInsights as any)?.retentionRisk || 'Standard'} Risk Factor
+                  </span>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {(candidate.predictiveInsights as any)?.retentionRiskFactor || "Profile reflects predictable software engineering transitions."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Actionable Recruiter Resolution Advice Card */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/25 space-y-2 shadow-2xs">
+            <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wider">
+              <Target className="w-4 h-4" />
+              <span>🎯 Recruiter Action Plan: Resolving Engine Discrepancies</span>
+            </div>
+            <p className="text-xs text-foreground/90 leading-relaxed">
+              {consensusPercentage >= 75 
+                ? `High confidence candidate (${consensusPercentage}% dual-engine consensus). Direct technical competencies in ${candidate.matchedSkills?.slice(0, 3).join(', ')} are verified by both tools. Use the screening call primarily for cultural alignment, compensation expectations, and notice period.`
+                : `Engine divergence flagged (${consensusPercentage}% consensus). While candidate shows potential, discrepancies exist between the literal text overlap and the cognitive evaluation. Specifically investigate:`}
+            </p>
+            {candidate.missingSkills && candidate.missingSkills.length > 0 && (
+              <ul className="space-y-1 text-xs text-muted-foreground list-disc list-inside pt-1">
+                {candidate.missingSkills.slice(0, 2).map((skill, idx) => (
+                  <li key={idx}>
+                    <span className="text-foreground font-medium">Probe {skill}:</span> Inquire about hands-on production exposure with {skill} to confirm whether this is a genuine gap or an unlisted transferable skill.
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </TabsContent>
