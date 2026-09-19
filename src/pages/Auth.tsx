@@ -227,19 +227,16 @@ export default function Auth() {
         {/* Left Hero Content: Floats directly over the sky */}
         <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 h-full flex-col justify-between py-4 select-none text-white">
           {/* Exclusive Top Branding on the Sky Hero */}
-          <div className="flex items-center gap-3">
-            <div className="h-11 px-3 py-1.5 rounded-2xl bg-white/95 backdrop-blur-md flex items-center justify-center shadow-lg shadow-black/20 border border-white/30">
+          <div className="flex items-center gap-4">
+            <div className="h-13 px-4 py-2 rounded-2xl bg-white/95 backdrop-blur-md flex items-center justify-center shadow-xl shadow-black/30 border border-white/40">
               <img 
                 src="/images/sahab-hiresortai-logo-2-contrast.png" 
                 alt="Sahab Portal" 
-                className="h-7 w-auto object-contain"
+                className="h-8 sm:h-9 w-auto object-contain"
               />
             </div>
-            <div>
-              <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5 drop-shadow-md">
-                Sahab Portal
-              </span>
-              <span className="text-xs text-slate-300 block font-medium tracking-wide">
+            <div className="border-l border-white/25 pl-4 hidden sm:block">
+              <span className="text-xs font-medium text-slate-200 tracking-wide drop-shadow-md">
                 Autonomous Talent Intelligence
               </span>
             </div>
@@ -284,17 +281,16 @@ export default function Auth() {
         <div className="col-span-1 lg:col-span-6 xl:col-span-5 h-full flex items-center justify-center lg:justify-end py-4">
           <div className="w-full max-w-md rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl shadow-black/30 p-6 sm:p-7 flex flex-col gap-3.5 overflow-hidden">
             {/* Mobile logo fallback */}
-            <div className="flex items-center gap-2.5 lg:hidden">
-              <div className="h-9 px-2.5 py-1 rounded-xl bg-card border border-border/80 flex items-center justify-center shadow-xs">
+            <div className="flex items-center gap-2.5 lg:hidden mb-1">
+              <div className="h-10 px-3 py-1.5 rounded-xl bg-white border border-border/80 flex items-center justify-center shadow-xs">
                 <img 
                   src="/images/sahab-hiresortai-logo-2-contrast.png" 
                   alt="Sahab Portal" 
-                  className="h-6 w-auto object-contain"
+                  className="h-7 w-auto object-contain"
                 />
               </div>
               <div>
-                <h2 className="text-xs font-bold text-foreground leading-tight">Sahab Portal</h2>
-                <p className="text-[10px] text-muted-foreground">Enterprise ATS Platform</p>
+                <p className="text-[10px] text-muted-foreground font-medium">Enterprise ATS Platform</p>
               </div>
             </div>
 
