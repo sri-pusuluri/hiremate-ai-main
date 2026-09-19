@@ -97,6 +97,7 @@ export function CandidateReportModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
+        hideCloseButton
         className={cn(
           "p-0 overflow-hidden flex flex-col bg-background transition-all duration-200 border-border print:border-none print:shadow-none print:m-0 print:p-0 print:w-full print:max-w-none print:inset-0",
           isFullscreen 
