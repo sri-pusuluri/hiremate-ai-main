@@ -31,7 +31,8 @@ import {
   Pencil,
   User,
   UserCheck,
-  MapPin
+  MapPin,
+  DollarSign
 } from 'lucide-react';
 import {
   Select,
@@ -40,12 +41,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { ScreeningQuestion, SYSTEM_QUESTION_LIBRARY } from '@/lib/question-library';
 import { QuestionLibraryModal } from './QuestionLibraryModal';
 import { assembleJobDescription, parseJobMarkdown, normalizeJobType } from '@/lib/job-parser';
 import { logAuditEvent } from '@/lib/audit-logger';
 import { ALL_LOCATION_PRESETS } from '@/lib/location-presets';
+
+export function parseExperienceToRange(expStr?: string): [number, number] {
+  if (!expStr) return [3, 5];
+  const numbers = expStr.match(/\d+/g)?.map(Number);
+  if (numbers && numbers.length >= 2) {
+    return [Math.min(numbers[0], numbers[1]), Math.max(numbers[0], numbers[1])];
+  }
+  if (numbers && numbers.length === 1) {
+    return [numbers[0], Math.min(20, numbers[0] + 2)];
+  }
+  if (expStr.toLowerCase().includes('fresher') || expStr.toLowerCase().includes('entry')) {
+    return [0, 1];
+  }
+  return [3, 5];
+}
+
+export function parseSalaryToState(salaryStr?: string): { currency: 'INR' | 'USD' | 'EUR' | 'GBP'; range: [number, number] } {
+  if (!salaryStr) return { currency: 'INR', range: [25, 40] };
+  let currency: 'INR' | 'USD' | 'EUR' | 'GBP' = 'INR';
+  if (salaryStr.includes('$') || salaryStr.toLowerCase().includes('usd')) currency = 'USD';
+  else if (salaryStr.includes('€') || salaryStr.toLowerCase().includes('eur')) currency = 'EUR';
+  else if (salaryStr.includes('£') || salaryStr.toLowerCase().includes('gbp')) currency = 'GBP';
+
+  const numbers = salaryStr.match(/\d+/g)?.map(Number);
+  if (numbers && numbers.length >= 2) {
+    return { currency, range: [Math.min(numbers[0], numbers[1]), Math.max(numbers[0], numbers[1])] };
+  }
+  if (numbers && numbers.length === 1) {
+    return { currency, range: [numbers[0], numbers[0] + (currency === 'INR' ? 10 : 30)] };
+  }
+  return { currency, range: currency === 'INR' ? [25, 40] : [80, 140] };
+}
+
+export function formatSalaryString(curr: 'INR' | 'USD' | 'EUR' | 'GBP', from: number, to: number) {
+  if (curr === 'INR') {
+    return from === to ? `₹${from} LPA` : `₹${from}-${to} LPA`;
+  } else if (curr === 'USD') {
+    return from === to ? `$${from}k / yr` : `$${from}-${to}k / yr`;
+  } else if (curr === 'EUR') {
+    return from === to ? `€${from}k / yr` : `€${from}-${to}k / yr`;
+  } else {
+    return from === to ? `£${from}k / yr` : `£${from}-${to}k / yr`;
+  }
+}
 
 interface CreateJobModalProps {
   open: boolean;
@@ -78,6 +124,39 @@ export function CreateJobModal({
     description: '',
     isPublic: true,
   });
+
+  // Experience seek bar state (From - To in Years)
+  const [expRange, setExpRange] = useState<[number, number]>([3, 5]);
+  const [isManualExp, setIsManualExp] = useState(false);
+
+  // Target Compensation seek bar state (From - To)
+  const [salaryCurrency, setSalaryCurrency] = useState<'INR' | 'USD' | 'EUR' | 'GBP'>('INR');
+  const [salaryRange, setSalaryRange] = useState<[number, number]>([25, 40]);
+  const [isManualSalary, setIsManualSalary] = useState(false);
+
+  const handleExpSliderChange = (vals: number[]) => {
+    const from = vals[0] ?? 0;
+    const to = vals[1] ?? from;
+    setExpRange([from, to]);
+    const formatted = from === to
+      ? (from === 0 ? 'Fresher (0 Yrs)' : `${from}+ Years`)
+      : `${from}-${to} Years`;
+    setFormData(prev => ({ ...prev, experienceLevel: formatted }));
+  };
+
+  const handleSalarySliderChange = (vals: number[]) => {
+    const from = vals[0] ?? 10;
+    const to = vals[1] ?? from;
+    setSalaryRange([from, to]);
+    setFormData(prev => ({ ...prev, salary: formatSalaryString(salaryCurrency, from, to) }));
+  };
+
+  const handleCurrencyChange = (newCurr: 'INR' | 'USD' | 'EUR' | 'GBP') => {
+    setSalaryCurrency(newCurr);
+    const newRange: [number, number] = newCurr === 'INR' ? [25, 40] : [80, 140];
+    setSalaryRange(newRange);
+    setFormData(prev => ({ ...prev, salary: formatSalaryString(newCurr, newRange[0], newRange[1]) }));
+  };
 
   const [activePeriod, setActivePeriod] = useState<'15' | '30' | '60' | '90' | 'custom' | 'unlimited'>('30');
   const [customExpiryDate, setCustomExpiryDate] = useState<string>(() => {
@@ -163,13 +242,24 @@ export function CreateJobModal({
     if (jobToEdit) {
       setSelectedCreatorId(jobToEdit.createdBy || user?.id || '');
       const fullDescription = assembleJobDescription(jobToEdit);
+      const rawExp = jobToEdit.experienceLevel || (jobToEdit as any).experience_level || '3-5 Years';
+      const parsedExp = parseExperienceToRange(rawExp);
+      setExpRange(parsedExp);
+
+      const rawSalary = jobToEdit.salary || '₹25-40 LPA';
+      const parsedSal = parseSalaryToState(rawSalary);
+      setSalaryCurrency(parsedSal.currency);
+      setSalaryRange(parsedSal.range);
+      setIsManualExp(false);
+      setIsManualSalary(false);
+
       setFormData({
         title: jobToEdit.title || '',
         department: jobToEdit.department || 'Engineering',
         location: jobToEdit.location || 'Remote',
         type: normalizeJobType(jobToEdit.type),
-        experienceLevel: jobToEdit.experienceLevel || (jobToEdit as any).experience_level || '3-5 Years',
-        salary: jobToEdit.salary || '',
+        experienceLevel: rawExp,
+        salary: rawSalary,
         description: fullDescription,
         isPublic: jobToEdit.isPublic ?? true,
       });
@@ -203,10 +293,16 @@ export function CreateJobModal({
       }
     } else {
       // Create mode defaults: pre-select 4 standard questions from the system library
+      setExpRange([3, 5]);
+      setSalaryCurrency('INR');
+      setSalaryRange([25, 40]);
+      setIsManualExp(false);
+      setIsManualSalary(false);
+
       setFormData({
         title: '',
         department: 'Engineering',
-        location: 'Bangalore, India (Hybrid)',
+        location: 'Bangalore, Karnataka, India (Hybrid)',
         type: 'full-time',
         experienceLevel: '3-5 Years',
         salary: '₹25-40 LPA',
@@ -579,88 +675,244 @@ export function CreateJobModal({
               </div>
             </div>
 
-            {/* Row 2: Location (6 cols wide with comprehensive auto-fill), Experience (3 cols), Compensation (3 cols) */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-              {/* Location with Global Autofill */}
-              <div className="sm:col-span-6 space-y-1">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="job-location" className="text-xs font-medium flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-primary" />
-                    Location *
-                  </Label>
-                  <span className="text-[10px] text-muted-foreground">Countries, states, cities autofill</span>
-                </div>
-                <div className="relative">
-                  <Input 
-                    id="job-location"
-                    list="global-locations-datalist"
-                    placeholder="e.g. Bangalore, Karnataka, India (Hybrid)"
-                    value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    className="h-8.5 text-xs"
-                  />
-                  <datalist id="global-locations-datalist">
-                    {ALL_LOCATION_PRESETS.map((loc) => (
-                      <option key={loc} value={loc} />
-                    ))}
-                  </datalist>
-                </div>
-                {/* Quick 1-click popular location pills */}
-                <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-none text-[10px]">
-                  <span className="text-muted-foreground shrink-0 text-[10px]">Quick:</span>
-                  {[
-                    { label: 'Remote', value: 'Remote (Worldwide)' },
-                    { label: 'Bangalore (Hybrid)', value: 'Bangalore, Karnataka, India (Hybrid)' },
-                    { label: 'Hyderabad (Hybrid)', value: 'Hyderabad, Telangana, India (Hybrid)' },
-                    { label: 'Pune (Hybrid)', value: 'Pune, Maharashtra, India (Hybrid)' },
-                    { label: 'San Francisco', value: 'San Francisco, CA, United States (Hybrid)' },
-                    { label: 'Dubai', value: 'Dubai, United Arab Emirates (Hybrid)' },
-                  ].map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, location: p.value }))}
-                      className="px-1.5 py-0.5 rounded bg-muted/70 hover:bg-primary/10 hover:text-primary transition-colors shrink-0 text-[10px] text-muted-foreground border border-border/50"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
+            {/* Row 2: Location (Full Width with Comprehensive Auto-fill & Quick Options) */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="job-location" className="text-xs font-medium flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  Location *
+                </Label>
+                <span className="text-[10px] text-muted-foreground">Countries, states, cities autofill</span>
               </div>
-
-              {/* Experience Level */}
-              <div className="sm:col-span-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="job-experience" className="text-xs font-medium">Experience *</Label>
-                  <span className="text-[10px] text-muted-foreground font-mono">3-5 Yrs</span>
-                </div>
+              <div className="relative">
                 <Input 
-                  id="job-experience"
-                  list="experience-presets"
-                  placeholder="e.g. 3-5 Years"
-                  value={formData.experienceLevel}
-                  onChange={(e) => setFormData(prev => ({ ...prev, experienceLevel: e.target.value }))}
+                  id="job-location"
+                  list="global-locations-datalist"
+                  placeholder="e.g. Bangalore, Karnataka, India (Hybrid)"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                   className="h-8.5 text-xs"
                 />
-                <datalist id="experience-presets">
-                  <option value="Fresher / Entry Level" />
-                  <option value="1-3 Years" />
-                  <option value="3-5 Years" />
-                  <option value="5-8 Years" />
-                  <option value="8+ Years (Lead / Staff)" />
+                <datalist id="global-locations-datalist">
+                  {ALL_LOCATION_PRESETS.map((loc) => (
+                    <option key={loc} value={loc} />
+                  ))}
                 </datalist>
               </div>
+              {/* Quick 1-click popular location pills */}
+              <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-none text-[10px]">
+                <span className="text-muted-foreground shrink-0 text-[10px]">Quick:</span>
+                {[
+                  { label: 'Remote', value: 'Remote (Worldwide)' },
+                  { label: 'Bangalore (Hybrid)', value: 'Bangalore, Karnataka, India (Hybrid)' },
+                  { label: 'Hyderabad (Hybrid)', value: 'Hyderabad, Telangana, India (Hybrid)' },
+                  { label: 'Pune (Hybrid)', value: 'Pune, Maharashtra, India (Hybrid)' },
+                  { label: 'San Francisco', value: 'San Francisco, CA, United States (Hybrid)' },
+                  { label: 'Dubai', value: 'Dubai, United Arab Emirates (Hybrid)' },
+                ].map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, location: p.value }))}
+                    className="px-1.5 py-0.5 rounded bg-muted/70 hover:bg-primary/10 hover:text-primary transition-colors shrink-0 text-[10px] text-muted-foreground border border-border/50"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              {/* Target Compensation */}
-              <div className="sm:col-span-3 space-y-1">
-                <Label htmlFor="job-salary" className="text-xs font-medium">Target Compensation</Label>
-                <Input 
-                  id="job-salary"
-                  placeholder="e.g. ₹25-40 LPA"
-                  value={formData.salary}
-                  onChange={(e) => setFormData(prev => ({ ...prev, salary: e.target.value }))}
-                  className="h-8.5 text-xs"
-                />
+            {/* Row 3: Experience & Target Compensation Seek Bar Selection (From & To) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* Experience Seek Bar */}
+              <div className="p-2.5 rounded-lg border border-border/70 bg-card/60 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="job-experience" className="text-xs font-semibold flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-primary" />
+                    Experience Requirement *
+                  </Label>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="secondary" className="text-[11px] font-mono font-medium px-2 py-0.5 bg-primary/10 text-primary border-primary/20">
+                      {isManualExp 
+                        ? (formData.experienceLevel || 'Custom') 
+                        : (expRange[0] === expRange[1]
+                            ? (expRange[0] === 0 ? 'Fresher (0 Yrs)' : `${expRange[0]}+ Years`)
+                            : `${expRange[0]} – ${expRange[1]} Years`)}
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={() => setIsManualExp(!isManualExp)}
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    >
+                      {isManualExp ? 'Seek Bar' : 'Custom'}
+                    </button>
+                  </div>
+                </div>
+
+                {isManualExp ? (
+                  <Input 
+                    id="job-experience"
+                    placeholder="e.g. 3-5 Years or Fresher"
+                    value={formData.experienceLevel}
+                    onChange={(e) => setFormData(prev => ({ ...prev, experienceLevel: e.target.value }))}
+                    className="h-8 text-xs"
+                  />
+                ) : (
+                  <>
+                    <div className="pt-2 pb-1 px-1">
+                      <Slider
+                        min={0}
+                        max={20}
+                        step={1}
+                        value={expRange}
+                        onValueChange={handleExpSliderChange}
+                        className="w-full"
+                        aria-label="Experience range seek bar"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <div className="flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
+                        <span className="text-muted-foreground text-[10px]">From:</span>
+                        <span className="font-semibold text-foreground">{expRange[0]} Yrs</span>
+                      </div>
+                      <div className="flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
+                        <span className="text-muted-foreground text-[10px]">To:</span>
+                        <span className="font-semibold text-foreground">{expRange[1] >= 20 ? '20+ Yrs' : `${expRange[1]} Yrs`}</span>
+                      </div>
+                    </div>
+                    {/* Quick Experience Pills */}
+                    <div className="flex items-center gap-1 overflow-x-auto pt-0.5 scrollbar-none">
+                      {[
+                        { label: 'Fresher (0-1)', range: [0, 1] as [number, number] },
+                        { label: '1–3 Yrs', range: [1, 3] as [number, number] },
+                        { label: '3–5 Yrs', range: [3, 5] as [number, number] },
+                        { label: '5–8 Yrs', range: [5, 8] as [number, number] },
+                        { label: '8+ Yrs', range: [8, 15] as [number, number] },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => handleExpSliderChange(item.range)}
+                          className="px-1.5 py-0.5 rounded bg-muted/60 hover:bg-primary/10 hover:text-primary transition-colors shrink-0 text-[10px] text-muted-foreground border border-border/40"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Target Compensation Seek Bar */}
+              <div className="p-2.5 rounded-lg border border-border/70 bg-card/60 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="job-salary" className="text-xs font-semibold flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    Target Compensation
+                  </Label>
+                  <div className="flex items-center gap-1.5">
+                    <Select value={salaryCurrency} onValueChange={(val: any) => handleCurrencyChange(val)}>
+                      <SelectTrigger className="h-6 text-[10px] px-1.5 py-0 w-20 bg-background border-border/70">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="INR" className="text-xs">₹ LPA</SelectItem>
+                        <SelectItem value="USD" className="text-xs">$ USD (k)</SelectItem>
+                        <SelectItem value="EUR" className="text-xs">€ EUR (k)</SelectItem>
+                        <SelectItem value="GBP" className="text-xs">£ GBP (k)</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Badge variant="secondary" className="text-[11px] font-mono font-medium px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                      {isManualSalary ? (formData.salary || 'Custom') : formatSalaryString(salaryCurrency, salaryRange[0], salaryRange[1])}
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={() => setIsManualSalary(!isManualSalary)}
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    >
+                      {isManualSalary ? 'Seek Bar' : 'Custom'}
+                    </button>
+                  </div>
+                </div>
+
+                {isManualSalary ? (
+                  <Input 
+                    id="job-salary"
+                    placeholder="e.g. ₹25-40 LPA or $120k/yr"
+                    value={formData.salary}
+                    onChange={(e) => setFormData(prev => ({ ...prev, salary: e.target.value }))}
+                    className="h-8 text-xs"
+                  />
+                ) : (
+                  <>
+                    <div className="pt-2 pb-1 px-1">
+                      <Slider
+                        min={salaryCurrency === 'INR' ? 1 : 20}
+                        max={salaryCurrency === 'INR' ? 100 : 350}
+                        step={salaryCurrency === 'INR' ? 1 : 5}
+                        value={salaryRange}
+                        onValueChange={handleSalarySliderChange}
+                        className="w-full"
+                        aria-label="Target compensation range seek bar"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <div className="flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
+                        <span className="text-muted-foreground text-[10px]">From:</span>
+                        <span className="font-semibold text-foreground">
+                          {salaryCurrency === 'INR' 
+                            ? `₹${salaryRange[0]} LPA` 
+                            : `${salaryCurrency === 'USD' ? '$' : salaryCurrency === 'EUR' ? '€' : '£'}${salaryRange[0]}k`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
+                        <span className="text-muted-foreground text-[10px]">To:</span>
+                        <span className="font-semibold text-foreground">
+                          {salaryCurrency === 'INR' 
+                            ? `₹${salaryRange[1]} LPA` 
+                            : `${salaryCurrency === 'USD' ? '$' : salaryCurrency === 'EUR' ? '€' : '£'}${salaryRange[1]}k`}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Quick Package Pills */}
+                    <div className="flex items-center gap-1 overflow-x-auto pt-0.5 scrollbar-none">
+                      {salaryCurrency === 'INR' ? (
+                        [
+                          { label: '₹5–12 LPA', range: [5, 12] as [number, number] },
+                          { label: '₹15–25 LPA', range: [15, 25] as [number, number] },
+                          { label: '₹25–40 LPA', range: [25, 40] as [number, number] },
+                          { label: '₹40–70 LPA', range: [40, 70] as [number, number] },
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() => handleSalarySliderChange(item.range)}
+                            className="px-1.5 py-0.5 rounded bg-muted/60 hover:bg-emerald-500/10 hover:text-emerald-600 transition-colors shrink-0 text-[10px] text-muted-foreground border border-border/40"
+                          >
+                            {item.label}
+                          </button>
+                        ))
+                      ) : (
+                        [
+                          { label: '$50–80k', range: [50, 80] as [number, number] },
+                          { label: '$80–140k', range: [80, 140] as [number, number] },
+                          { label: '$140–220k', range: [140, 220] as [number, number] },
+                          { label: '$220k+', range: [220, 320] as [number, number] },
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() => handleSalarySliderChange(item.range)}
+                            className="px-1.5 py-0.5 rounded bg-muted/60 hover:bg-emerald-500/10 hover:text-emerald-600 transition-colors shrink-0 text-[10px] text-muted-foreground border border-border/40"
+                          >
+                            {item.label}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

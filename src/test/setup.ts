@@ -74,3 +74,14 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+
+if (typeof window !== "undefined" && !(window as any).ResizeObserver) {
+  class ResizeObserverMock {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  (window as any).ResizeObserver = ResizeObserverMock;
+  (globalThis as any).ResizeObserver = ResizeObserverMock;
+}
+
