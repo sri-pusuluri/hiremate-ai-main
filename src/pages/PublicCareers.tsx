@@ -46,6 +46,12 @@ export default function PublicCareers() {
   const { toast } = useToast();
   const [client, setClient] = useState<ClientTenant>(DEFAULT_ZOOL_CLIENT);
   const isZool = (client?.slug || slug || '').toLowerCase().includes('zool') || client?.name?.toLowerCase().includes('zool');
+  const isPlatform = 
+    (client?.slug || slug || '').toLowerCase().includes('platform') || 
+    (client?.slug || slug || '').toLowerCase().includes('sahab') || 
+    (client?.slug || slug || '').toLowerCase().includes('hiremate') ||
+    (client?.name || '').toLowerCase().includes('platform') ||
+    (client?.name || '').toLowerCase().includes('sahab');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,18 +81,8 @@ export default function PublicCareers() {
         let { data: clientData } = await supabase
           .from('clients')
           .select('*')
-          .eq('slug', normalizedSlug)
+          .ilike('slug', normalizedSlug)
           .maybeSingle();
-
-        // Fallback search if exact slug match didn't find (e.g. Zool vs zool)
-        if (!clientData) {
-          const { data: fallbackClient } = await supabase
-            .from('clients')
-            .select('*')
-            .ilike('name', normalizedSlug)
-            .maybeSingle();
-          if (fallbackClient) clientData = fallbackClient;
-        }
 
         if (clientData) {
           setClient({
@@ -98,9 +94,10 @@ export default function PublicCareers() {
             subscriptionTier: (clientData as any).subscription_tier || 'pro',
           });
         } else {
+          const isPlatformSlug = normalizedSlug === 'platform' || normalizedSlug === 'sahab';
           setClient({
             ...DEFAULT_ZOOL_CLIENT,
-            name: normalizedSlug.charAt(0).toUpperCase() + normalizedSlug.slice(1),
+            name: isPlatformSlug ? 'Sahab Portal' : normalizedSlug.charAt(0).toUpperCase() + normalizedSlug.slice(1),
             slug: normalizedSlug,
           });
         }
@@ -340,9 +337,9 @@ export default function PublicCareers() {
         <nav className="border-b border-border/70 bg-card/80 backdrop-blur-md sticky top-0 z-30 px-6 py-3 shadow-xs">
           <div className="max-w-5xl mx-auto flex items-center justify-between">
             <Link to={`/careers/${slug}`} className="flex items-center gap-2.5 group">
-              {isZool ? (
+              {isZool || isPlatform ? (
                 <TenantBrandLogo
-                  client={client}
+                  client={isPlatform ? { ...client, name: 'Sahab Portal', slug: 'platform' } : client}
                   variant="full"
                   size="md"
                   showBorder={false}
@@ -377,9 +374,9 @@ export default function PublicCareers() {
       {isEmbedMode ? (
         <header className="pb-4 mb-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {isZool ? (
+            {isZool || isPlatform ? (
               <TenantBrandLogo
-                client={client}
+                client={isPlatform ? { ...client, name: 'Sahab Portal', slug: 'platform' } : client}
                 variant="full"
                 size="md"
                 showBorder={false}
@@ -400,7 +397,7 @@ export default function PublicCareers() {
                 </div>
               </>
             )}
-            {isZool && (
+            {(isZool || isPlatform) && (
               <div className="pl-3 border-l border-border/60">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Careers Portal</span>
                 <p className="text-xs text-muted-foreground">
@@ -430,7 +427,7 @@ export default function PublicCareers() {
             {/* Prominent Client Brand Logo */}
             <div className="py-2 flex justify-center hover:scale-105 transition-transform duration-200">
               <TenantBrandLogo
-                client={client}
+                client={isPlatform ? { ...client, name: 'Sahab Portal', slug: 'platform' } : client}
                 variant="full"
                 size="hero"
                 showBorder={false}
@@ -443,7 +440,7 @@ export default function PublicCareers() {
                 style={{ backgroundColor: client.themeColor || '#2563eb' }}
               />
               <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Careers at {client.name}
+                Careers at {isPlatform ? 'Sahab Portal' : client.name}
               </span>
             </div>
 
@@ -657,9 +654,9 @@ export default function PublicCareers() {
         <footer className="border-t border-border py-8 px-6 text-center text-xs text-muted-foreground mt-auto bg-muted/20">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
-              {isZool ? (
+              {isZool || isPlatform ? (
                 <div className="flex items-center gap-2">
-                  <TenantBrandLogo client={client} variant="full" size="sm" showBorder={false} />
+                  <TenantBrandLogo client={isPlatform ? { ...client, name: 'Sahab Portal', slug: 'platform' } : client} variant="full" size="sm" showBorder={false} />
                   <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider pl-2 border-l border-border/60">Careers</span>
                 </div>
               ) : (
@@ -669,11 +666,11 @@ export default function PublicCareers() {
                 </>
               )}
             </div>
-            <p>© {new Date().getFullYear()} {client.name}. Multi-Tenant ATS powered by Sahab Portal.</p>
+            <p>© {new Date().getFullYear()} {isPlatform ? 'Sahab Portal' : client.name}. Multi-Tenant ATS powered by Sahab Portal.</p>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Careers Portal</span>
               <span>•</span>
-              <span className="font-medium text-foreground">{client.name}</span>
+              <span className="font-medium text-foreground">{isPlatform ? 'Sahab Portal' : client.name}</span>
             </div>
           </div>
         </footer>

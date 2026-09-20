@@ -33,7 +33,7 @@ export const getResolvedTenantLogo = (
 
   if (isSahab) {
     if (variant === 'icon') return '/images/sahab-icon.png';
-    return '/images/sahab-hiresortai-logo.png';
+    return '/images/sahab-hiresortai-black.png';
   }
 
   if (isZool) {
@@ -61,10 +61,10 @@ const sizeClasses = {
 const fullSizeClasses = {
   xs: 'h-5 w-auto max-w-[100px]',
   sm: 'h-6 sm:h-7 w-auto max-w-[130px]',
-  md: 'h-8 sm:h-9 w-auto max-w-[160px]',
-  lg: 'h-10 sm:h-12 w-auto max-w-[200px]',
-  xl: 'h-12 sm:h-14 w-auto max-w-[240px]',
-  hero: 'h-12 sm:h-16 w-auto max-w-[280px]'
+  md: 'h-8 sm:h-9 w-auto max-w-[180px]',
+  lg: 'h-10 sm:h-12 w-auto max-w-[220px]',
+  xl: 'h-12 sm:h-14 w-auto max-w-[260px]',
+  hero: 'h-12 sm:h-16 w-auto max-w-[340px]'
 };
 
 export default function TenantBrandLogo({
@@ -88,7 +88,7 @@ export default function TenantBrandLogo({
   const effectiveThemeColor = themeColor || client?.themeColor || '#2563eb';
 
   const s = (effectiveSlug || effectiveName).toLowerCase();
-  const isSahab = s.includes('sahab') || s.includes('platform');
+  const isSahab = s.includes('sahab') || s.includes('platform') || s.includes('hiremate');
   const isZool = s.includes('zool');
   const isCommit = s.includes('commit') || s.includes('comm-it');
 
@@ -113,13 +113,32 @@ export default function TenantBrandLogo({
           className
         )}
       >
-        <img
-          src={useIcon ? "/images/sahab-icon.png" : "/images/sahab-hiresortai-logo.png"}
-          alt={alt || `${effectiveName} Logo`}
-          className="w-full h-full object-contain"
-          onError={() => setImageError(true)}
-          loading="eager"
-        />
+        {useIcon ? (
+          <img
+            src="/images/sahab-icon.png"
+            alt={alt || `${effectiveName} Logo`}
+            className="w-full h-full object-contain"
+            onError={() => setImageError(true)}
+            loading="eager"
+          />
+        ) : (
+          <>
+            <img
+              src="/images/sahab-hiresortai-black.png"
+              alt={alt || `${effectiveName} Logo`}
+              className="w-full h-full object-contain dark:hidden"
+              onError={() => setImageError(true)}
+              loading="eager"
+            />
+            <img
+              src="/images/sahab-hiresortai-logo-v2.png"
+              alt={alt || `${effectiveName} Logo`}
+              className="w-full h-full object-contain hidden dark:block"
+              onError={() => setImageError(true)}
+              loading="eager"
+            />
+          </>
+        )}
       </div>
     );
   }

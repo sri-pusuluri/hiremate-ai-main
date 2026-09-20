@@ -123,6 +123,12 @@ export default function PublicJobApplication() {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const isZool = (client?.slug || slug || '').toLowerCase().includes('zool') || client?.name?.toLowerCase().includes('zool');
+  const isPlatform = 
+    (client?.slug || slug || '').toLowerCase().includes('platform') || 
+    (client?.slug || slug || '').toLowerCase().includes('sahab') || 
+    (client?.slug || slug || '').toLowerCase().includes('hiremate') ||
+    (client?.name || '').toLowerCase().includes('platform') ||
+    (client?.name || '').toLowerCase().includes('sahab');
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -607,7 +613,7 @@ export default function PublicJobApplication() {
             className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground hover:text-primary transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span>All {client.name} Jobs</span>
+            <span>All {isPlatform ? 'Sahab Portal' : client.name} Jobs</span>
           </Link>
 
           <div className="flex items-center gap-3">
@@ -630,8 +636,8 @@ export default function PublicJobApplication() {
             </Button>
 
             <div className="hidden sm:flex items-center gap-2.5 pl-2 border-l border-border/60">
-              {isZool ? (
-                <TenantBrandLogo client={client} variant="full" size="sm" showBorder={false} />
+              {isZool || isPlatform ? (
+                <TenantBrandLogo client={isPlatform ? { ...client, name: 'Sahab Portal', slug: 'platform' } : client} variant="full" size="sm" showBorder={false} />
               ) : (
                 <>
                   <TenantBrandLogo client={client} size="sm" />

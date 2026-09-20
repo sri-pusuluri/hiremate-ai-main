@@ -9,23 +9,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Building2, 
-  Sparkles, 
-  ArrowRight, 
-  ArrowLeft, 
-  Check, 
-  CheckCircle2, 
-  ShieldCheck, 
-  Zap, 
-  Users, 
-  Lock, 
-  Mail, 
-  User, 
-  Globe, 
-  Palette, 
-  Eye, 
-  EyeOff, 
+import {
+  Building2,
+  Sparkles,
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  ShieldCheck,
+  Zap,
+  Users,
+  Lock,
+  Mail,
+  User,
+  Globe,
+  Palette,
+  Eye,
+  EyeOff,
   Loader2,
   Cpu,
   Rocket
@@ -212,7 +212,7 @@ export default function CompanyOnboarding() {
           full_name: fullName,
           avatar_url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(fullName)}`
         }));
-      } catch (storageErr) {}
+      } catch (storageErr) { }
 
       toast({
         title: "Workspace Created 🎉",
@@ -245,14 +245,14 @@ export default function CompanyOnboarding() {
 
       {/* 2. Onboarding Modal Container */}
       <div className="relative z-10 w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/40 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/50 p-6 sm:p-8 flex flex-col gap-6 my-8">
-        
+
         {/* Top Header & Stepper */}
         <div>
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center">
                 <img
-                  src="/images/sahab-hiresortai-logo-v2.png"
+                  src="/images/sahab-hiresortai-black.png"
                   alt="Sahab Portal"
                   className="h-9 w-auto object-contain block"
                 />
@@ -287,25 +287,25 @@ export default function CompanyOnboarding() {
               const isPast = currentStep > step.num;
 
               return (
-                <div 
+                <div
                   key={step.num}
                   className={cn(
                     "flex flex-col gap-1 p-2 rounded-xl border transition-all text-xs",
                     isActive
                       ? "bg-primary/10 border-primary text-primary font-semibold shadow-2xs"
                       : isPast
-                      ? "bg-muted/40 border-border/80 text-foreground"
-                      : "bg-muted/10 border-border/40 text-muted-foreground opacity-60"
+                        ? "bg-muted/40 border-border/80 text-foreground"
+                        : "bg-muted/10 border-border/40 text-muted-foreground opacity-60"
                   )}
                 >
                   <div className="flex items-center gap-1.5">
                     <span className={cn(
                       "w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold",
-                      isActive 
-                        ? "bg-primary text-primary-foreground" 
-                        : isPast 
-                        ? "bg-emerald-500 text-white" 
-                        : "bg-muted text-muted-foreground"
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : isPast
+                          ? "bg-emerald-500 text-white"
+                          : "bg-muted text-muted-foreground"
                     )}>
                       {isPast ? <Check className="w-2.5 h-2.5" /> : step.num}
                     </span>
