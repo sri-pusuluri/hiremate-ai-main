@@ -16,8 +16,8 @@ interface TenantBrandLogoProps {
 }
 
 export const getResolvedTenantLogo = (
-  slug?: string, 
-  name?: string, 
+  slug?: string,
+  name?: string,
   logoUrl?: string | null,
   variant: 'icon' | 'full' | 'auto' = 'auto'
 ): string | null => {
@@ -96,18 +96,18 @@ export default function TenantBrandLogo({
   const useFullVariant = variant === 'full' || (variant === 'auto' && (size === 'hero' || size === 'xl' || size === 'lg'));
 
   // If there's an explicit custom logo url that isn't one of our internal paths
-  const hasCustomLogo = effectiveLogoUrl && 
-    !effectiveLogoUrl.startsWith('/logos/') && 
-    !effectiveLogoUrl.startsWith('/images/') && 
+  const hasCustomLogo = effectiveLogoUrl &&
+    !effectiveLogoUrl.startsWith('/logos/') &&
+    !effectiveLogoUrl.startsWith('/images/') &&
     effectiveLogoUrl.trim().length > 0;
 
   // 0. Official Sahab Portal Brand Logo
   if (isSahab && !imageError) {
     const useIcon = !useFullVariant && (size === 'xs' || size === 'sm');
     return (
-      <div 
+      <div
         className={cn(
-          "relative shrink-0 flex items-center justify-center transition-transform duration-200 overflow-hidden",
+          "relative  shrink-0 flex items-center justify-center transition-transform duration-200 overflow-hidden",
           useFullVariant ? fullSizeClasses[size] : sizeClasses[size],
           showBorder && "border border-border/80 rounded-xl px-2 py-1 bg-white/95 dark:bg-card/95 shadow-sm",
           className
@@ -146,7 +146,7 @@ export default function TenantBrandLogo({
   // 1. Explicit Custom Logo
   if (hasCustomLogo && !imageError) {
     return (
-      <div 
+      <div
         className={cn(
           "relative shrink-0 flex items-center justify-center overflow-hidden bg-card/95 transition-transform duration-200",
           showBorder && "border border-border/80 shadow-sm",
@@ -168,7 +168,7 @@ export default function TenantBrandLogo({
   // 2. Official Zool Full Wordmark
   if (isZool && useFullVariant && !imageError) {
     return (
-      <div 
+      <div
         className={cn(
           "relative shrink-0 flex items-center justify-center transition-transform duration-200",
           fullSizeClasses[size],
@@ -198,7 +198,7 @@ export default function TenantBrandLogo({
   if (isCommit && !imageError) {
     const useIcon = !useFullVariant && (size === 'xs' || size === 'sm' || size === 'md');
     return (
-      <div 
+      <div
         className={cn(
           "relative shrink-0 flex items-center justify-center transition-transform duration-200 overflow-hidden",
           useFullVariant ? fullSizeClasses[size] : sizeClasses[size],
@@ -228,7 +228,7 @@ export default function TenantBrandLogo({
   // 4. Official Zool 4-Ring Icon Mark
   if (isZool && !imageError) {
     return (
-      <div 
+      <div
         className={cn(
           "relative shrink-0 flex items-center justify-center overflow-hidden bg-card/95 transition-transform duration-200",
           showBorder && "border border-border/80 shadow-sm",
@@ -251,7 +251,7 @@ export default function TenantBrandLogo({
   const resolvedLogo = getResolvedTenantLogo(effectiveSlug, effectiveName, effectiveLogoUrl, variant);
   if (resolvedLogo && !imageError) {
     return (
-      <div 
+      <div
         className={cn(
           "relative shrink-0 flex items-center justify-center overflow-hidden bg-card/95 transition-transform duration-200",
           showBorder && "border border-border/80 shadow-sm",

@@ -506,99 +506,94 @@ export function CreateJobModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              {isEditMode ? (
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <Pencil className="w-4 h-4" />
-                </div>
-              ) : (
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <Briefcase className="w-4 h-4" />
-                </div>
-              )}
-              <DialogTitle>
-                {isEditMode ? `Edit Job: ${jobToEdit?.title}` : 'Create New Job Opening'}
-              </DialogTitle>
+        <DialogContent className="sm:max-w-[780px] max-h-[92vh] overflow-y-auto p-4 sm:p-5">
+          <DialogHeader className="pb-1 border-b border-border/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                {isEditMode ? <Pencil className="w-3.5 h-3.5" /> : <Briefcase className="w-3.5 h-3.5" />}
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold">
+                  {isEditMode ? `Edit Job: ${jobToEdit?.title}` : 'Create New Job Opening'}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  {isEditMode
+                    ? `Update posting details, compensation, screening questions, and visibility for ${client?.name || 'this workspace'}.`
+                    : `Publish a new opening for ${client?.name || 'this workspace'} to start collecting and ranking applicants.`}
+                </DialogDescription>
+              </div>
             </div>
-            <DialogDescription>
-              {isEditMode
-                ? `Update posting details, compensation, screening questions, and visibility for ${client?.name || 'this workspace'}.`
-                : `Publish a new opening for ${client?.name || 'this workspace'} to start collecting and ranking applicants.`}
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            {/* Job Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="job-title">Job Title *</Label>
-              <Input 
-                id="job-title"
-                placeholder="e.g. Senior Full Stack Engineer"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              />
-            </div>
+          <div className="space-y-3 py-1.5">
+            {/* Row 1: Job Title & Department */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+              <div className="sm:col-span-8 space-y-1">
+                <Label htmlFor="job-title" className="text-xs font-medium">Job Title *</Label>
+                <Input 
+                  id="job-title"
+                  placeholder="e.g. Senior Full Stack Engineer"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  className="h-8.5 text-xs"
+                />
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Department */}
-              <div className="space-y-1.5">
-                <Label htmlFor="job-dept">Department</Label>
+              <div className="sm:col-span-4 space-y-1">
+                <Label htmlFor="job-dept" className="text-xs font-medium">Department</Label>
                 <Select 
                   value={formData.department} 
                   onValueChange={(val) => setFormData(prev => ({ ...prev, department: val }))}
                 >
-                  <SelectTrigger id="job-dept">
+                  <SelectTrigger id="job-dept" className="h-8.5 text-xs bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Engineering">Engineering</SelectItem>
-                    <SelectItem value="Product & Design">Product & Design</SelectItem>
-                    <SelectItem value="Sales & Marketing">Sales & Marketing</SelectItem>
-                    <SelectItem value="Human Resources">Human Resources</SelectItem>
-                    <SelectItem value="Operations">Operations</SelectItem>
-                    <SelectItem value="Finance & Legal">Finance & Legal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Employment Type */}
-              <div className="space-y-1.5">
-                <Label htmlFor="job-type">Employment Type</Label>
-                <Select 
-                  value={formData.type || 'full-time'} 
-                  onValueChange={(val: any) => setFormData(prev => ({ ...prev, type: normalizeJobType(val) }))}
-                >
-                  <SelectTrigger id="job-type">
-                    <SelectValue placeholder="Select type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full-time">Full-Time</SelectItem>
-                    <SelectItem value="part-time">Part-Time</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
+                    <SelectItem value="Engineering" className="text-xs">Engineering</SelectItem>
+                    <SelectItem value="Product & Design" className="text-xs">Product & Design</SelectItem>
+                    <SelectItem value="Sales & Marketing" className="text-xs">Sales & Marketing</SelectItem>
+                    <SelectItem value="Human Resources" className="text-xs">Human Resources</SelectItem>
+                    <SelectItem value="Operations" className="text-xs">Operations</SelectItem>
+                    <SelectItem value="Finance & Legal" className="text-xs">Finance & Legal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Location */}
-              <div className="space-y-1.5">
-                <Label htmlFor="job-location">Location</Label>
+            {/* Row 2: Employment Type, Location, Experience Level, Compensation (4-column grid) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="space-y-1">
+                <Label htmlFor="job-type" className="text-xs font-medium">Employment Type</Label>
+                <Select 
+                  value={formData.type || 'full-time'} 
+                  onValueChange={(val: any) => setFormData(prev => ({ ...prev, type: normalizeJobType(val) }))}
+                >
+                  <SelectTrigger id="job-type" className="h-8.5 text-xs bg-background">
+                    <SelectValue placeholder="Select type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full-time" className="text-xs">Full-Time</SelectItem>
+                    <SelectItem value="part-time" className="text-xs">Part-Time</SelectItem>
+                    <SelectItem value="contract" className="text-xs">Contract</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="job-location" className="text-xs font-medium">Location</Label>
                 <Input 
                   id="job-location"
-                  placeholder="e.g. Bangalore, India (Remote Available)"
+                  placeholder="e.g. Bangalore, India (Hybrid)"
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="h-8.5 text-xs"
                 />
               </div>
 
-              {/* Experience Level */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="job-experience">Experience Level *</Label>
-                  <span className="text-[10px] text-muted-foreground font-mono">e.g. 3-5 Years</span>
+                  <Label htmlFor="job-experience" className="text-xs font-medium">Experience *</Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">3-5 Yrs</span>
                 </div>
                 <Input 
                   id="job-experience"
@@ -606,6 +601,7 @@ export function CreateJobModal({
                   placeholder="e.g. 3-5 Years"
                   value={formData.experienceLevel}
                   onChange={(e) => setFormData(prev => ({ ...prev, experienceLevel: e.target.value }))}
+                  className="h-8.5 text-xs"
                 />
                 <datalist id="experience-presets">
                   <option value="Fresher / Entry Level" />
@@ -616,25 +612,25 @@ export function CreateJobModal({
                 </datalist>
               </div>
 
-              {/* Salary */}
-              <div className="space-y-1.5">
-                <Label htmlFor="job-salary">Target Compensation</Label>
+              <div className="space-y-1">
+                <Label htmlFor="job-salary" className="text-xs font-medium">Target Compensation</Label>
                 <Input 
                   id="job-salary"
-                  placeholder="e.g. ₹25-35 LPA or $120k-$150k"
+                  placeholder="e.g. ₹25-40 LPA"
                   value={formData.salary}
                   onChange={(e) => setFormData(prev => ({ ...prev, salary: e.target.value }))}
+                  className="h-8.5 text-xs"
                 />
               </div>
             </div>
 
-            {/* Description - Rich Text Editor */}
-            <div className="space-y-1.5">
+            {/* Row 3: Description - Rich Text Editor (Compact) */}
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <Label htmlFor="job-desc" className="text-xs font-semibold">
+                <Label htmlFor="job-desc" className="text-xs font-medium">
                   Job Description & Responsibilities *
                 </Label>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   Rich text, bullet lists & markdown supported
                 </span>
               </div>
@@ -643,74 +639,48 @@ export function CreateJobModal({
                 onChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
                 placeholder="Detail the mission, role expectations, daily responsibilities, and required qualifications..."
                 jobTitle={formData.title}
-                minHeight="170px"
+                minHeight="110px"
               />
             </div>
 
-            {/* Active Time Period / Expiry Setting */}
-            <div className="p-3.5 rounded-lg border border-border bg-muted/40 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <Label className="font-semibold text-xs">Active Time Period / Auto-Expiry</Label>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Job will automatically become Inactive after this period.
-                  </p>
+            {/* Row 4: Unified Compact Settings Panel (Auto-Expiry + Owner + Public Toggle) */}
+            <div className="p-2.5 rounded-lg border border-border bg-muted/30 grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-center">
+              {/* Auto-Expiry */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <Label className="text-[11px] font-semibold">Active Period / Expiry</Label>
                 </div>
                 <Select 
                   value={activePeriod} 
                   onValueChange={(val: any) => setActivePeriod(val)}
                 >
-                  <SelectTrigger className="w-[170px] h-8 text-xs bg-background">
+                  <SelectTrigger className="w-full h-8 text-xs bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="15">15 Days Active</SelectItem>
-                    <SelectItem value="30">30 Days Active</SelectItem>
-                    <SelectItem value="60">60 Days Active</SelectItem>
-                    <SelectItem value="90">90 Days Active</SelectItem>
-                    <SelectItem value="custom">Custom End Date</SelectItem>
-                    <SelectItem value="unlimited">No Expiry (Open Ended)</SelectItem>
+                    <SelectItem value="15" className="text-xs">15 Days Active</SelectItem>
+                    <SelectItem value="30" className="text-xs">30 Days Active</SelectItem>
+                    <SelectItem value="60" className="text-xs">60 Days Active</SelectItem>
+                    <SelectItem value="90" className="text-xs">90 Days Active</SelectItem>
+                    <SelectItem value="custom" className="text-xs">Custom End Date</SelectItem>
+                    <SelectItem value="unlimited" className="text-xs">No Expiry (Open Ended)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {activePeriod === 'custom' && (
-                <div className="flex items-center gap-2 pt-2 border-t border-border">
-                  <Label className="text-xs text-muted-foreground shrink-0">Auto-Inactive Date:</Label>
-                  <Input
-                    type="date"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={customExpiryDate}
-                    onChange={(e) => setCustomExpiryDate(e.target.value)}
-                    className="h-8 text-xs bg-background"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Job Creator & Ownership Assignment */}
-            <div className="p-3.5 rounded-lg border border-border bg-muted/40 space-y-2">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-primary" />
-                    <Label className="font-semibold text-xs">Job Creator / Assigned Owner</Label>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {isEditMode 
-                      ? 'Team member or administrator who owns and manages this job.' 
-                      : 'Assigned owner of this job. Admins can reassign anytime.'}
-                  </p>
+              {/* Job Owner */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <UserCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <Label className="text-[11px] font-semibold">Job Creator / Owner</Label>
                 </div>
                 <Select 
                   value={selectedCreatorId || user?.id || ''} 
                   onValueChange={(val) => setSelectedCreatorId(val)}
                   disabled={isEditMode && !isAdmin && !isSuperAdmin && !isClientAdmin}
                 >
-                  <SelectTrigger className="w-[200px] h-8 text-xs bg-background">
+                  <SelectTrigger className="w-full h-8 text-xs bg-background">
                     <SelectValue placeholder="Select Owner" />
                   </SelectTrigger>
                   <SelectContent>
@@ -727,43 +697,73 @@ export function CreateJobModal({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Public Toggle */}
+              <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:border-l sm:border-border/60 sm:pl-3 pt-1 sm:pt-0">
+                <div className="flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <div>
+                    <Label htmlFor="job-public" className="text-xs font-semibold cursor-pointer block leading-tight">
+                      Publish to Careers
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground block leading-tight">
+                      Publicly accessible
+                    </span>
+                  </div>
+                </div>
+                <Switch 
+                  id="job-public"
+                  checked={formData.isPublic}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublic: checked }))}
+                  className="scale-90"
+                />
+              </div>
+
+              {/* Custom Date sub-row if custom expiry selected */}
+              {activePeriod === 'custom' && (
+                <div className="sm:col-span-3 flex items-center gap-2 pt-1 border-t border-border/50">
+                  <Label className="text-xs text-muted-foreground shrink-0">Auto-Inactive Date:</Label>
+                  <Input
+                    type="date"
+                    min={new Date().toISOString().split('T')[0]}
+                    value={customExpiryDate}
+                    onChange={(e) => setCustomExpiryDate(e.target.value)}
+                    className="h-7 text-xs bg-background max-w-[200px]"
+                  />
+                </div>
+              )}
             </div>
 
-            {/* APPLICATION SCREENING QUESTIONS SECTION */}
-            <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <ListChecks className="w-4 h-4 text-primary" />
-                    <Label className="font-semibold text-xs">Application Screening Questions</Label>
-                    <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
-                      {selectedQuestions.length} Attached
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Questions candidates must answer when submitting their application.
-                  </p>
+            {/* Row 5: Screening Questions (Compact) */}
+            <div className="p-2.5 rounded-lg border border-border bg-muted/30 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ListChecks className="w-3.5 h-3.5 text-primary" />
+                  <Label className="font-semibold text-xs">Screening Questions</Label>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                    {selectedQuestions.length} Attached
+                  </Badge>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setShowLibraryModal(true)}
-                    className="h-7 text-xs gap-1.5 bg-background shadow-xs text-primary border-primary/30 hover:bg-primary/5"
+                    className="h-6.5 text-[11px] gap-1 px-2 bg-background shadow-xs text-primary border-primary/30 hover:bg-primary/5"
                   >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    Select from Library
+                    <BookOpen className="w-3 h-3" />
+                    Library
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowAddCustomQuestion(!showAddCustomQuestion)}
-                    className="h-7 text-xs gap-1"
+                    className="h-6.5 text-[11px] gap-1 px-1.5 text-muted-foreground hover:text-foreground"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3 h-3" />
                     Custom
                   </Button>
                 </div>
@@ -771,7 +771,7 @@ export function CreateJobModal({
 
               {/* Custom Question Quick Creator */}
               {showAddCustomQuestion && (
-                <div className="p-3 bg-card border border-border rounded-lg space-y-2.5 animate-fade-in shadow-xs">
+                <div className="p-2.5 bg-card border border-border rounded-lg space-y-2 animate-fade-in shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold flex items-center gap-1.5">
                       <Plus className="w-3.5 h-3.5 text-primary" />
@@ -789,11 +789,11 @@ export function CreateJobModal({
                     placeholder="e.g. How many years of experience do you have with PostgreSQL & Node.js?"
                     value={customQText}
                     onChange={(e) => setCustomQText(e.target.value)}
-                    className="h-8 text-xs"
+                    className="h-7 text-xs"
                   />
                   <div className="flex items-center gap-2">
                     <Select value={customQType} onValueChange={(val: any) => setCustomQType(val)}>
-                      <SelectTrigger className="w-[140px] h-8 text-xs bg-background">
+                      <SelectTrigger className="w-[140px] h-7 text-xs bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -810,25 +810,25 @@ export function CreateJobModal({
                         placeholder="Options separated by comma (e.g. 1-2 Yrs, 3-5 Yrs, 5+ Yrs)"
                         value={customQOptions}
                         onChange={(e) => setCustomQOptions(e.target.value)}
-                        className="h-8 text-xs flex-1 bg-background"
+                        className="h-7 text-xs flex-1 bg-background"
                       />
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <div className="flex items-center justify-between pt-0.5">
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
                       <Checkbox
                         checked={saveToBank}
                         onCheckedChange={(c) => setSaveToBank(!!c)}
                       />
-                      <span>Save to Question Library for future jobs</span>
+                      <span>Save to Question Library</span>
                     </label>
 
                     <Button
                       type="button"
                       size="sm"
                       onClick={handleAddCustomQuestion}
-                      className="h-7 text-xs"
+                      className="h-6.5 text-[11px] px-2.5"
                     >
                       Add Question
                     </Button>
@@ -837,92 +837,59 @@ export function CreateJobModal({
               )}
 
               {/* Selected Questions List */}
-              <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 divide-y divide-border/60">
+              <div className="space-y-1 max-h-32 overflow-y-auto pr-1 divide-y divide-border/40">
                 {selectedQuestions.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-muted-foreground border border-dashed rounded-md bg-background/50">
-                    <ListChecks className="w-6 h-6 mx-auto mb-1.5 text-muted-foreground/60" />
-                    <p className="font-medium">No screening questions selected yet</p>
-                    <p className="text-[11px] mt-0.5">Click "Select from Library" to choose standard recruitment questions.</p>
-                  </div>
+                  <p className="text-[11px] text-muted-foreground py-1 text-center italic">
+                    No screening questions attached yet. Click "Library" to choose standard questions.
+                  </p>
                 ) : (
                   selectedQuestions.map((q, idx) => (
                     <div 
                       key={q.id || `${q.text}-${idx}`} 
-                      className="pt-2 first:pt-0 flex items-start justify-between gap-3 p-2 rounded-md hover:bg-muted/40 transition-colors bg-card/60"
+                      className="pt-1.5 first:pt-0 flex items-center justify-between gap-2 py-1 px-1.5 rounded hover:bg-muted/40 transition-colors bg-card/50"
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-medium text-foreground leading-tight">
-                            {idx + 1}. {q.text}
-                          </span>
-                          <Badge variant="outline" className="text-[9px] uppercase px-1.5 py-0 shrink-0 font-mono">
-                            {q.type === 'choice' 
-                              ? 'Choice' 
-                              : q.type === 'boolean' 
-                              ? 'Yes/No' 
-                              : q.type === 'date' 
-                              ? 'Date' 
-                              : q.type === 'url' 
-                              ? 'URL' 
-                              : q.type === 'textarea' 
-                              ? 'Long Text' 
-                              : 'Text'}
-                          </Badge>
-                        </div>
-                        {q.options && q.options.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {q.options.map((opt, oIdx) => (
-                              <span key={oIdx} className="text-[9px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                                {opt}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span className="text-xs font-medium text-foreground truncate">
+                          {idx + 1}. {q.text}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] uppercase px-1 py-0 shrink-0 font-mono">
+                          {q.type === 'choice' 
+                            ? 'Choice' 
+                            : q.type === 'boolean' 
+                            ? 'Yes/No' 
+                            : q.type === 'date' 
+                            ? 'Date' 
+                            : q.type === 'url' 
+                            ? 'URL' 
+                            : q.type === 'textarea' 
+                            ? 'Long' 
+                            : 'Text'}
+                        </Badge>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => removeQuestion(q.id || q.text)}
-                        className="text-muted-foreground hover:text-destructive p-1 transition-colors shrink-0"
-                        title="Remove question from job"
+                        className="text-muted-foreground hover:text-destructive p-0.5 transition-colors shrink-0"
+                        title="Remove question"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   ))
                 )}
               </div>
             </div>
-
-            {/* Public Toggle Card */}
-            <div className="p-3.5 rounded-lg border border-border bg-muted/40 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-primary" />
-                  <Label htmlFor="job-public" className="font-semibold text-xs cursor-pointer">
-                    Publish to Public Careers Page Immediately
-                  </Label>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Candidates will be able to apply through your public careers board.
-                </p>
-              </div>
-              <Switch 
-                id="job-public"
-                checked={formData.isPublic}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublic: checked }))}
-              />
-            </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <DialogFooter className="pt-2 border-t border-border/60 flex items-center justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={loading} className="h-8 text-xs">
               Cancel
             </Button>
-            <Button onClick={handleSaveJob} disabled={loading} className="gap-1.5">
-              <Sparkles className="w-4 h-4" />
+            <Button size="sm" onClick={handleSaveJob} disabled={loading} className="h-8 text-xs font-semibold px-4 gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
               {loading 
-                ? (isEditMode ? 'Saving Changes...' : 'Creating...') 
+                ? (isEditMode ? 'Saving...' : 'Creating...') 
                 : (isEditMode ? 'Save Changes' : 'Create & Publish Job')}
             </Button>
           </DialogFooter>

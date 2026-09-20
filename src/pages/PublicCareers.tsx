@@ -7,14 +7,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Building2, 
-  Search, 
-  MapPin, 
-  Briefcase, 
-  ArrowRight, 
-  Sparkles, 
-  Calendar, 
+import {
+  Building2,
+  Search,
+  MapPin,
+  Briefcase,
+  ArrowRight,
+  Sparkles,
+  Calendar,
   CheckCircle,
   ExternalLink,
   Users,
@@ -46,9 +46,9 @@ export default function PublicCareers() {
   const { toast } = useToast();
   const [client, setClient] = useState<ClientTenant>(DEFAULT_ZOOL_CLIENT);
   const isZool = (client?.slug || slug || '').toLowerCase().includes('zool') || client?.name?.toLowerCase().includes('zool');
-  const isPlatform = 
-    (client?.slug || slug || '').toLowerCase().includes('platform') || 
-    (client?.slug || slug || '').toLowerCase().includes('sahab') || 
+  const isPlatform =
+    (client?.slug || slug || '').toLowerCase().includes('platform') ||
+    (client?.slug || slug || '').toLowerCase().includes('sahab') ||
     (client?.slug || slug || '').toLowerCase().includes('hiremate') ||
     (client?.name || '').toLowerCase().includes('platform') ||
     (client?.name || '').toLowerCase().includes('sahab');
@@ -406,10 +406,10 @@ export default function PublicCareers() {
               </div>
             )}
           </div>
-          <a 
-            href={`/careers/${slug}`} 
-            target="_blank" 
-            rel="noreferrer" 
+          <a
+            href={`/careers/${slug}`}
+            target="_blank"
+            rel="noreferrer"
             className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-muted/60 px-2.5 py-1.5 rounded-md border border-border"
           >
             <span>Full Portal</span>
@@ -417,7 +417,7 @@ export default function PublicCareers() {
           </a>
         </header>
       ) : (
-        <header 
+        <header
           className="relative border-b border-border py-16 px-6 overflow-hidden"
           style={{
             background: `radial-gradient(ellipse at 50% 0%, ${client.themeColor || '#2563eb'}22 0%, transparent 70%)`
@@ -425,7 +425,7 @@ export default function PublicCareers() {
         >
           <div className="max-w-4xl mx-auto text-center space-y-5 flex flex-col items-center">
             {/* Prominent Client Brand Logo */}
-            <div className="py-2 flex justify-center hover:scale-105 transition-transform duration-200">
+            <div className="py-2 flex justify-center hover:scale-105 transition-transform duration-200 hidden">
               <TenantBrandLogo
                 client={isPlatform ? { ...client, name: 'Sahab Portal', slug: 'platform' } : client}
                 variant="full"
@@ -435,8 +435,8 @@ export default function PublicCareers() {
             </div>
 
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-border bg-card/90 backdrop-blur shadow-sm">
-              <div 
-                className="w-2 h-2 rounded-full animate-pulse" 
+              <div
+                className="w-2 h-2 rounded-full animate-pulse"
                 style={{ backgroundColor: client.themeColor || '#2563eb' }}
               />
               <span className="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -517,8 +517,8 @@ export default function PublicCareers() {
           </div>
 
           {filteredJobs.map((job) => (
-            <Link 
-              key={job.id} 
+            <Link
+              key={job.id}
               to={`/careers/${client.slug}/${job.slug || job.id}`}
               target={isEmbedMode ? "_blank" : undefined}
               rel={isEmbedMode ? "noopener noreferrer" : undefined}
@@ -588,7 +588,7 @@ export default function PublicCareers() {
                   </div>
 
                   <div className="shrink-0 flex items-center gap-2">
-                    <Button 
+                    <Button
                       type="button"
                       variant="outline"
                       size="sm"
@@ -607,7 +607,7 @@ export default function PublicCareers() {
                       <Sparkles className="w-3.5 h-3.5 text-primary" />
                       Quick Apply
                     </Button>
-                    <Button 
+                    <Button
                       className="group-hover:bg-primary group-hover:text-primary-foreground gap-1.5"
                     >
                       Apply Now
