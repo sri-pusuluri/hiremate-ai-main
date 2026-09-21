@@ -54,7 +54,8 @@ export interface Candidate {
   };
   // ATS Fields
   clientId?: string;
-  pipelineStage?: 'applied' | 'ai_screened' | 'interviewing' | 'offered' | 'rejected';
+  pipelineStage?: 'applied' | 'ai_screened' | 'shortlisted' | 'interviewing' | 'offered' | 'rejected' | string;
+  status?: 'applied' | 'shortlisted' | 'interviewing' | 'offered' | 'rejected' | 'pending' | string;
   phone?: string;
   linkedInUrl?: string;
   portfolioUrl?: string;

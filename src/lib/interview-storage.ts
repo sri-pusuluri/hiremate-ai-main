@@ -268,11 +268,15 @@ export async function submitInterviewScorecard(scorecard: Omit<InterviewScorecar
 }
 
 export async function deleteInterview(interviewId: string): Promise<boolean> {
+  let targetCandidateId: string | null = null;
+
   // 1. Update localStorage
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_INTERVIEWS_KEY);
     if (raw) {
       const list: Interview[] = JSON.parse(raw);
+      const target = list.find(i => i.id === interviewId);
+      if (target) targetCandidateId = target.candidateId;
       const filtered = list.filter(i => i.id !== interviewId);
       localStorage.setItem(LOCAL_STORAGE_INTERVIEWS_KEY, JSON.stringify(filtered));
     }
@@ -280,10 +284,39 @@ export async function deleteInterview(interviewId: string): Promise<boolean> {
     console.warn('Could not update localStorage interviews on delete:', e);
   }
 
-  // 2. Delete from Supabase
+  // 2. Delete from Supabase & rollback candidate stage if no interviews remain
   try {
+    if (!targetCandidateId) {
+      const { data } = await supabase.from('interviews').select('candidate_id').eq('id', interviewId).maybeSingle();
+      if (data) targetCandidateId = (data as any).candidate_id;
+    }
+
     await supabase.from('interview_scorecards').delete().eq('interview_id', interviewId);
     await supabase.from('interviews').delete().eq('id', interviewId);
+
+    // Rollback candidate status if no other interviews exist for candidate
+    if (targetCandidateId) {
+      const { data: remaining } = await supabase
+        .from('interviews')
+        .select('id')
+        .eq('candidate_id', targetCandidateId);
+
+      if (!remaining || remaining.length === 0) {
+        const { data: cand } = await supabase
+          .from('candidates')
+          .select('is_pinned, ai_score')
+          .eq('id', targetCandidateId)
+          .maybeSingle();
+
+        const isShortlisted = Boolean(cand?.is_pinned || cand?.ai_score === 'high');
+        const fallbackStage = isShortlisted ? 'shortlisted' : 'applied';
+
+        await supabase.from('candidates').update({
+          pipeline_stage: fallbackStage,
+          status: fallbackStage
+        } as any).eq('id', targetCandidateId);
+      }
+    }
   } catch (e) {
     console.warn('Non-blocking Supabase delete interview fallback:', e);
   }

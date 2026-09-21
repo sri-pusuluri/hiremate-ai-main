@@ -35,6 +35,7 @@ import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getInitials } from '@/lib/utils';
 import { getAppBaseUrl } from '@/lib/app-url';
+import { ScheduleInterviewModal } from '@/components/interviews/ScheduleInterviewModal';
 
 const jobUuidMap: Record<string, string> = {
   'job-1': '11111111-1111-1111-1111-111111111111',
@@ -163,13 +164,22 @@ export default function Shortlisted() {
             })(),
             aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
             isPinned: c.is_pinned || c.ai_score === 'high' || c.aiScore === 'high' || false,
+            status: c.status || (c.is_pinned || c.ai_score === 'high' ? 'shortlisted' : 'applied'),
+            pipelineStage: c.pipeline_stage || (c.status === 'interviewing' ? 'interviewing' : (c.is_pinned || c.ai_score === 'high' ? 'shortlisted' : 'applied')),
             company: c.company || (c.predictive_insights as any)?.company || 'Independent',
             currentRole: c.role_title || (c.predictive_insights as any)?.currentRole || c.current_role || c.currentRole || 'Software Engineer',
             resumeText: c.resume_text || c.resumeText || '',
             resumeUrl: c.resume_url || c.resumeUrl || ''
           }));
         }
-        const filteredShortlisted = mappedCandidates.filter(c => c.aiScore === 'high' || c.isPinned);
+        const filteredShortlisted = mappedCandidates.filter(c => 
+          c.aiScore === 'high' || 
+          c.isPinned || 
+          c.status === 'shortlisted' || 
+          c.pipelineStage === 'shortlisted' ||
+          c.status === 'interviewing' ||
+          c.pipelineStage === 'interviewing'
+        );
         setCandidates(filteredShortlisted);
       } catch (err) {
         console.error('Error loading shortlisted candidates:', err);
@@ -185,6 +195,7 @@ export default function Shortlisted() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterJob, setFilterJob] = useState<string>('all');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [interviewCandidate, setInterviewCandidate] = useState<Candidate | null>(null);
 
   // Create a job lookup map for efficient access
   const jobMap = useMemo(() => {
@@ -452,7 +463,20 @@ export default function Shortlisted() {
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-xs text-foreground">{candidate.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-xs text-foreground">{candidate.name}</p>
+                        {candidate.status === 'interviewing' || candidate.pipelineStage === 'interviewing' ? (
+                          <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-200 text-[10px] py-0 px-1.5 font-medium flex items-center gap-1">
+                            <Calendar className="w-2.5 h-2.5" />
+                            Interviewing
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-200 text-[10px] py-0 px-1.5 font-medium flex items-center gap-1">
+                            <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                            Shortlisted
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Mail className="w-3 h-3" />
                         {candidate.email}
@@ -513,19 +537,34 @@ export default function Shortlisted() {
                     {candidate.appliedDate}
                   </p>
                 </td>
-                <td className="px-3.5 py-2.5">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewCandidate(candidate);
-                    }}
-                  >
-                    <Eye className="w-3.5 h-3.5 mr-1" />
-                    View
-                  </Button>
+                <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 px-2.5 text-xs text-purple-700 hover:text-purple-800 hover:bg-purple-50 border-purple-200 gap-1 font-medium shadow-2xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInterviewCandidate(candidate);
+                      }}
+                      title="Schedule Interview Round"
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-purple-600" />
+                      Schedule
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewCandidate(candidate);
+                      }}
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      View
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -568,6 +607,23 @@ export default function Shortlisted() {
           onCandidateUpdate={(updated) => {
             setSelectedCandidate(updated);
             setCandidates(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
+          }}
+        />
+      )}
+
+      {/* Direct Schedule Interview Modal */}
+      {interviewCandidate && (
+        <ScheduleInterviewModal
+          isOpen={Boolean(interviewCandidate)}
+          onClose={() => setInterviewCandidate(null)}
+          candidate={interviewCandidate}
+          job={interviewCandidate.jobId ? jobMap[interviewCandidate.jobId] : undefined}
+          onScheduled={(newInt) => {
+            setCandidates(prev => prev.map(c => 
+              c.id === newInt.candidateId 
+                ? { ...c, status: 'interviewing', pipelineStage: 'interviewing' } 
+                : c
+            ));
           }}
         />
       )}
