@@ -3,6 +3,7 @@ import {
   fetchInterviews, 
   createInterview, 
   submitInterviewScorecard, 
+  deleteInterview,
   SEED_DEMO_INTERVIEWS 
 } from '../lib/interview-storage';
 import { 
@@ -88,6 +89,18 @@ describe('Interview & Interviewer Module Suite', () => {
     const updated = updatedList.find(i => i.id === targetInterview.id);
     expect(updated?.status).toBe('completed');
     expect(updated?.scorecard?.overallScore).toBe(4.75);
+  });
+
+  it('deletes an interview round and removes it from pipeline', async () => {
+    const targetInterview = SEED_DEMO_INTERVIEWS[0];
+    const initialList = await fetchInterviews();
+    expect(initialList.some(i => i.id === targetInterview.id)).toBe(true);
+
+    const deleted = await deleteInterview(targetInterview.id);
+    expect(deleted).toBe(true);
+
+    const afterList = await fetchInterviews();
+    expect(afterList.some(i => i.id === targetInterview.id)).toBe(false);
   });
 });
 

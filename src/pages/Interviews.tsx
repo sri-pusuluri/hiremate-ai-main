@@ -18,10 +18,11 @@ import {
   Sparkles,
   CalendarDays,
   Building2,
-  Briefcase
+  Briefcase,
+  Trash2
 } from 'lucide-react';
 import { Interview, InterviewRoundType, InterviewStatus, InterviewScorecard } from '@/types/interviews';
-import { fetchInterviews } from '@/lib/interview-storage';
+import { fetchInterviews, deleteInterview } from '@/lib/interview-storage';
 import { ScheduleInterviewModal } from '@/components/interviews/ScheduleInterviewModal';
 import { InterviewScorecardModal } from '@/components/interviews/InterviewScorecardModal';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,26 @@ export default function Interviews() {
       console.warn('Error loading interviews:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteInterview = async (interviewId: string, candidateName: string) => {
+    if (!window.confirm(`Are you sure you want to cancel / remove the interview for "${candidateName}"?`)) {
+      return;
+    }
+    try {
+      await deleteInterview(interviewId);
+      setInterviews(prev => prev.filter(i => i.id !== interviewId));
+      toast({
+        title: 'Interview Removed',
+        description: `The interview round for ${candidateName} has been cancelled and removed.`
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error Deleting Interview',
+        description: err.message || 'Could not delete interview.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -241,17 +262,28 @@ export default function Interviews() {
                     </div>
                   </div>
 
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      "text-xs font-semibold capitalize shrink-0",
-                      item.status === 'completed' 
-                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" 
-                        : "bg-purple-500/10 text-purple-600 border-purple-500/30"
-                    )}
-                  >
-                    {item.status === 'completed' ? '✓ Completed' : '⏱ Scheduled'}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "text-xs font-semibold capitalize",
+                        item.status === 'completed' 
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" 
+                          : "bg-purple-500/10 text-purple-600 border-purple-500/30"
+                      )}
+                    >
+                      {item.status === 'completed' ? '✓ Completed' : '⏱ Scheduled'}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                      title="Cancel / Delete Interview"
+                      onClick={() => handleDeleteInterview(item.id, item.candidateName)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
 
                 <h4 className="text-xs font-bold text-foreground/90 pt-1">

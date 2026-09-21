@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -26,7 +26,8 @@ import {
   Sparkles, 
   CheckCircle2, 
   Briefcase,
-  Link2
+  Link2,
+  UserCheck
 } from 'lucide-react';
 import { Candidate, Job } from '@/types/hiresort';
 import { Interview, InterviewRoundType } from '@/types/interviews';
@@ -34,6 +35,24 @@ import { createInterview } from '@/lib/interview-storage';
 import { logAuditEvent } from '@/lib/audit-logger';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { mockJobs, mockCandidates } from '@/data/mockData';
+
+interface AvailableJob {
+  id: string;
+  title: string;
+  department?: string;
+}
+
+interface AvailableCandidate {
+  id: string;
+  name: string;
+  email?: string;
+  jobId: string;
+  currentRole?: string;
+  experience?: string;
+  matchScore?: number;
+}
 
 interface ScheduleInterviewModalProps {
   open: boolean;
@@ -50,8 +69,14 @@ export function ScheduleInterviewModal({
   job,
   onScheduled
 }: ScheduleInterviewModalProps) {
-  const { user, client, role } = useAuth();
+  const { user, client, clientId, role } = useAuth();
   const { toast } = useToast();
+
+  const [availableJobs, setAvailableJobs] = useState<AvailableJob[]>([]);
+  const [availableCandidates, setAvailableCandidates] = useState<AvailableCandidate[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>('');
+  const [loadingOptions, setLoadingOptions] = useState(false);
 
   const [title, setTitle] = useState('');
   const [roundType, setRoundType] = useState<InterviewRoundType>('technical');
@@ -63,19 +88,157 @@ export function ScheduleInterviewModal({
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Set default title based on roundType & candidate
+  // Load jobs and candidates when modal opens without preselected candidate
   useEffect(() => {
-    if (candidate) {
-      const roundLabel = roundType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      setTitle(`${roundLabel} Evaluation - ${candidate.name}`);
+    if (!open) return;
+
+    if (job?.id) {
+      setSelectedJobId(job.id);
     } else {
-      setTitle('Technical Assessment');
+      setSelectedJobId('');
     }
+
+    if (candidate?.id) {
+      setSelectedCandidateId(candidate.id);
+    } else {
+      setSelectedCandidateId('');
+    }
+
     // Default scheduled date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setScheduledDate(tomorrow.toISOString().split('T')[0]);
-  }, [candidate, roundType, open]);
+
+    if (!candidate) {
+      const loadOptions = async () => {
+        setLoadingOptions(true);
+        try {
+          // 1. Load active jobs
+          let jobsList: AvailableJob[] = [];
+          try {
+            let q = supabase.from('jobs').select('id, title, department, client_id, status');
+            if (clientId && clientId !== 'hiresort-platform-hq') {
+              q = q.eq('client_id', clientId);
+            }
+            const { data } = await q;
+            if (data && data.length > 0) {
+              jobsList = data.map((j: any) => ({
+                id: j.id,
+                title: j.title,
+                department: j.department || undefined
+              }));
+            }
+          } catch (e) {}
+
+          if (jobsList.length === 0) {
+            jobsList = mockJobs.map(j => ({
+              id: j.id,
+              title: j.title,
+              department: j.department
+            }));
+          }
+          setAvailableJobs(jobsList);
+
+          // 2. Load candidates
+          let candList: AvailableCandidate[] = [];
+          try {
+            let q = supabase.from('candidates').select('id, full_name, email, job_id, client_id, current_role, experience, overall_score, match_score');
+            if (clientId && clientId !== 'hiresort-platform-hq') {
+              q = q.eq('client_id', clientId);
+            }
+            const { data } = await q;
+            if (data && data.length > 0) {
+              candList = data.map((c: any) => ({
+                id: c.id,
+                name: c.full_name || 'Candidate',
+                email: c.email || undefined,
+                jobId: c.job_id || '',
+                currentRole: c.current_role || undefined,
+                experience: c.experience || undefined,
+                matchScore: c.overall_score || c.match_score || undefined
+              }));
+            }
+          } catch (e) {}
+
+          if (candList.length === 0) {
+            candList = mockCandidates.map(c => ({
+              id: c.id,
+              name: c.name,
+              email: c.email,
+              jobId: c.jobId,
+              currentRole: c.currentRole,
+              experience: c.experience,
+              matchScore: c.aiScore?.overall
+            }));
+          }
+          setAvailableCandidates(candList);
+        } finally {
+          setLoadingOptions(false);
+        }
+      };
+
+      loadOptions();
+    }
+  }, [open, candidate, job, clientId]);
+
+  // Candidates filtered by selected job
+  const filteredCandidates = useMemo(() => {
+    if (!selectedJobId || selectedJobId === 'all') {
+      return availableCandidates;
+    }
+    return availableCandidates.filter(c => c.jobId === selectedJobId);
+  }, [availableCandidates, selectedJobId]);
+
+  // Active candidate object (either prop or selected from dropdown)
+  const activeCandidate = useMemo(() => {
+    if (candidate) {
+      return {
+        id: candidate.id,
+        name: candidate.name,
+        email: candidate.email,
+        jobId: candidate.jobId,
+        currentRole: candidate.currentRole,
+        experience: candidate.experience
+      };
+    }
+    return availableCandidates.find(c => c.id === selectedCandidateId) || null;
+  }, [candidate, availableCandidates, selectedCandidateId]);
+
+  // Active job object (either prop or matching the selected job / candidate's job)
+  const activeJob = useMemo(() => {
+    if (job) return { id: job.id, title: job.title };
+    const jId = (selectedJobId && selectedJobId !== 'all') ? selectedJobId : activeCandidate?.jobId;
+    return availableJobs.find(j => j.id === jId) || null;
+  }, [job, availableJobs, selectedJobId, activeCandidate]);
+
+  // Auto update title when active candidate or round type changes
+  useEffect(() => {
+    const roundLabel = roundType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (activeCandidate?.name) {
+      setTitle(`${roundLabel} Evaluation - ${activeCandidate.name}`);
+    } else {
+      setTitle(`${roundLabel} Evaluation`);
+    }
+  }, [activeCandidate?.name, roundType]);
+
+  const handleJobSelect = (jobId: string) => {
+    setSelectedJobId(jobId);
+    // If current selected candidate does not belong to this job, reset candidate
+    if (selectedCandidateId && jobId !== 'all') {
+      const cand = availableCandidates.find(c => c.id === selectedCandidateId);
+      if (cand && cand.jobId && cand.jobId !== jobId) {
+        setSelectedCandidateId('');
+      }
+    }
+  };
+
+  const handleCandidateSelect = (candId: string) => {
+    setSelectedCandidateId(candId);
+    const cand = availableCandidates.find(c => c.id === candId);
+    if (cand && cand.jobId && (!selectedJobId || selectedJobId === 'all')) {
+      setSelectedJobId(cand.jobId);
+    }
+  };
 
   const handleGenerateMeetingLink = (type: 'meet' | 'zoom') => {
     const code = Math.random().toString(36).substring(2, 5) + '-' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 5);
@@ -87,6 +250,15 @@ export function ScheduleInterviewModal({
   };
 
   const handleSchedule = async () => {
+    if (!activeCandidate) {
+      toast({
+        title: 'Candidate Required',
+        description: 'Please select a candidate applicant to schedule an interview.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     if (!title.trim() || !scheduledDate) {
       toast({
         title: 'Missing Required Fields',
@@ -107,11 +279,11 @@ export function ScheduleInterviewModal({
       const created = await createInterview({
         clientId: client?.id || 'hiresort-platform-hq',
         clientName: client?.name || 'Workspace',
-        candidateId: candidate?.id || 'cand-generic',
-        candidateName: candidate?.name || 'Candidate',
-        candidateEmail: candidate?.email,
-        jobId: job?.id || candidate?.jobId || 'job-generic',
-        jobTitle: job?.title || 'Engineering Role',
+        candidateId: activeCandidate.id,
+        candidateName: activeCandidate.name,
+        candidateEmail: activeCandidate.email,
+        jobId: activeJob?.id || activeCandidate.jobId || 'job-generic',
+        jobTitle: activeJob?.title || 'Open Position',
         title,
         roundType,
         status: 'scheduled',
@@ -133,19 +305,20 @@ export function ScheduleInterviewModal({
         userRole: role || 'recruiter',
         action: 'SCHEDULE_INTERVIEW',
         resourceType: 'candidate',
-        resourceId: candidate?.id,
+        resourceId: activeCandidate.id,
         details: {
           interview_id: created.id,
           title: created.title,
           round_type: created.roundType,
           scheduled_at: created.scheduledAt,
-          candidate_name: candidate?.name
+          candidate_name: activeCandidate.name,
+          job_title: activeJob?.title || 'Open Position'
         }
       }).catch(() => {});
 
       toast({
         title: 'Interview Scheduled! 🎙️',
-        description: `Scheduled "${title}" with ${candidate?.name || 'candidate'}.`
+        description: `Scheduled "${title}" with ${activeCandidate.name} for ${activeJob?.title || 'position'}.`
       });
 
       onScheduled?.(created);
@@ -173,15 +346,107 @@ export function ScheduleInterviewModal({
             <div>
               <DialogTitle className="text-lg font-bold">Schedule Candidate Interview</DialogTitle>
               <DialogDescription className="text-xs">
-                Configure round parameters, calendar schedule, video links, and assign panel interviewers.
+                Select job and candidate, configure round parameters, calendar schedule, video links, and assign panel interviewers.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
         <div className="space-y-4 py-3">
-          {/* Candidate / Job Summary Pill */}
-          {candidate && (
+          {/* Job & Candidate Selection (or preselected pill if candidate passed) */}
+          {!candidate ? (
+            <div className="p-3.5 rounded-xl bg-purple-500/[0.04] border border-purple-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-300">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>1. Select Job & Candidate</span>
+                </div>
+                {loadingOptions && (
+                  <span className="text-[10px] text-muted-foreground animate-pulse">Loading directory...</span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* 1. Job Dropdown */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold flex items-center justify-between">
+                    <span>Target Job <span className="text-destructive">*</span></span>
+                    {availableJobs.length > 0 && (
+                      <span className="text-[10px] font-normal text-muted-foreground">{availableJobs.length} roles</span>
+                    )}
+                  </Label>
+                  <Select value={selectedJobId} onValueChange={handleJobSelect}>
+                    <SelectTrigger className="text-xs h-9 bg-background">
+                      <SelectValue placeholder="Filter by job opening..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      <SelectItem value="all">🌐 All Job Openings ({availableCandidates.length} applicants)</SelectItem>
+                      {availableJobs.map(j => (
+                        <SelectItem key={j.id} value={j.id}>
+                          {j.title} {j.department ? `(${j.department})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 2. Candidate Dropdown */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold flex items-center justify-between">
+                    <span>Candidate Applicant <span className="text-destructive">*</span></span>
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      {filteredCandidates.length} available
+                    </span>
+                  </Label>
+                  <Select value={selectedCandidateId} onValueChange={handleCandidateSelect}>
+                    <SelectTrigger className="text-xs h-9 bg-background">
+                      <SelectValue placeholder={filteredCandidates.length === 0 ? "No candidates found" : "Select candidate..."} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {filteredCandidates.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          No applicants found for this job
+                        </SelectItem>
+                      ) : (
+                        filteredCandidates.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            <div className="flex items-center gap-1.5 text-left">
+                              <span className="font-semibold">{c.name}</span>
+                              {c.matchScore && (
+                                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">
+                                  {Math.round(c.matchScore)}% Match
+                                </span>
+                              )}
+                              {c.experience && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  • {c.experience}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {activeCandidate && (
+                <div className="flex flex-wrap items-center justify-between gap-1 pt-1.5 border-t border-purple-500/15 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <UserCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    Applicant: <strong className="text-foreground">{activeCandidate.name}</strong>
+                    {activeCandidate.email ? ` • ${activeCandidate.email}` : ''}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Briefcase className="w-3.5 h-3.5 text-primary" />
+                    Role: <strong className="text-foreground">{activeJob?.title || 'Open Position'}</strong>
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Candidate / Job Summary Pill */
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/60 border border-border/70 text-xs">
               <div>
                 <span className="font-semibold text-foreground">{candidate.name}</span>
@@ -193,6 +458,7 @@ export function ScheduleInterviewModal({
               </span>
             </div>
           )}
+
 
           {/* Round Title & Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

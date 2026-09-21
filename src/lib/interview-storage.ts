@@ -266,3 +266,27 @@ export async function submitInterviewScorecard(scorecard: Omit<InterviewScorecar
 
   return newScorecard;
 }
+
+export async function deleteInterview(interviewId: string): Promise<boolean> {
+  // 1. Update localStorage
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_INTERVIEWS_KEY);
+    if (raw) {
+      const list: Interview[] = JSON.parse(raw);
+      const filtered = list.filter(i => i.id !== interviewId);
+      localStorage.setItem(LOCAL_STORAGE_INTERVIEWS_KEY, JSON.stringify(filtered));
+    }
+  } catch (e) {
+    console.warn('Could not update localStorage interviews on delete:', e);
+  }
+
+  // 2. Delete from Supabase
+  try {
+    await supabase.from('interview_scorecards').delete().eq('interview_id', interviewId);
+    await supabase.from('interviews').delete().eq('id', interviewId);
+  } catch (e) {
+    console.warn('Non-blocking Supabase delete interview fallback:', e);
+  }
+
+  return true;
+}
