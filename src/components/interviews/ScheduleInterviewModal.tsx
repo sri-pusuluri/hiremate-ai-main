@@ -55,6 +55,13 @@ interface AvailableCandidate {
   matchScore?: number;
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  email?: string;
+  role?: string;
+}
+
 interface ScheduleInterviewModalProps {
   open?: boolean;
   isOpen?: boolean;
@@ -96,7 +103,11 @@ export function ScheduleInterviewModal({
   const [scheduledTime, setScheduledTime] = useState('14:00');
   const [durationMinutes, setDurationMinutes] = useState(45);
   const [meetingLink, setMeetingLink] = useState('');
-  const [interviewerNames, setInterviewerNames] = useState('Srini Admin, Naushad Recruiter');
+  const [interviewerNames, setInterviewerNames] = useState('');
+  const [availableInterviewers, setAvailableInterviewers] = useState<TeamMember[]>([]);
+  const [selectedInterviewers, setSelectedInterviewers] = useState<TeamMember[]>([]);
+  const [interviewerSearch, setInterviewerSearch] = useState('');
+  const [showInterviewerDropdown, setShowInterviewerDropdown] = useState(false);
   const [notes, setNotes] = useState('');
   const [downloadCalendarInvite, setDownloadCalendarInvite] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -194,6 +205,32 @@ export function ScheduleInterviewModal({
             }));
           }
           setAvailableCandidates(candList);
+
+          // 3. Load team members from profiles for the interviewer picker
+          try {
+            let pq = supabase.from('profiles').select('id, full_name, email, role');
+            if (clientId && clientId !== 'hiresort-platform-hq') {
+              pq = pq.eq('client_id', clientId);
+            }
+            const { data: profilesData } = await pq;
+            if (profilesData && profilesData.length > 0) {
+              const members: TeamMember[] = profilesData
+                .filter((p: any) => p.full_name)
+                .map((p: any) => ({
+                  id: p.id,
+                  name: p.full_name,
+                  email: p.email || undefined,
+                  role: p.role || undefined
+                }));
+              setAvailableInterviewers(members);
+              // Auto-select the current logged-in user as default interviewer
+              const currentUser = members.find(m => m.id === user?.id);
+              if (currentUser) {
+                setSelectedInterviewers([currentUser]);
+              }
+            }
+          } catch (e) {}
+
         } finally {
           setLoadingOptions(false);
         }
@@ -307,10 +344,9 @@ export function ScheduleInterviewModal({
     setSubmitting(true);
     try {
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime || '10:00'}:00Z`).toISOString();
-      const parsedInterviewers = interviewerNames
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
+      const parsedInterviewers = selectedInterviewers.length > 0
+        ? selectedInterviewers.map(i => i.name)
+        : interviewerNames.split(',').map(s => s.trim()).filter(Boolean);
 
       const created = await createInterview({
         clientId: client?.id || 'hiresort-platform-hq',
@@ -627,17 +663,86 @@ export function ScheduleInterviewModal({
             />
           </div>
 
-          {/* Assigned Interviewers */}
+          {/* Assigned Interviewers — searchable picker from DB profiles */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-primary" /> Assigned Interviewers (comma separated)
+              <Users className="w-3.5 h-3.5 text-primary" /> Assigned Interviewers
+              <span className="font-normal text-muted-foreground">({selectedInterviewers.length} selected)</span>
             </Label>
-            <Input 
-              value={interviewerNames}
-              onChange={e => setInterviewerNames(e.target.value)}
-              placeholder="Srini Admin, Naushad Recruiter"
-              className="text-xs h-9"
-            />
+
+            {/* Selected chips */}
+            {selectedInterviewers.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-1">
+                {selectedInterviewers.map(m => (
+                  <span
+                    key={m.id}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
+                  >
+                    {m.name}
+                    {m.email && <span className="text-primary/60 text-[10px]">· {m.email}</span>}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedInterviewers(prev => prev.filter(i => i.id !== m.id))}
+                      className="ml-0.5 hover:text-destructive transition-colors"
+                      aria-label={`Remove ${m.name}`}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Search input */}
+            <div className="relative">
+              <Input
+                value={interviewerSearch}
+                onChange={e => {
+                  setInterviewerSearch(e.target.value);
+                  setShowInterviewerDropdown(true);
+                }}
+                onFocus={() => setShowInterviewerDropdown(true)}
+                onBlur={() => setTimeout(() => setShowInterviewerDropdown(false), 150)}
+                placeholder={availableInterviewers.length > 0 ? "Search team members..." : "No team members found in DB"}
+                className="text-xs h-9"
+              />
+              {showInterviewerDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-44 overflow-y-auto">
+                  {availableInterviewers
+                    .filter(m =>
+                      !selectedInterviewers.find(s => s.id === m.id) &&
+                      (m.name.toLowerCase().includes(interviewerSearch.toLowerCase()) ||
+                       (m.email || '').toLowerCase().includes(interviewerSearch.toLowerCase()))
+                    )
+                    .map(m => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-accent flex items-center justify-between gap-2"
+                        onMouseDown={() => {
+                          setSelectedInterviewers(prev => [...prev, m]);
+                          setInterviewerSearch('');
+                          setShowInterviewerDropdown(false);
+                        }}
+                      >
+                        <span className="font-medium">{m.name}</span>
+                        {m.email && <span className="text-muted-foreground text-[10px]">{m.email}</span>}
+                      </button>
+                    ))}
+                  {availableInterviewers.filter(m =>
+                    !selectedInterviewers.find(s => s.id === m.id) &&
+                    (m.name.toLowerCase().includes(interviewerSearch.toLowerCase()) ||
+                     (m.email || '').toLowerCase().includes(interviewerSearch.toLowerCase()))
+                  ).length === 0 && (
+                    <p className="px-3 py-2 text-xs text-muted-foreground">
+                      {availableInterviewers.length === 0
+                        ? 'No team members in database yet'
+                        : 'No matching members found'}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Special Notes / Agendas */}
