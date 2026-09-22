@@ -44,6 +44,7 @@ import { useAuth, DEFAULT_ZOOL_CLIENT } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getInitials } from '@/lib/utils';
 import { AddCandidateModal } from '@/components/flows/AddCandidateModal';
+import { ScheduleInterviewModal } from '@/components/interviews/ScheduleInterviewModal';
 
 type TabType = 'all' | 'applied' | 'talent-pool';
 
@@ -187,6 +188,7 @@ export default function Candidates() {
   const [filterJob, setFilterJob] = useState<string>('all');
   const [filterStage, setFilterStage] = useState<string>('all');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [interviewCandidate, setInterviewCandidate] = useState<Candidate | null>(null);
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
 
@@ -630,19 +632,34 @@ export default function Candidates() {
                     {candidate.appliedDate}
                   </p>
                 </td>
-                <td className="px-3.5 py-2.5">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewCandidate(candidate);
-                    }}
-                  >
-                    <Eye className="w-3.5 h-3.5 mr-1" />
-                    View
-                  </Button>
+                <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 px-2 text-xs text-purple-700 hover:text-purple-800 hover:bg-purple-50 border-purple-200 gap-1 font-medium shadow-2xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInterviewCandidate(candidate);
+                      }}
+                      title="Schedule Interview Round"
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-purple-600" />
+                      Schedule
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewCandidate(candidate);
+                      }}
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      View
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -700,6 +717,23 @@ export default function Candidates() {
             });
         }}
       />
+
+      {/* Direct Schedule Interview Modal */}
+      {interviewCandidate && (
+        <ScheduleInterviewModal
+          isOpen={Boolean(interviewCandidate)}
+          onClose={() => setInterviewCandidate(null)}
+          candidate={interviewCandidate}
+          job={interviewCandidate.jobId ? jobMap[interviewCandidate.jobId] : undefined}
+          onScheduled={(newInt) => {
+            setCandidates(prev => prev.map(c => 
+              c.id === newInt.candidateId 
+                ? { ...c, status: 'interviewing', pipelineStage: 'interviewing' } 
+                : c
+            ));
+          }}
+        />
+      )}
     </div>
   );
 }

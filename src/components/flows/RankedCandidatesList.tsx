@@ -29,11 +29,14 @@ import {
   Info,
   ExternalLink,
   UserPlus,
-  Printer
+  Printer,
+  Calendar
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { CandidateReportModal } from '@/components/reports/CandidateReportModal';
+import { ScheduleInterviewModal } from '@/components/interviews/ScheduleInterviewModal';
+import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
@@ -61,6 +64,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
   const [resumeCandidate, setResumeCandidate] = useState<Candidate | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [reportCandidate, setReportCandidate] = useState<Candidate | null>(null);
+  const [interviewCandidate, setInterviewCandidate] = useState<Candidate | null>(null);
   const [showJDModal, setShowJDModal] = useState(false);
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<CandidateTab>('all');
@@ -137,6 +141,8 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             })(),
             aiExplanation: (c.predictive_insights as any)?.assessment || c.aiExplanation || '',
             isPinned: Boolean(c.is_pinned),
+            status: c.status || (c.is_pinned ? 'shortlisted' : 'applied'),
+            pipelineStage: c.pipeline_stage || (c.status === 'interviewing' ? 'interviewing' : (c.is_pinned ? 'shortlisted' : 'applied')),
             company: (c as any).company || (c.predictive_insights as any)?.company || 'Independent',
             currentRole: (c as any).role_title || (c.predictive_insights as any)?.currentRole || c.current_role || 'Software Engineer',
             resumeText: c.resume_text || c.resumeText || '',
@@ -661,6 +667,7 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
             onClick={() => onSelectCandidate({ ...candidate, aiRank: index + 1 })}
             onViewResume={() => handleViewResume(candidate)}
             onViewReport={() => setReportCandidate(candidate)}
+            onScheduleInterview={() => setInterviewCandidate(candidate)}
             onReanalyze={() => handleReanalyzeSingleCandidate(candidate)}
             isReanalyzing={reanalyzingId === candidate.id}
             isAIEnabled={selectedJob?.hireSortEnabled || false}
@@ -765,6 +772,23 @@ export function RankedCandidatesList({ onSelectCandidate, onCreateShortlist, sel
           }
         }}
       />
+
+      {/* Schedule Interview Modal */}
+      {interviewCandidate && (
+        <ScheduleInterviewModal
+          isOpen={Boolean(interviewCandidate)}
+          onClose={() => setInterviewCandidate(null)}
+          candidate={interviewCandidate}
+          job={selectedJob || undefined}
+          onScheduled={(newInt) => {
+            setCandidates(prev => prev.map(c => 
+              c.id === newInt.candidateId 
+                ? { ...c, status: 'interviewing', pipelineStage: 'interviewing' } 
+                : c
+            ));
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -777,12 +801,13 @@ interface CandidateRowProps {
   onClick: () => void;
   onViewResume: () => void;
   onViewReport?: () => void;
+  onScheduleInterview?: () => void;
   onReanalyze?: () => void;
   isReanalyzing?: boolean;
   isAIEnabled: boolean;
 }
 
-function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, onViewResume, onViewReport, onReanalyze, isReanalyzing, isAIEnabled }: CandidateRowProps) {
+function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, onViewResume, onViewReport, onScheduleInterview, onReanalyze, isReanalyzing, isAIEnabled }: CandidateRowProps) {
   return (
     <div
       className={cn(
@@ -865,6 +890,18 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
             )}>
               {candidate.source === 'talent-pool' ? 'Talent Pool' : 'Applied'}
             </span>
+
+            {/* Stage Status Badge */}
+            {(candidate.status === 'interviewing' || candidate.pipelineStage === 'interviewing') ? (
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 text-[10px] py-0 px-1.5 font-medium flex items-center gap-1">
+                <Calendar className="w-2.5 h-2.5" />
+                Interviewing
+              </Badge>
+            ) : candidate.isPinned ? (
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 text-[10px] py-0 px-1.5 font-medium flex items-center gap-1">
+                Shortlisted
+              </Badge>
+            ) : null}
           </div>
           <p className="text-sm text-muted-foreground truncate">
             {candidate.currentRole} at {candidate.company} • {candidate.experience} yrs • {candidate.location}
@@ -933,6 +970,20 @@ function CandidateRow({ candidate, displayRank, isSelected, onSelect, onClick, o
           >
             <Printer className="w-4 h-4" />
           </Button>
+          {onScheduleInterview && (
+            <Button 
+              variant="ghost" 
+              size="icon-sm" 
+              title="Schedule Interview Round"
+              onClick={(e) => {
+                e.stopPropagation();
+                onScheduleInterview();
+              }}
+              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+            >
+              <Calendar className="w-4 h-4" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon-sm" 

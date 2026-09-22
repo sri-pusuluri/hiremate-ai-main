@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Candidate } from '@/types/hiresort';
 import { parseCandidateResume } from '@/lib/resume-parser';
+import { getSecureResumeUrl } from '@/lib/resume-storage';
 import { 
   FileText, 
   Download, 
@@ -156,7 +157,15 @@ ${certificationsList.join('\n')}
             </div>
             <div className="flex items-center gap-2">
               {candidate.resumeUrl && (
-                <Button variant="outline" size="sm" onClick={() => window.open(candidate.resumeUrl, '_blank')}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={async () => {
+                    const secureUrl = await getSecureResumeUrl(candidate.resumeUrl);
+                    window.open(secureUrl || candidate.resumeUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                  title="Open original candidate resume with authenticated access"
+                >
                   <ExternalLink className="w-4 h-4 mr-1.5" />
                   Original
                 </Button>

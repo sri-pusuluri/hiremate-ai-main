@@ -3,7 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { getAppBaseUrl } from '@/lib/app-url';
-import { Department, Position, QuestionBankItem, ClientTenant } from '@/types/hiresort';
+import { Department, Position, QuestionBankItem, ClientTenant, Candidate } from '@/types/hiresort';
+import { DisparateImpactMonitor } from '@/components/compliance/DisparateImpactMonitor';
+import { AsyncScreeningQueueMonitor } from '@/components/compliance/AsyncScreeningQueueMonitor';
+import { mockCandidates } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +43,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Zap,
-  Globe
+  Globe,
+  Scale
 } from 'lucide-react';
 import {
   Select,
@@ -198,6 +202,39 @@ export default function TenantSettings() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [auditSearch, setAuditSearch] = useState('');
   const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
+
+  // AI Governance & Compliance State
+  const [governanceCandidates, setGovernanceCandidates] = useState<Candidate[]>([]);
+
+  useEffect(() => {
+    async function loadCandidatesForGovernance() {
+      try {
+        let q = supabase.from('candidates').select('*');
+        if (effectiveClientId && effectiveClientId !== 'hiresort-platform-hq') {
+          q = q.eq('client_id', effectiveClientId);
+        }
+        const { data } = await q;
+        if (data && data.length > 0) {
+          setGovernanceCandidates(data.map((c: any) => ({
+            id: c.id,
+            name: c.full_name,
+            email: c.email,
+            experience: c.experience,
+            source: c.source,
+            status: c.status,
+            pipelineStage: c.pipeline_stage,
+            aiScore: c.ai_score,
+            isPinned: c.is_pinned
+          } as any)));
+        } else {
+          setGovernanceCandidates(mockCandidates as any);
+        }
+      } catch (e) {
+        setGovernanceCandidates(mockCandidates as any);
+      }
+    }
+    loadCandidatesForGovernance();
+  }, [effectiveClientId]);
 
   // Load available clients from Supabase
   useEffect(() => {
@@ -715,6 +752,10 @@ export default function TenantSettings() {
           <TabsTrigger value="questions" onClick={() => handleTabChange('questions')} className="gap-1.5 text-xs">
             <HelpCircle className="w-3.5 h-3.5" />
             Question Bank ({questionBank.length})
+          </TabsTrigger>
+          <TabsTrigger value="governance" onClick={() => handleTabChange('governance')} className="gap-1.5 text-xs">
+            <Scale className="w-3.5 h-3.5 text-indigo-500" />
+            AI Governance & Bias Audit
           </TabsTrigger>
           <TabsTrigger value="departments" onClick={() => handleTabChange('departments')} className="gap-1.5 text-xs">
             <Building2 className="w-3.5 h-3.5" />
@@ -1510,6 +1551,33 @@ export default function TenantSettings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* 10. AI GOVERNANCE & BIAS AUDIT TAB */}
+        <TabsContent value="governance" className="space-y-6">
+          <AsyncScreeningQueueMonitor />
+
+          <DisparateImpactMonitor 
+            candidates={governanceCandidates}
+            tenantName={name}
+            onRefresh={() => {
+              supabase.from('candidates').select('*').then(({ data }) => {
+                if (data && data.length > 0) {
+                  setGovernanceCandidates(data.map((c: any) => ({
+                    id: c.id,
+                    name: c.full_name,
+                    email: c.email,
+                    experience: c.experience,
+                    source: c.source,
+                    status: c.status,
+                    pipelineStage: c.pipeline_stage,
+                    aiScore: c.ai_score,
+                    isPinned: c.is_pinned
+                  } as any)));
+                }
+              });
+            }}
+          />
         </TabsContent>
       </Tabs>
 

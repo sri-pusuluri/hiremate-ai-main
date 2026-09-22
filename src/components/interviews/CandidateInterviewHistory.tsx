@@ -12,7 +12,11 @@ import {
   ExternalLink,
   Award,
   ThumbsUp,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  Mail,
+  CalendarPlus,
+  Copy
 } from 'lucide-react';
 import { Interview, InterviewScorecard } from '@/types/interviews';
 import { fetchInterviews } from '@/lib/interview-storage';
@@ -20,6 +24,8 @@ import { ScheduleInterviewModal } from './ScheduleInterviewModal';
 import { InterviewScorecardModal } from './InterviewScorecardModal';
 import { Candidate, Job } from '@/types/hiresort';
 import { cn } from '@/lib/utils';
+import { downloadInterviewIcs, getGoogleCalendarUrl, getCandidateEmailInvite } from '@/lib/calendar-export';
+import { useToast } from '@/hooks/use-toast';
 
 interface CandidateInterviewHistoryProps {
   candidate: Candidate;
@@ -27,6 +33,7 @@ interface CandidateInterviewHistoryProps {
 }
 
 export function CandidateInterviewHistory({ candidate, job }: CandidateInterviewHistoryProps) {
+  const { toast } = useToast();
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -176,6 +183,59 @@ export function CandidateInterviewHistory({ candidate, job }: CandidateInterview
                   </a>
                 </div>
               )}
+
+              {/* Meeting & Calendar Quick Actions */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] gap-1 px-2.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    downloadInterviewIcs(item);
+                    toast({
+                      title: "Calendar Invite Downloaded",
+                      description: `Saved .ics invitation for ${item.title}.`
+                    });
+                  }}
+                  title="Download .ics calendar event"
+                >
+                  <Download className="w-3 h-3 text-purple-600" />
+                  Download .ics
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] gap-1 px-2.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    const url = getGoogleCalendarUrl(item);
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                  }}
+                  title="Add to Google Calendar"
+                >
+                  <CalendarPlus className="w-3 h-3 text-blue-600" />
+                  Google Calendar
+                </Button>
+
+                {(candidate.email || item.candidateEmail) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] gap-1 px-2.5 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const invite = getCandidateEmailInvite({
+                        ...item,
+                        candidateEmail: item.candidateEmail || candidate.email
+                      });
+                      window.open(invite.mailtoUrl, '_blank');
+                    }}
+                    title="Send invite via email"
+                  >
+                    <Mail className="w-3 h-3 text-emerald-600" />
+                    Email Candidate
+                  </Button>
+                )}
+              </div>
 
               {/* Scorecard Display if Available */}
               {item.scorecard && (

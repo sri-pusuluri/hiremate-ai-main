@@ -32,6 +32,7 @@ import {
 import { Candidate, Job } from '@/types/hiresort';
 import { Interview, InterviewRoundType } from '@/types/interviews';
 import { createInterview } from '@/lib/interview-storage';
+import { downloadInterviewIcs, getGoogleCalendarUrl } from '@/lib/calendar-export';
 import { logAuditEvent } from '@/lib/audit-logger';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -55,20 +56,31 @@ interface AvailableCandidate {
 }
 
 interface ScheduleInterviewModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
   candidate?: Candidate | null;
   job?: Job | null;
   onScheduled?: (interview: Interview) => void;
 }
 
 export function ScheduleInterviewModal({
-  open,
+  open: openProp,
+  isOpen: isOpenProp,
   onOpenChange,
+  onClose,
   candidate,
   job,
   onScheduled
 }: ScheduleInterviewModalProps) {
+  const open = openProp ?? isOpenProp ?? false;
+  const handleOpenChange = (val: boolean) => {
+    onOpenChange?.(val);
+    if (!val) {
+      onClose?.();
+    }
+  };
   const { user, client, clientId, role } = useAuth();
   const { toast } = useToast();
 
@@ -86,6 +98,7 @@ export function ScheduleInterviewModal({
   const [meetingLink, setMeetingLink] = useState('');
   const [interviewerNames, setInterviewerNames] = useState('Srini Admin, Naushad Recruiter');
   const [notes, setNotes] = useState('');
+  const [downloadCalendarInvite, setDownloadCalendarInvite] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Load jobs and candidates when modal opens without preselected candidate
@@ -296,6 +309,20 @@ export function ScheduleInterviewModal({
         createdBy: user?.id
       });
 
+      // Update candidate status to interviewing
+      try {
+        await supabase
+          .from('candidates')
+          .update({
+            status: 'interviewing',
+            pipeline_stage: 'interviewing',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', activeCandidate.id);
+      } catch (statusErr) {
+        console.warn('Could not update candidate status in database:', statusErr);
+      }
+
       // Audit log scheduling
       logAuditEvent({
         clientId: client?.id || 'hiresort-platform-hq',
@@ -316,13 +343,21 @@ export function ScheduleInterviewModal({
         }
       }).catch(() => {});
 
+      if (downloadCalendarInvite) {
+        try {
+          downloadInterviewIcs(created);
+        } catch (calErr) {
+          console.warn('Calendar download error:', calErr);
+        }
+      }
+
       toast({
         title: 'Interview Scheduled! 🎙️',
-        description: `Scheduled "${title}" with ${activeCandidate.name} for ${activeJob?.title || 'position'}.`
+        description: `Scheduled "${title}" with ${activeCandidate.name} for ${activeJob?.title || 'position'}.${downloadCalendarInvite ? ' Calendar invite (.ics) downloaded.' : ''}`
       });
 
       onScheduled?.(created);
-      onOpenChange(false);
+      handleOpenChange(false);
     } catch (err: any) {
       console.error('Error scheduling interview:', err);
       toast({
@@ -336,7 +371,7 @@ export function ScheduleInterviewModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -586,6 +621,24 @@ export function ScheduleInterviewModal({
               placeholder="Evaluate algorithmic complexity, past leadership projects, and culture alignment."
               className="text-xs min-h-[65px]"
             />
+          </div>
+
+          {/* Calendar Invite Option */}
+          <div className="flex items-center space-x-2 pt-1">
+            <input
+              type="checkbox"
+              id="auto-download-ics"
+              checked={downloadCalendarInvite}
+              onChange={(e) => setDownloadCalendarInvite(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+            />
+            <label
+              htmlFor="auto-download-ics"
+              className="text-xs text-muted-foreground cursor-pointer select-none flex items-center gap-1.5"
+            >
+              <Calendar className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              Download Calendar Invite (<code className="text-[10px] bg-muted px-1 py-0.5 rounded font-mono">.ics</code> file) upon scheduling
+            </label>
           </div>
         </div>
 

@@ -396,10 +396,7 @@ export default function PublicJobApplication() {
             .upload(filePath, resumeFile);
 
           if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage
-              .from('resumes')
-              .getPublicUrl(filePath);
-            resumeUrl = publicUrl || filePath;
+            resumeUrl = filePath;
           }
 
           // If text or markdown file, read raw content directly for ATS parsing
