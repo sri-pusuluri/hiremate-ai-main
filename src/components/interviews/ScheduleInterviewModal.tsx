@@ -152,13 +152,22 @@ export function ScheduleInterviewModal({
           }
           setAvailableJobs(jobsList);
 
-          // 2. Load candidates
+          // 2. Load candidates — scoped to the jobs we just loaded, not all org candidates
           let candList: AvailableCandidate[] = [];
           try {
-            let q = supabase.from('candidates').select('id, full_name, email, job_id, client_id, current_role, experience, overall_score, match_score');
-            if (clientId && clientId !== 'hiresort-platform-hq') {
+            const jobIds = jobsList.map(j => j.id);
+            let q = supabase
+              .from('candidates')
+              .select('id, full_name, email, job_id, client_id, current_role, experience, overall_score, match_score')
+              .limit(500);
+
+            if (jobIds.length > 0) {
+              // Only fetch candidates that belong to one of our active jobs
+              q = q.in('job_id', jobIds);
+            } else if (clientId && clientId !== 'hiresort-platform-hq') {
               q = q.eq('client_id', clientId);
             }
+
             const { data } = await q;
             if (data && data.length > 0) {
               candList = data.map((c: any) => ({
@@ -193,6 +202,20 @@ export function ScheduleInterviewModal({
       loadOptions();
     }
   }, [open, candidate, job, clientId]);
+
+  // Per-job candidate count map (for displaying counts in the job dropdown)
+  const candidatesPerJob = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const c of availableCandidates) {
+      if (c.jobId) map[c.jobId] = (map[c.jobId] || 0) + 1;
+    }
+    return map;
+  }, [availableCandidates]);
+
+  // Total candidates across all loaded jobs (excludes orphaned records with no jobId)
+  const totalScopedCandidates = useMemo(() => {
+    return availableCandidates.filter(c => c.jobId).length;
+  }, [availableCandidates]);
 
   // Candidates filtered by selected job
   const filteredCandidates = useMemo(() => {
@@ -415,12 +438,17 @@ export function ScheduleInterviewModal({
                       <SelectValue placeholder="Filter by job opening..." />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      <SelectItem value="all">🌐 All Job Openings ({availableCandidates.length} applicants)</SelectItem>
-                      {availableJobs.map(j => (
-                        <SelectItem key={j.id} value={j.id}>
-                          {j.title} {j.department ? `(${j.department})` : ''}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="all">
+                        🌐 All Job Openings{totalScopedCandidates > 0 ? ` (${totalScopedCandidates} applicants)` : ''}
+                      </SelectItem>
+                      {availableJobs.map(j => {
+                        const count = candidatesPerJob[j.id] || 0;
+                        return (
+                          <SelectItem key={j.id} value={j.id}>
+                            {j.title}{j.department ? ` (${j.department})` : ''}{count > 0 ? ` — ${count}` : ''}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
