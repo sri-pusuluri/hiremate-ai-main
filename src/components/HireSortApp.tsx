@@ -160,6 +160,7 @@ export function HireSortApp() {
   const [showShortlist, setShowShortlist] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [shortlistCandidates, setShortlistCandidates] = useState<Candidate[]>([]);
+  const [isActualProcessingComplete, setIsActualProcessingComplete] = useState(false);
 
   // Sync state with URL parameter /jobs/:jobId or ?jobId=...
   useEffect(() => {
@@ -303,7 +304,9 @@ export function HireSortApp() {
 
   const handleConfirmOnboarding = async () => {
     setShowOnboarding(false);
-    setCurrentScreen('ranked-list');
+    setIsActualProcessingComplete(false);
+    // Show the processing screen before transitioning to ranked list
+    setCurrentScreen('processing');
 
     if (selectedJob) {
       try {
@@ -321,10 +324,14 @@ export function HireSortApp() {
           aiProcessingStatus: 'processing'
         } : null);
 
-        // Kick off background processing without blocking
-        processCandidatesInBg(selectedJob);
+        // Kick off background processing and signal completion when done
+        processCandidatesInBg(selectedJob).then(() => {
+          setIsActualProcessingComplete(true);
+        });
       } catch (err) {
         console.error("Failed to enable HireSort in database:", err);
+        // If DB update fails, still show processing screen gracefully
+        setIsActualProcessingComplete(true);
       }
     }
   };
@@ -543,14 +550,16 @@ export function HireSortApp() {
           />
         );
       case 'processing':
-        // Fallback in case state gets weird, but we no longer use this screen
         return (
-          <div className="flex items-center justify-center min-h-[60vh] animate-fade-in">
-            <div className="text-center max-w-md p-8 bg-muted rounded-xl">
-              <h2 className="text-xl font-semibold mb-2">AI is ranking candidates...</h2>
-              <p className="text-muted-foreground">Please wait a moment while we process the resumes in the background.</p>
-            </div>
-          </div>
+          <ProcessingState
+            jobTitle={selectedJob?.title || 'Job'}
+            totalCandidates={selectedJob?.candidateCount || 0}
+            isActualProcessingComplete={isActualProcessingComplete}
+            onComplete={() => {
+              setCurrentScreen('ranked-list');
+              setIsActualProcessingComplete(false);
+            }}
+          />
         );
       case 'ranked-list':
         if (loadingJob && !selectedJob) {
