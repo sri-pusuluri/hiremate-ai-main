@@ -283,9 +283,51 @@ export function cleanExtractedText(raw: string): string {
 export function parseContactInfoFromText(text: string, fileName?: string): ParsedCandidateContact {
   const extractedText = text || '';
 
-  // 1. Email Address
-  const emailMatch = extractedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
-  const email = emailMatch ? emailMatch[0].trim().toLowerCase() : '';
+  // 1. Email Address — Multi-strategy extraction to handle PDF glyph fragmentation,
+  //    fullwidth Unicode @, labelled prefixes, and [at]/(at) obfuscation.
+  let email = '';
+
+  // Normalize fullwidth @ (U+FF20) and common obfuscations before matching
+  const normalizedForEmail = extractedText
+    .replace(/＠/g, '@')                         // fullwidth @
+    .replace(/\[at\]/gi, '@')                    // [at] obfuscation
+    .replace(/\(at\)/gi, '@')                    // (at) obfuscation
+    .replace(/\bat\b(?=\s*[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi, '@') // bare "at" between parts
+    // Remove spaces that PDF extractors inject inside email tokens
+    // e.g. "maruti @gmail .com" -> "maruti@gmail.com"
+    .replace(/([a-zA-Z0-9._%+-])\s+@\s*/g, '$1@')
+    .replace(/@\s+([a-zA-Z0-9.-])/g, '@$1')
+    .replace(/([a-zA-Z0-9.-])\s+\.\s*([a-zA-Z]{2,})/g, '$1.$2');
+
+  // Strategy A: Standard email pattern on normalised text
+  const emailMatchA = normalizedForEmail.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
+  if (emailMatchA) {
+    email = emailMatchA[0].trim().toLowerCase();
+  }
+
+  // Strategy B: Look after common label prefixes (Email:, E:, Mail:) on any line
+  if (!email) {
+    const labelMatch = normalizedForEmail.match(
+      /(?:e[\s-]?mail|mail|e)[\s:：]+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i
+    );
+    if (labelMatch) {
+      email = labelMatch[1].trim().toLowerCase();
+    }
+  }
+
+  // Strategy C: Reconstruct from lines where PDF split "user @ domain . com" across tokens
+  if (!email) {
+    for (const line of extractedText.split(/[\r\n]+/)) {
+      // Remove all whitespace in a line, then see if a valid email appears
+      const collapsed = line.replace(/\s+/g, '');
+      const maybeEmail = collapsed.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/i);
+      if (maybeEmail) {
+        email = maybeEmail[0].trim().toLowerCase();
+        break;
+      }
+    }
+  }
+
 
   // 2. Phone Number (handles 10-digit Indian numbers, +91, US formats; rejects binary timestamps)
   let phone = '';
