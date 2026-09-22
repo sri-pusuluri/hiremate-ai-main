@@ -108,6 +108,8 @@ export function ScheduleInterviewModal({
   const [selectedInterviewers, setSelectedInterviewers] = useState<TeamMember[]>([]);
   const [interviewerSearch, setInterviewerSearch] = useState('');
   const [showInterviewerDropdown, setShowInterviewerDropdown] = useState(false);
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
   const [notes, setNotes] = useState('');
   const [downloadCalendarInvite, setDownloadCalendarInvite] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -489,7 +491,7 @@ export function ScheduleInterviewModal({
                   </Select>
                 </div>
 
-                {/* 2. Candidate Dropdown */}
+                {/* 2. Candidate Dropdown — searchable */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold flex items-center justify-between">
                     <span>Candidate Applicant <span className="text-destructive">*</span></span>
@@ -497,36 +499,104 @@ export function ScheduleInterviewModal({
                       {filteredCandidates.length} available
                     </span>
                   </Label>
-                  <Select value={selectedCandidateId} onValueChange={handleCandidateSelect}>
-                    <SelectTrigger className="text-xs h-9 bg-background">
-                      <SelectValue placeholder={filteredCandidates.length === 0 ? "No candidates found" : "Select candidate..."} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {filteredCandidates.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          No applicants found for this job
-                        </SelectItem>
-                      ) : (
-                        filteredCandidates.map(c => (
-                          <SelectItem key={c.id} value={c.id}>
-                            <div className="flex items-center gap-1.5 text-left">
-                              <span className="font-semibold">{c.name}</span>
-                              {c.matchScore && (
-                                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">
-                                  {Math.round(c.matchScore)}% Match
+
+                  <div className="relative">
+                    {/* Trigger button — shows selected candidate or placeholder */}
+                    <button
+                      type="button"
+                      className="w-full h-9 text-xs rounded-lg border border-input bg-background px-3 flex items-center justify-between gap-2 hover:border-primary/60 transition-colors"
+                      onClick={() => {
+                        setShowCandidateDropdown(v => !v);
+                        setCandidateSearch('');
+                      }}
+                    >
+                      <span className={selectedCandidateId && filteredCandidates.find(c => c.id === selectedCandidateId) ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                        {selectedCandidateId && filteredCandidates.find(c => c.id === selectedCandidateId)
+                          ? filteredCandidates.find(c => c.id === selectedCandidateId)!.name
+                          : filteredCandidates.length === 0 ? 'No candidates found' : 'Select candidate...'}
+                      </span>
+                      <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+
+                    {showCandidateDropdown && (
+                      <div
+                        className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg flex flex-col"
+                        style={{ maxHeight: '260px' }}
+                      >
+                        {/* Sticky search input inside dropdown */}
+                        <div className="p-2 border-b border-border sticky top-0 bg-popover z-10">
+                          <input
+                            autoFocus
+                            className="w-full h-8 text-xs rounded-md border border-input bg-background px-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Search by name, email or role..."
+                            value={candidateSearch}
+                            onChange={e => setCandidateSearch(e.target.value)}
+                            onKeyDown={e => e.key === 'Escape' && setShowCandidateDropdown(false)}
+                          />
+                        </div>
+
+                        {/* Scrollable results */}
+                        <div className="overflow-y-auto flex-1">
+                          {filteredCandidates
+                            .filter(c => {
+                              const q = candidateSearch.toLowerCase();
+                              return !q ||
+                                c.name.toLowerCase().includes(q) ||
+                                (c.email || '').toLowerCase().includes(q) ||
+                                (c.currentRole || '').toLowerCase().includes(q);
+                            })
+                            .map(c => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                className={`w-full text-left px-3 py-2 text-xs hover:bg-accent flex items-center justify-between gap-2 ${
+                                  selectedCandidateId === c.id ? 'bg-primary/5 text-primary font-semibold' : ''
+                                }`}
+                                onMouseDown={() => {
+                                  handleCandidateSelect(c.id);
+                                  setShowCandidateDropdown(false);
+                                  setCandidateSearch('');
+                                }}
+                              >
+                                <span className="font-medium truncate">{c.name}</span>
+                                <span className="flex items-center gap-1.5 shrink-0">
+                                  {c.matchScore && (
+                                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">
+                                      {Math.round(c.matchScore)}%
+                                    </span>
+                                  )}
+                                  {c.currentRole && (
+                                    <span className="text-[10px] text-muted-foreground">{c.currentRole}</span>
+                                  )}
                                 </span>
-                              )}
-                              {c.experience && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  • {c.experience}
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                              </button>
+                            ))}
+
+                          {filteredCandidates.filter(c => {
+                            const q = candidateSearch.toLowerCase();
+                            return !q ||
+                              c.name.toLowerCase().includes(q) ||
+                              (c.email || '').toLowerCase().includes(q) ||
+                              (c.currentRole || '').toLowerCase().includes(q);
+                          }).length === 0 && (
+                            <p className="px-3 py-3 text-xs text-muted-foreground text-center">
+                              {filteredCandidates.length === 0
+                                ? 'No applicants for this job yet'
+                                : `No candidates matching "${candidateSearch}"`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Click-outside overlay */}
+                    {showCandidateDropdown && (
+                      <div
+                        className="fixed inset-0 z-40"
+                        onMouseDown={() => setShowCandidateDropdown(false)}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
