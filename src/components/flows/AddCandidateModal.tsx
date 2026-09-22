@@ -74,6 +74,7 @@ export function AddCandidateModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
   const [wordCount, setWordCount] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Duplicate candidate alert state
   const [duplicateCandidate, setDuplicateCandidate] = useState<{
@@ -169,6 +170,54 @@ export function AddCandidateModal({
     if (contact.phone && !phone) setPhone(contact.phone);
     setDetectedSkills(contact.detectedSkills);
     setWordCount(contact.wordCount);
+  };
+
+  // Drag-and-drop handlers for the resume upload zone
+  const handleDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
+    const allowed = ['.pdf', '.doc', '.docx', '.txt', '.md', '.html', '.rtf'];
+    if (!allowed.includes(ext)) {
+      toast({
+        title: 'Unsupported File Type',
+        description: `Please drop a PDF, DOCX, TXT, MD, RTF, or HTML resume file.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const syntheticEvent = {
+      target: { files }
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
+    await handleFileUpload(syntheticEvent);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -467,7 +516,17 @@ export function AddCandidateModal({
               </TabsList>
 
               <TabsContent value="upload" className="mt-3">
-                <label className="border-2 border-dashed border-border hover:border-primary/60 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-muted/20 hover:bg-muted/40 transition-colors block">
+                <label
+                  className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors block ${
+                    isDragging
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20 scale-[1.01]'
+                      : 'border-border hover:border-primary/60 bg-muted/20 hover:bg-muted/40'
+                  }`}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf"
@@ -490,12 +549,12 @@ export function AddCandidateModal({
                     </div>
                   ) : (
                     <div className="py-2 flex flex-col items-center gap-1.5">
-                      <UploadCloud className="w-6 h-6 text-muted-foreground mb-0.5" />
-                      <span className="text-xs font-semibold text-foreground">
-                        Drop resume file here (PDF, TXT, MD, DOCX)
+                      <UploadCloud className={`w-6 h-6 mb-0.5 transition-colors ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className={`text-xs font-semibold transition-colors ${isDragging ? 'text-primary' : 'text-foreground'}`}>
+                        {isDragging ? 'Release to upload resume' : 'Drop resume file here (PDF, TXT, MD, DOCX)'}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        Auto-extracts Name, Email, Phone, and Skills instantly
+                        {isDragging ? 'PDF, DOCX, TXT, MD, RTF supported' : 'Auto-extracts Name, Email, Phone, and Skills instantly'}
                       </span>
                     </div>
                   )}
