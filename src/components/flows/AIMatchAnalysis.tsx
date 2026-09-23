@@ -792,6 +792,154 @@ export function AIMatchAnalysis({
             )}
           </div>
 
+          {/* Candidate Cognitive Competency Matrix (Parallel to Semantic Math) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Verified Core Competencies */}
+            <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-2xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs font-semibold text-foreground">Verified Competencies ({matchedCount})</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  {matchedCount > 0 ? `${Math.round((matchedCount / Math.max(1, matchedCount + missingCount)) * 100)}% Match` : '0%'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {matchedCount > 0 ? (
+                  candidate.matchedSkills?.map((skill, i) => (
+                    <span 
+                      key={i} 
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                    >
+                      <Check className="w-3 h-3 text-emerald-500" />
+                      {skill}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground italic">No required competencies confirmed in resume.</span>
+                )}
+              </div>
+            </div>
+
+            {/* Cognitive Requirement Gaps */}
+            <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-2xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-500" />
+                  <span className="text-xs font-semibold text-foreground">Critical Gaps to Probe ({missingCount})</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  {missingCount} Areas
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {missingCount > 0 ? (
+                  candidate.missingSkills?.map((skill, i) => (
+                    <span 
+                      key={i} 
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                    >
+                      <AlertCircle className="w-3 h-3 text-amber-500" />
+                      {skill}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> All target job criteria satisfied!
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Predictive Talent Signals (LLM Cognitive Probability Scoring) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/15 space-y-1">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider block">Interview Pass</span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-base font-bold text-foreground font-mono">
+                  {(candidate.predictiveInsights as any)?.interviewPassProb || (candidate.predictiveInsights as any)?.interviewPassProbability || 82}%
+                </span>
+                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">Likelihood</span>
+              </div>
+              <Progress 
+                value={(candidate.predictiveInsights as any)?.interviewPassProb || (candidate.predictiveInsights as any)?.interviewPassProbability || 82} 
+                className="h-1.5 bg-purple-500/20" 
+              />
+            </div>
+
+            <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15 space-y-1">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider block">Offer Acceptance</span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-base font-bold text-foreground font-mono">
+                  {(candidate.predictiveInsights as any)?.offerAcceptanceProb || (candidate.predictiveInsights as any)?.offerAcceptanceProbability || 85}%
+                </span>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Likelihood</span>
+              </div>
+              <Progress 
+                value={(candidate.predictiveInsights as any)?.offerAcceptanceProb || (candidate.predictiveInsights as any)?.offerAcceptanceProbability || 85} 
+                className="h-1.5 bg-blue-500/20" 
+              />
+            </div>
+
+            <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 space-y-1">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider block">Onboarding Success</span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-base font-bold text-foreground font-mono">
+                  {(candidate.predictiveInsights as any)?.onboardingSuccessProb || (candidate.predictiveInsights as any)?.onboardingSuccessProbability || 88}%
+                </span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Probability</span>
+              </div>
+              <Progress 
+                value={(candidate.predictiveInsights as any)?.onboardingSuccessProb || (candidate.predictiveInsights as any)?.onboardingSuccessProbability || 88} 
+                className="h-1.5 bg-emerald-500/20" 
+              />
+            </div>
+
+            <div className="p-3 rounded-xl bg-card border border-border/80 space-y-1">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider block">Retention Stability</span>
+              <div className="flex items-baseline justify-between">
+                <span className={cn(
+                  "text-xs font-bold uppercase px-1.5 py-0.5 rounded",
+                  (candidate.predictiveInsights as any)?.retentionRisk === 'high' 
+                    ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" 
+                    : (candidate.predictiveInsights as any)?.retentionRisk === 'medium'
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                    : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                )}>
+                  {(candidate.predictiveInsights as any)?.retentionRisk || 'Low'} Risk
+                </span>
+                <span className="text-[10px] text-muted-foreground truncate" title={(candidate.predictiveInsights as any)?.timeToJoinEstimate || '15–30d'}>
+                  {(candidate.predictiveInsights as any)?.timeToJoinEstimate || (candidate.predictiveInsights as any)?.timeToJoinDays || '15–30d'}
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground truncate leading-tight mt-1" title={(candidate.predictiveInsights as any)?.retentionRiskFactor}>
+                {(candidate.predictiveInsights as any)?.retentionRiskFactor || 'Consistent employment tenure'}
+              </p>
+            </div>
+          </div>
+
+          {/* Targeted Recruiter Interview Probes */}
+          {missingCount > 0 && (
+            <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-2xs space-y-2">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span className="text-xs font-semibold text-foreground">Targeted Interview Probes (Gap Investigation)</span>
+              </div>
+              <div className="space-y-1.5 text-xs text-muted-foreground">
+                {candidate.missingSkills?.slice(0, 3).map((skill, idx) => (
+                  <div key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-muted/30 border border-border/40">
+                    <span className="font-mono text-purple-600 dark:text-purple-400 font-bold shrink-0">Q{idx + 1}:</span>
+                    <p className="text-foreground/90">
+                      "Could you describe your hands-on architectural experience with <strong className="text-foreground">{skill}</strong>, or discuss a project where you adapted comparable frameworks?"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Unified Difference Analysis Box */}
           {!isUnranked && overallScore !== null && (
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 text-center">

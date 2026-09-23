@@ -446,6 +446,114 @@ export function evaluateResumeDeterministically(input: {
 }
 
 /**
+ * Records AI token usage, costs, and output telemetry to Supabase and localStorage.
+ */
+export async function recordAICostingAudit(params: {
+  jobId: string;
+  candidateName: string;
+  provider: string;
+  modelName: string;
+  prompt: string;
+  outputJson: any;
+  inputTokens?: number;
+  outputTokens?: number;
+}): Promise<void> {
+  const { jobId, candidateName, provider, modelName, prompt, outputJson } = params;
+  
+  const inputTokens = params.inputTokens ?? Math.max(10, Math.round((prompt || '').length / 4));
+  const outputTokens = params.outputTokens ?? Math.max(10, Math.round(JSON.stringify(outputJson || {}).length / 4));
+
+  let inputCostPerMillion = 1.0;
+  let outputCostPerMillion = 3.0;
+
+  const prov = (provider || '').toLowerCase();
+  const mod = (modelName || '').toLowerCase();
+
+  if (prov === 'deterministic-ats') {
+    inputCostPerMillion = 0.0;
+    outputCostPerMillion = 0.0;
+  } else if (prov === 'openai') {
+    if (mod.includes('mini') || mod.includes('luna')) {
+      inputCostPerMillion = 0.15;
+      outputCostPerMillion = 0.60;
+    } else {
+      inputCostPerMillion = 2.50;
+      outputCostPerMillion = 10.00;
+    }
+  } else if (prov === 'claude') {
+    inputCostPerMillion = 3.00;
+    outputCostPerMillion = 15.00;
+  } else if (prov === 'gemini') {
+    if (mod.includes('flash')) {
+      inputCostPerMillion = 0.075;
+      outputCostPerMillion = 0.30;
+    } else {
+      inputCostPerMillion = 1.25;
+      outputCostPerMillion = 5.00;
+    }
+  } else if (prov === 'supabase-edge' || prov.includes('vector')) {
+    inputCostPerMillion = 0.02;
+    outputCostPerMillion = 0.02;
+  }
+
+  const inputCostUsd = (inputTokens / 1_000_000) * inputCostPerMillion;
+  const outputCostUsd = (outputTokens / 1_000_000) * outputCostPerMillion;
+
+  // Validate if jobId is a valid UUID for Supabase foreign key
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(jobId);
+
+  const logData = {
+    id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    job_id: isUuid ? jobId : null,
+    candidate_name: candidateName,
+    model_name: modelName,
+    provider: provider,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    input_cost_usd: parseFloat(inputCostUsd.toFixed(6)),
+    output_cost_usd: parseFloat(outputCostUsd.toFixed(6)),
+    analyzed_prompt: (prompt || '').slice(0, 4000),
+    output_received: outputJson || {},
+    created_at: new Date().toISOString()
+  };
+
+  // Always update localStorage so offline/mock mode & immediate UI updates work
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const existingLogsStr = localStorage.getItem('hiremate_ai_analysis_logs') || '[]';
+      const logs = JSON.parse(existingLogsStr);
+      logs.push(logData);
+      if (logs.length > 100) logs.splice(0, logs.length - 100);
+      localStorage.setItem('hiremate_ai_analysis_logs', JSON.stringify(logs));
+    } catch (e) {
+      console.warn('[AI Costing Audit] Failed to save to localStorage:', e);
+    }
+  }
+
+  // Attempt database insert if available and not explicitly mock
+  const useMock = typeof window !== 'undefined' && localStorage.getItem('use_mock_supabase') === 'true';
+  if (!useMock) {
+    try {
+      await supabase.from('ai_analysis_logs').insert({
+        job_id: logData.job_id,
+        candidate_name: logData.candidate_name,
+        model_name: logData.model_name,
+        provider: logData.provider,
+        input_tokens: logData.input_tokens,
+        output_tokens: logData.output_tokens,
+        input_cost_usd: logData.input_cost_usd,
+        output_cost_usd: logData.output_cost_usd,
+        analyzed_prompt: logData.analyzed_prompt,
+        output_received: logData.output_received,
+        created_at: logData.created_at
+      });
+    } catch (dbErr) {
+      console.warn('[AI Costing Audit] DB log insert skipped or failed:', dbErr);
+    }
+  }
+}
+
+/**
  * Main AI Screening entry point.
  * Tries live backend edge function or client AI keys; falls back to deterministic ATS engine.
  */
@@ -871,9 +979,19 @@ Output ONLY valid JSON without markdown wrapping.`;
     console.error('[AI Screening] Failed to update candidate in database:', dbErr);
   }
 
-  // Save into Token Deduplication Cache
+  // Save into Token Deduplication Cache & Audit Costing Log
   if (result) {
     asyncAIQueue.setCachedEvaluation(fingerprint, result);
+
+    // Asynchronously record costing and token metrics audit log
+    recordAICostingAudit({
+      jobId: job.id,
+      candidateName: name,
+      provider: result.provider || selectedProvider || 'deterministic-ats',
+      modelName: result.model || 'Deterministic ATS Engine',
+      prompt: prompt,
+      outputJson: result
+    }).catch(auditErr => console.warn('[AI Screening] Failed to record costing audit:', auditErr));
   }
 
   return result;
