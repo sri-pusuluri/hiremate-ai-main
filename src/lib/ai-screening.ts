@@ -831,6 +831,13 @@ Output ONLY valid JSON without markdown wrapping.`;
   // Option C: Client OpenAI Key
   if (!result && (selectedProvider === 'auto' || selectedProvider === 'openai') && openaiKey) {
     try {
+      // Map platform model tiers (e.g. gpt-5.6-luna) to valid live OpenAI API targets
+      const targetApiModel = openaiModel === 'gpt-5.6-luna'
+        ? 'gpt-4o-mini'
+        : (openaiModel === 'gpt-5.6-sol' || openaiModel === 'gpt-5.6-terra')
+        ? 'gpt-4o'
+        : openaiModel;
+
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -838,7 +845,7 @@ Output ONLY valid JSON without markdown wrapping.`;
           'Authorization': `Bearer ${openaiKey}`
         },
         body: JSON.stringify({
-          model: openaiModel,
+          model: targetApiModel,
           temperature: 0.1,
           messages: [{ role: 'user', content: prompt }],
           response_format: { type: 'json_object' }
