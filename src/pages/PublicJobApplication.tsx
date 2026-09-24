@@ -1011,9 +1011,9 @@ export default function PublicJobApplication() {
                       )}
                     </label>
 
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground px-1 pt-0.5">
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground px-1 pt-1">
                       <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span><strong>HireSort AI Ingestion:</strong> Your resume is scanned using AI to auto-fill contact info and technical skills.</span>
+                      <span><strong>🤖 HireSort AI Ingestion:</strong> We use AI to automatically scan and parse your resume details and technical skills so you don't have to enter them manually.</span>
                     </div>
 
                     {parsedByAI && (
@@ -1278,10 +1278,10 @@ export default function PublicJobApplication() {
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground space-y-1">
                     <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
                       <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span>AI-Assisted Hiring Transparency Notice</span>
+                      <span>✨ AI-Assisted Hiring Transparency Notice</span>
                     </div>
                     <p className="text-[11px] leading-relaxed text-muted-foreground">
-                      This application is evaluated with assistance from <strong>HireSort AI</strong> to ensure fair, objective qualification matching against role criteria. Every application is reviewed by our human recruitment team — hiring decisions are never made by AI alone.
+                      This application is processed with assistance from <strong>HireSort AI</strong> to ensure fair, unbiased, and objective qualification matching against role requirements. All applications are reviewed by our human recruitment team — hiring decisions are never made by AI alone.
                     </p>
                   </div>
 

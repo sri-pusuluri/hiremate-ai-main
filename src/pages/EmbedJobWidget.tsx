@@ -308,6 +308,11 @@ export default function EmbedJobWidget() {
                 )}
               </label>
 
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground px-1 pt-0.5">
+                <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                <span><strong>🤖 HireSort AI Ingestion:</strong> We use AI to automatically scan and parse your resume details and technical skills so you don't have to enter them manually.</span>
+              </div>
+
               {parsed && (
                 <div className="p-2.5 rounded-lg bg-primary/10 text-primary text-xs space-y-2 font-medium">
                   <div className="flex items-center justify-between">
@@ -370,6 +375,17 @@ export default function EmbedJobWidget() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+91 98450 12345"
               />
+            </div>
+
+            {/* AI-Assisted Hiring Transparency Notice */}
+            <div className="p-2.5 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground space-y-1 my-2">
+              <div className="flex items-center gap-1.5 font-semibold text-foreground text-[11px]">
+                <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span>✨ AI-Assisted Hiring Transparency Notice</span>
+              </div>
+              <p className="text-[10px] leading-relaxed text-muted-foreground">
+                This application is processed with assistance from <strong>HireSort AI</strong> to ensure fair, unbiased, and objective qualification matching against role requirements. All applications are reviewed by our human recruitment team — hiring decisions are never made by AI alone.
+              </p>
             </div>
 
             <Button type="submit" disabled={submitting} className="w-full mt-2">

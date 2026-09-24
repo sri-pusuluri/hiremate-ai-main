@@ -740,6 +740,11 @@ export default function PublicCareers() {
                   )}
                 </label>
 
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground px-1 pt-0.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span><strong>🤖 HireSort AI Ingestion:</strong> We use AI to automatically scan and parse your resume details and technical skills so you don't have to enter them manually.</span>
+                </div>
+
                 {/* Confirmed Text Extraction & Preview */}
                 {qaExtractedText && (
                   <div className="p-2.5 rounded-lg bg-primary/10 text-primary text-xs space-y-2 font-medium">
@@ -813,6 +818,17 @@ export default function PublicCareers() {
                   placeholder="+91 98765 43210"
                   className="h-9 text-xs"
                 />
+              </div>
+
+              {/* AI-Assisted Hiring Transparency Notice */}
+              <div className="p-2.5 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground text-[11px]">
+                  <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>✨ AI-Assisted Hiring Transparency Notice</span>
+                </div>
+                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                  This application is processed with assistance from <strong>HireSort AI</strong> to ensure fair, unbiased, and objective qualification matching against role requirements. All applications are reviewed by our human recruitment team — hiring decisions are never made by AI alone.
+                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
