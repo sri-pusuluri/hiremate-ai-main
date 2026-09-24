@@ -196,12 +196,136 @@ export async function extractTextFromDocx(arrayBuffer: ArrayBuffer): Promise<str
 }
 
 /**
- * Extracts raw readable text from an uploaded File object (PDF, DOCX, TXT, MD, HTML, RTF).
+ * Converts a File or Blob into a base64 encoded string.
+ */
+function fileToBase64(file: File | Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Extracts raw readable text from an image File (JPG, PNG, WEBP) using browser OCR (Tesseract.js)
+ * and optional Vision API fallback.
+ */
+export async function extractTextFromImage(file: File): Promise<string> {
+  // 1. Try Gemini Vision or OpenAI Vision if client keys are configured
+  const geminiKey = typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null;
+  const openaiKey = typeof window !== 'undefined' ? localStorage.getItem('openai_api_key') : null;
+
+  if (geminiKey) {
+    try {
+      const base64 = await fileToBase64(file);
+      const mimeType = file.type || 'image/jpeg';
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: "Extract all text, candidate names, contact details, experiences, and technical skills from this resume image verbatim. Output clean plain text without commentary." },
+              { inline_data: { mime_type: mimeType, data: base64 } }
+            ]
+          }]
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const extracted = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (extracted && extracted.trim().length > 20) {
+          return cleanExtractedText(extracted);
+        }
+      }
+    } catch (gErr) {
+      console.warn('[Resume Parser] Gemini Vision OCR skipped:', gErr);
+    }
+  }
+
+  if (openaiKey) {
+    try {
+      const base64 = await fileToBase64(file);
+      const mimeType = file.type || 'image/jpeg';
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Extract all text, candidate name, contact details, work history, and skills from this resume image verbatim. Output plain text only.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } }
+            ]
+          }],
+          max_tokens: 2000
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const extracted = data.choices?.[0]?.message?.content;
+        if (extracted && extracted.trim().length > 20) {
+          return cleanExtractedText(extracted);
+        }
+      }
+    } catch (oErr) {
+      console.warn('[Resume Parser] OpenAI Vision OCR skipped:', oErr);
+    }
+  }
+
+  // 2. Client-side OCR via Tesseract.js (100% offline in-browser OCR)
+  try {
+    const { createWorker } = await import('tesseract.js');
+    const worker = await createWorker('eng');
+    const ret = await worker.recognize(file);
+    await worker.terminate();
+    const ocrText = cleanExtractedText(ret.data?.text || '');
+    if (ocrText && ocrText.trim().length > 15) {
+      return ocrText;
+    }
+  } catch (tessErr) {
+    console.warn('[Resume Parser] Tesseract OCR error:', tessErr);
+  }
+
+  return '';
+}
+
+/**
+ * Extracts raw readable text from an uploaded File object (PDF, DOCX, TXT, MD, HTML, RTF, JPG, PNG, WEBP).
  */
 export async function extractTextFromFile(file: File): Promise<string> {
   const fileName = file.name.toLowerCase();
 
-  // 1. PDF Documents (.pdf)
+  // 1. Image Files (.jpg, .jpeg, .png, .webp) - OCR Pipeline
+  const isImage =
+    file.type.startsWith('image/') ||
+    fileName.endsWith('.jpg') ||
+    fileName.endsWith('.jpeg') ||
+    fileName.endsWith('.png') ||
+    fileName.endsWith('.webp');
+
+  if (isImage) {
+    try {
+      const text = await extractTextFromImage(file);
+      if (text && text.trim().length > 15) {
+        return text;
+      }
+    } catch (err) {
+      console.warn('[Resume Parser] Image OCR extraction failed:', err);
+    }
+    return '';
+  }
+
+  // 2. PDF Documents (.pdf)
   if (file.type.includes('pdf') || fileName.endsWith('.pdf')) {
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -215,7 +339,7 @@ export async function extractTextFromFile(file: File): Promise<string> {
     }
   }
 
-  // 2. Microsoft Word Documents (.docx)
+  // 3. Microsoft Word Documents (.docx)
   if (
     file.type.includes('wordprocessingml') ||
     file.type.includes('msword') ||
@@ -232,7 +356,7 @@ export async function extractTextFromFile(file: File): Promise<string> {
     }
   }
 
-  // 3. Text, Markdown, HTML, JSON, RTF
+  // 4. Text, Markdown, HTML, JSON, RTF
   try {
     const text = await file.text();
     const cleaned = cleanExtractedText(text);

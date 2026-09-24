@@ -149,8 +149,9 @@ export default function EmbedJobWidget() {
       setDetectedSkills(contact.detectedSkills);
       setParsed(true);
 
+      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(file.name);
       toast({
-        title: 'Resume Auto-Parsed ✨',
+        title: isImage ? 'Resume Image Scanned & Parsed ✨' : 'Resume Auto-Parsed ✨',
         description: `Extracted details from ${file.name}.`,
       });
     } catch (err) {
@@ -281,14 +282,14 @@ export default function EmbedJobWidget() {
               <label className="border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-muted/20 hover:bg-muted/40 transition-colors block">
                 <input 
                   type="file" 
-                  accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf" 
+                  accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf,.png,.jpg,.jpeg,.webp" 
                   className="hidden" 
                   onChange={handleResumeUpload}
                 />
                 {isParsing ? (
                   <div className="flex items-center gap-2 text-primary text-xs py-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>HireSort ATS parsing resume...</span>
+                    <span>HireSort ATS parsing resume & scanning text...</span>
                   </div>
                 ) : resumeFileName ? (
                   <div className="py-1 flex items-center justify-between w-full px-2 text-xs">
@@ -301,8 +302,8 @@ export default function EmbedJobWidget() {
                 ) : (
                   <>
                     <UploadCloud className="w-6 h-6 text-muted-foreground mb-1" />
-                    <span className="text-xs font-medium text-foreground">Upload Resume (PDF, DOCX, TXT, MD)</span>
-                    <span className="text-[10px] text-muted-foreground">Auto-fills your details instantly</span>
+                    <span className="text-xs font-medium text-foreground">Upload Resume (PDF, DOCX, PNG, JPG)</span>
+                    <span className="text-[10px] text-muted-foreground">Supports PDF, DOCX, TXT, PNG, JPG, WEBP</span>
                   </>
                 )}
               </label>

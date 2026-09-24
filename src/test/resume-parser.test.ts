@@ -128,4 +128,16 @@ Aug 2025 – Present
     expect(contact.location).toBe('Bengaluru, India');
     expect(contact.portfolio).toBe('https://www.behance.net/adlinyonaa');
   });
+
+  it('recognizes image MIME types and image extensions in extractTextFromFile without crashing', async () => {
+    const { extractTextFromFile } = await import('../lib/resume-parser');
+    
+    // Create a mock image file
+    const fakeImageBlob = new Blob(['mock binary image content'], { type: 'image/png' });
+    const fakeFile = new File([fakeImageBlob], 'resume_screenshot.png', { type: 'image/png' });
+
+    // Should route through OCR pipeline safely without crashing
+    const result = await extractTextFromFile(fakeFile);
+    expect(typeof result).toBe('string');
+  });
 });

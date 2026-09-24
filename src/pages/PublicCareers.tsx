@@ -198,8 +198,9 @@ export default function PublicCareers() {
       setQaWordCount(contact.wordCount);
       setQaDetectedSkills(contact.detectedSkills);
 
+      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(file.name);
       toast({
-        title: 'Resume Auto-Parsed ✨',
+        title: isImage ? 'Resume Image Scanned & Parsed ✨' : 'Resume Auto-Parsed ✨',
         description: `Extracted candidate details and ${contact.detectedSkills.length} domain skills from ${file.name}.`,
       });
     } catch (err) {
@@ -710,14 +711,14 @@ export default function PublicCareers() {
                 <label className="border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-3.5 flex flex-col items-center justify-center text-center cursor-pointer bg-muted/20 hover:bg-muted/40 transition-colors block">
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf"
+                    accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf,.png,.jpg,.jpeg,.webp"
                     className="hidden"
                     onChange={handleQaFileUpload}
                   />
                   {qaIsParsing ? (
                     <div className="flex items-center gap-2 text-primary text-xs py-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Parsing resume & extracting skills...</span>
+                      <span>{qaResumeFile && (qaResumeFile.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(qaResumeFile.name)) ? 'Scanning resume image with OCR... ✨' : 'Parsing resume & extracting skills...'}</span>
                     </div>
                   ) : qaResumeFile ? (
                     <div className="flex items-center justify-between w-full px-2 text-xs">
@@ -733,8 +734,8 @@ export default function PublicCareers() {
                   ) : (
                     <div className="py-1 flex flex-col items-center">
                       <UploadCloud className="w-6 h-6 text-muted-foreground mb-1" />
-                      <span className="text-xs font-medium text-foreground">Upload Resume (PDF, DOCX, TXT, MD)</span>
-                      <span className="text-[10px] text-muted-foreground">Auto-fills contact info & extracts technical skills</span>
+                      <span className="text-xs font-medium text-foreground">Upload Resume (PDF, DOCX, PNG, JPG)</span>
+                      <span className="text-[10px] text-muted-foreground">Supports PDF, DOCX, TXT, PNG, JPG, WEBP</span>
                     </div>
                   )}
                 </label>

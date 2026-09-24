@@ -142,6 +142,7 @@ export default function PublicJobApplication() {
 
   // File Upload & AI Parsing State
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [parsedByAI, setParsedByAI] = useState(false);
   const [extractedResumeContent, setExtractedResumeContent] = useState<string>('');
@@ -294,15 +295,12 @@ export default function PublicJobApplication() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processResumeFile = async (file: File) => {
     setResumeFile(file);
     setIsParsingResume(true);
 
     try {
-      // Genuine client-side text and contact extraction
+      // Genuine client-side text and contact extraction (supports PDF, DOCX, TXT, and OCR for JPG/PNG/WEBP)
       const text = await extractTextFromFile(file);
       const contact = parseContactInfoFromText(text, file.name);
 
@@ -322,8 +320,9 @@ export default function PublicJobApplication() {
       setExtractedWordCount(contact.wordCount);
       setParsedByAI(true);
 
+      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(file.name);
       toast({
-        title: 'Resume Auto-Parsed by ATS ✨',
+        title: isImage ? 'Resume Image Scanned & Parsed ✨' : 'Resume Auto-Parsed by ATS ✨',
         description: `Extracted candidate details and ${contact.detectedSkills.length} domain skills from ${file.name}.`,
       });
     } catch (err) {
@@ -334,6 +333,34 @@ export default function PublicJobApplication() {
       });
     } finally {
       setIsParsingResume(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processResumeFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      await processResumeFile(file);
     }
   };
 
@@ -921,18 +948,25 @@ export default function PublicJobApplication() {
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold flex items-center justify-between">
                       <span>Resume / CV *</span>
-                      <span className="text-[11px] text-muted-foreground font-normal">PDF or DOCX</span>
+                      <span className="text-[11px] text-muted-foreground font-normal">PDF, DOCX, PNG, JPG</span>
                     </Label>
                     
-                    <label className={cn(
-                      "border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all block group",
-                      resumeFile 
-                        ? "border-emerald-500/40 bg-emerald-500/5" 
-                        : "border-border hover:border-primary/60 bg-muted/20 hover:bg-muted/40"
-                    )}>
+                    <label 
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={cn(
+                        "border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all block group",
+                        isDragging
+                          ? "border-primary bg-primary/10 scale-[1.01]"
+                          : resumeFile 
+                            ? "border-emerald-500/40 bg-emerald-500/5" 
+                            : "border-border hover:border-primary/60 bg-muted/20 hover:bg-muted/40"
+                      )}
+                    >
                       <input 
                         type="file" 
-                        accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf" 
+                        accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf,.png,.jpg,.jpeg,.webp" 
                         className="hidden" 
                         onChange={handleFileUpload} 
                       />
@@ -940,7 +974,9 @@ export default function PublicJobApplication() {
                         <div className="py-2.5 flex flex-col items-center gap-2 text-primary">
                           <Loader2 className="w-6 h-6 animate-spin" />
                           <span className="text-xs font-semibold animate-pulse">
-                            HireSort ATS parsing resume & extracting skills... ✨
+                            {resumeFile && (resumeFile.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(resumeFile.name))
+                              ? "HireSort OCR scanning image resume & extracting text... 🔍✨"
+                              : "HireSort ATS parsing resume & extracting skills... ✨"}
                           </span>
                         </div>
                       ) : resumeFile ? (
@@ -969,7 +1005,7 @@ export default function PublicJobApplication() {
                             Click to upload or drag & drop resume
                           </span>
                           <span className="text-[11px] text-muted-foreground">
-                            Supports PDF, DOCX, TXT, MD, HTML (up to 10MB)
+                            Supports PDF, DOCX, TXT, PNG, JPG, WEBP (up to 10MB)
                           </span>
                         </div>
                       )}

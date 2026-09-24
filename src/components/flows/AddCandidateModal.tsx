@@ -204,11 +204,11 @@ export function AddCandidateModal({
 
     const file = files[0];
     const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
-    const allowed = ['.pdf', '.doc', '.docx', '.txt', '.md', '.html', '.rtf'];
+    const allowed = ['.pdf', '.doc', '.docx', '.txt', '.md', '.html', '.rtf', '.png', '.jpg', '.jpeg', '.webp'];
     if (!allowed.includes(ext)) {
       toast({
         title: 'Unsupported File Type',
-        description: `Please drop a PDF, DOCX, TXT, MD, RTF, or HTML resume file.`,
+        description: `Please drop a PDF, DOCX, TXT, MD, PNG, JPG, or WEBP resume file.`,
         variant: 'destructive',
       });
       return;
@@ -529,14 +529,14 @@ export function AddCandidateModal({
                 >
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf"
+                    accept=".pdf,.doc,.docx,.txt,.md,.html,.rtf,.png,.jpg,.jpeg,.webp"
                     className="hidden"
                     onChange={handleFileUpload}
                   />
                   {isParsing ? (
                     <div className="flex flex-col items-center gap-2 py-3 text-primary text-xs">
                       <Loader2 className="w-6 h-6 animate-spin" />
-                      <span className="font-semibold">Extracting text & contact details...</span>
+                      <span className="font-semibold">Extracting text & contact details (OCR/ATS)...</span>
                     </div>
                   ) : uploadedFileName ? (
                     <div className="flex items-center justify-between w-full px-2 text-xs">
@@ -551,10 +551,10 @@ export function AddCandidateModal({
                     <div className="py-2 flex flex-col items-center gap-1.5">
                       <UploadCloud className={`w-6 h-6 mb-0.5 transition-colors ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
                       <span className={`text-xs font-semibold transition-colors ${isDragging ? 'text-primary' : 'text-foreground'}`}>
-                        {isDragging ? 'Release to upload resume' : 'Drop resume file here (PDF, TXT, MD, DOCX)'}
+                        {isDragging ? 'Release to upload resume' : 'Drop resume file here (PDF, DOCX, PNG, JPG)'}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        {isDragging ? 'PDF, DOCX, TXT, MD, RTF supported' : 'Auto-extracts Name, Email, Phone, and Skills instantly'}
+                        {isDragging ? 'PDF, DOCX, TXT, PNG, JPG, WEBP supported' : 'Auto-extracts Name, Email, Phone, and Skills with OCR & ATS'}
                       </span>
                     </div>
                   )}
