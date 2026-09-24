@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isMockMode, saveMockClients, getMockClients } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { getAppBaseUrl } from '@/lib/app-url';
 import { ClientTenant } from '@/types/hiresort';
@@ -111,6 +111,9 @@ export default function ClientManagement() {
             logoUrl: resolvedLogo,
             themeColor: c.theme_color || (c.slug === 'commit' ? '#f97316' : '#2563eb'),
             subscriptionTier: (c.subscription_tier as any) || 'pro',
+            status: (c.status as any) || 'active',
+            adminEmail: c.admin_email,
+            adminName: c.admin_name,
             stripeCustomerId: c.stripe_customer_id,
             createdAt: c.created_at,
           };
@@ -131,14 +134,65 @@ export default function ClientManagement() {
         }
         setClients(mapped);
       } else {
-        // Fallback to seeds if database table is not yet migrated or empty
-        setClients(SEED_CLIENTS);
+        // Fallback to mock / seeds and pending workspaces
+        const mockList = getMockClients();
+        try {
+          const pendingKey = 'hiresort_pending_workspaces';
+          const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+          const combined = [...pending.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            logoUrl: getResolvedTenantLogo(p.slug, p.name),
+            themeColor: '#2563eb',
+            subscriptionTier: p.subscriptionTier || 'pro',
+            status: p.status || 'pending',
+            adminEmail: p.adminEmail,
+            adminName: p.adminName,
+            createdAt: p.submittedAt || new Date().toISOString()
+          })), ...mockList];
+          setClients(combined.length > 0 ? combined : SEED_CLIENTS);
+        } catch (e) {
+          setClients(mockList.length > 0 ? mockList : SEED_CLIENTS);
+        }
       }
     } catch (err) {
       console.warn('Using seeded client list:', err);
       setClients(SEED_CLIENTS);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApproveClient = async (clientToApprove: ClientTenant) => {
+    try {
+      if (!isMockMode()) {
+        await supabase
+          .from('clients')
+          .update({ status: 'active' } as any)
+          .eq('id', clientToApprove.id);
+      }
+      const updated = clients.map(c => c.id === clientToApprove.id ? { ...c, status: 'active' as const } : c);
+      setClients(updated);
+      saveMockClients(updated);
+      
+      try {
+        const pendingKey = 'hiresort_pending_workspaces';
+        const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+        const updatedPending = pending.map((p: any) => p.id === clientToApprove.id ? { ...p, status: 'active' } : p);
+        localStorage.setItem(pendingKey, JSON.stringify(updatedPending));
+      } catch (e) {}
+
+      toast({
+        title: 'Workspace Approved! 🎉',
+        description: `${clientToApprove.name} is now active. Access details & activation status updated.`,
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Error',
+        description: e.message || 'Could not approve client',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -453,14 +507,33 @@ export default function ClientManagement() {
                     </td>
 
                     <td className="px-3.5 py-2.5">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Live & Ready
-                      </span>
+                      {client.status === 'pending' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Pending Review
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Live & Ready
+                        </span>
+                      )}
                     </td>
 
                     <td className="px-3.5 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Approve Pending Workspace (SuperAdmin only) */}
+                        {client.status === 'pending' && isSuperAdmin && (
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1 font-semibold"
+                            onClick={() => handleApproveClient(client)}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            Approve
+                          </Button>
+                        )}
                         {/* Embed Widget Button */}
                         <Button 
                           variant="ghost" 

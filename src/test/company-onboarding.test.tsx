@@ -46,8 +46,7 @@ describe('Company Onboarding & Streamlined Auth Flow', () => {
     );
 
     expect(await screen.findByText(/Welcome back/i)).toBeInTheDocument();
-    expect(screen.getByText(/Demo Credentials/i)).toBeInTheDocument();
-    expect(screen.getByText('admin@hiremate.ai')).toBeInTheDocument();
+    expect(screen.queryByText(/Demo Credentials/i)).not.toBeInTheDocument();
     expect(screen.getByText(/New Organization\?/i)).toBeInTheDocument();
 
     const ctaButton = screen.getByRole('link', { name: /Create Company Workspace/i });
@@ -127,6 +126,15 @@ describe('Company Onboarding & Streamlined Auth Flow', () => {
     expect(screen.getByText(/Starter/i)).toBeInTheDocument();
     expect(screen.getByText(/Professional/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Enterprise/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('button', { name: /Launch Company Workspace/i })).toBeInTheDocument();
+    const submitBtn = screen.getByRole('button', { name: /Submit/i });
+    expect(submitBtn).toBeInTheDocument();
+
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Workspace Request Submitted!/i)).toBeInTheDocument();
+      expect(screen.getByText(/Pending SuperAdmin Approval/i)).toBeInTheDocument();
+      expect(screen.getByText(/Return to Sign In/i)).toBeInTheDocument();
+    });
   });
 });

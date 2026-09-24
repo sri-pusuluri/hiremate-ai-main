@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { getAppBaseUrl } from '@/lib/app-url';
 import { Button } from '@/components/ui/button';
@@ -19,11 +19,15 @@ const nameSchema = z.string().min(2, 'Name must be at least 2 characters');
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading, signIn, signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Hide demo credentials by default for public security; display only if explicitly requested via ?demo=true or env
+  const showDemoCredentials = import.meta.env.VITE_SHOW_DEMO_CREDENTIALS === 'true' || searchParams.get('demo') === 'true' || searchParams.get('show_demo') === 'true';
 
   // Falcon Background Video / Image State
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -55,11 +59,10 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user) {
-      const searchParams = new URLSearchParams(window.location.search);
       const redirect = searchParams.get('redirect') || '/';
       navigate(redirect);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, searchParams]);
 
   const handleAutofill = (email: string, pass: string) => {
     setLoginEmail(email);
@@ -310,90 +313,92 @@ export default function Auth() {
               </Alert>
             )}
 
-            {/* Sleek 1-click persona chips */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-foreground flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-primary" />
-                  Demo Credentials
-                </span>
-                <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
+            {/* Sleek 1-click persona chips (hidden by default on public URL for security) */}
+            {showDemoCredentials && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-primary" />
+                    Demo Credentials
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium">1-click autofill</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')}
+                    className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@hiremate.ai'
+                      ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-1 ring-purple-500'
+                      : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-purple-500/50'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-purple-500" />
+                        SuperAdmin
+                      </span>
+                      {loginEmail === 'admin@hiremate.ai' && <Check className="w-3 h-3 text-purple-500" />}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@hiremate.ai</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAutofill('admin@commit.com', 'commit123')}
+                    className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@commit.com'
+                      ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-1 ring-blue-500'
+                      : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-blue-500/50'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-blue-500" />
+                        Commit Admin
+                      </span>
+                      {loginEmail === 'admin@commit.com' && <Check className="w-3 h-3 text-blue-500" />}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@commit.com</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAutofill('admin@zool.in', 'zool123')}
+                    className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@zool.in'
+                      ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500'
+                      : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-emerald-500/50'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-emerald-500" />
+                        Zool Admin
+                      </span>
+                      {loginEmail === 'admin@zool.in' && <Check className="w-3 h-3 text-emerald-500" />}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@zool.in</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')}
+                    className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'recruiter@hiremate.ai'
+                      ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
+                      : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-primary/50'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                        <User className="w-3 h-3 text-primary" />
+                        Recruiter
+                      </span>
+                      {loginEmail === 'recruiter@hiremate.ai' && <Check className="w-3 h-3 text-primary" />}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">recruiter@hiremate.ai</div>
+                  </button>
+                </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleAutofill('admin@hiremate.ai', 'admin123')}
-                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@hiremate.ai'
-                    ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-1 ring-purple-500'
-                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-purple-500/50'
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-purple-500" />
-                      SuperAdmin
-                    </span>
-                    {loginEmail === 'admin@hiremate.ai' && <Check className="w-3 h-3 text-purple-500" />}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@hiremate.ai</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleAutofill('admin@commit.com', 'commit123')}
-                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@commit.com'
-                    ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-1 ring-blue-500'
-                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-blue-500/50'
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-blue-500" />
-                      Commit Admin
-                    </span>
-                    {loginEmail === 'admin@commit.com' && <Check className="w-3 h-3 text-blue-500" />}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@commit.com</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleAutofill('admin@zool.in', 'zool123')}
-                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'admin@zool.in'
-                    ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500'
-                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-emerald-500/50'
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-emerald-500" />
-                      Zool Admin
-                    </span>
-                    {loginEmail === 'admin@zool.in' && <Check className="w-3 h-3 text-emerald-500" />}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">admin@zool.in</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleAutofill('recruiter@hiremate.ai', 'recruiter123')}
-                  className={`p-2 rounded-xl border text-left transition-all relative ${loginEmail === 'recruiter@hiremate.ai'
-                    ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
-                    : 'border-border/60 bg-background/50 hover:bg-background/80 hover:border-primary/50'
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1">
-                      <User className="w-3 h-3 text-primary" />
-                      Recruiter
-                    </span>
-                    {loginEmail === 'recruiter@hiremate.ai' && <Check className="w-3 h-3 text-primary" />}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">recruiter@hiremate.ai</div>
-                </button>
-              </div>
-            </div>
+            )}
 
             <form onSubmit={handleLogin} className="space-y-3 pt-1">
               <div className="space-y-1">
@@ -474,20 +479,22 @@ export default function Auth() {
               </Link>
             </div>
 
-            {/* Bottom Status bar */}
-            <div className="pt-2.5 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${mockActive ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
-                <span>{mockActive ? 'Offline Mock Mode' : 'Supabase Live Connected'}</span>
+            {/* Bottom Status bar (only exposed in demo/development mode) */}
+            {showDemoCredentials && (
+              <div className="pt-2.5 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${mockActive ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+                  <span>{mockActive ? 'Offline Mock Mode' : 'Supabase Live Connected'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleMockMode}
+                  className="hover:text-foreground underline underline-offset-2 transition-colors cursor-pointer"
+                >
+                  Switch to {mockActive ? 'Supabase Live' : 'Offline Mock'}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleToggleMockMode}
-                className="hover:text-foreground underline underline-offset-2 transition-colors cursor-pointer"
-              >
-                Switch to {mockActive ? 'Supabase Live' : 'Offline Mock'}
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>

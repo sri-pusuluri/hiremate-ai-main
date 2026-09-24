@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase, isMockMode } from '@/integrations/supabase/client';
+import { supabase, isMockMode, getMockClients, saveMockClients } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getResolvedTenantLogo } from '@/components/common/TenantBrandLogo';
 import { getAppBaseUrl } from '@/lib/app-url';
@@ -28,7 +28,9 @@ import {
   EyeOff,
   Loader2,
   Cpu,
-  Rocket
+  Rocket,
+  Clock,
+  Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
@@ -50,10 +52,11 @@ const PRESET_COLORS = [
 export default function CompanyOnboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { setClient, setRole } = useAuth();
+  const { setClient } = useAuth();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Step 1: Admin Account
@@ -137,7 +140,7 @@ export default function CompanyOnboarding() {
     else if (currentStep === 2) setCurrentStep(1);
   };
 
-  // Final submission: Create tenant, user, and launch workspace
+  // Final submission: Submit company workspace request for SuperAdmin review
   const handleCompleteOnboarding = async () => {
     setError(null);
     setIsSubmitting(true);
@@ -151,6 +154,9 @@ export default function CompanyOnboarding() {
         logo_url: logoUrl || null,
         theme_color: themeColor,
         subscription_tier: subscriptionTier,
+        status: 'pending',
+        admin_email: email,
+        admin_name: fullName,
         created_at: new Date().toISOString()
       };
 
@@ -168,9 +174,9 @@ export default function CompanyOnboarding() {
           console.warn('Supabase clients table write error, fallback to local:', dbErr);
         }
 
-        // 2. Sign up user through Supabase Auth
+        // 2. Register candidate admin user via Supabase Auth (or trigger confirmation)
         try {
-          const redirectUrl = `${getAppBaseUrl()}/`;
+          const redirectUrl = `${getAppBaseUrl()}/auth`;
           await supabase.auth.signUp({
             email,
             password,
@@ -180,50 +186,60 @@ export default function CompanyOnboarding() {
                 full_name: fullName,
                 company_name: companyName,
                 client_id: tenantId,
+                status: 'pending_approval'
               }
             }
           });
         } catch (authErr) {
           console.warn('Supabase Auth signUp note:', authErr);
         }
+      } else {
+        // Mock mode: add to mock clients with pending status
+        const currentClients = getMockClients();
+        const newMockClient = {
+          id: tenantId,
+          name: companyName.trim(),
+          slug: slug.trim().toLowerCase(),
+          logoUrl: logoUrl || getResolvedTenantLogo(slug, companyName),
+          themeColor,
+          subscriptionTier,
+          status: 'pending' as const,
+          adminEmail: email,
+          adminName: fullName,
+          createdAt: new Date().toISOString()
+        };
+        saveMockClients([newMockClient, ...currentClients]);
       }
 
-      // 3. Update client in application context
-      const fullClientObject = {
-        id: tenantId,
-        name: companyName.trim(),
-        slug: slug.trim().toLowerCase(),
-        logoUrl: logoUrl || getResolvedTenantLogo(slug, companyName),
-        themeColor,
-        subscriptionTier,
-        createdAt: new Date().toISOString()
-      };
-
-      setClient(fullClientObject);
-      setRole('admin');
-
-      // Persist active tenant and admin profile
+      // 3. Persist pending workspace request in local storage for admin inspection
       try {
-        localStorage.setItem('hiresort_active_tenant', JSON.stringify(fullClientObject));
-        localStorage.setItem('hiresort_cached_role', 'admin');
-        localStorage.setItem('hiresort_cached_profile', JSON.stringify({
+        const pendingKey = 'hiresort_pending_workspaces';
+        const existing = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+        existing.unshift({
           id: tenantId,
-          email,
-          full_name: fullName,
-          avatar_url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(fullName)}`
-        }));
-      } catch (storageErr) { }
+          name: companyName.trim(),
+          slug: slug.trim().toLowerCase(),
+          adminEmail: email,
+          adminName: fullName,
+          subscriptionTier,
+          aiStrategy,
+          teamSize,
+          submittedAt: new Date().toISOString(),
+          status: 'pending'
+        });
+        localStorage.setItem(pendingKey, JSON.stringify(existing));
+      } catch (storageErr) {}
 
       toast({
-        title: "Workspace Created 🎉",
-        description: `Welcome to Sahab Portal! Your workspace for ${companyName} is ready.`,
+        title: "Request Submitted 🎉",
+        description: `Your application for ${companyName} has been submitted to the SuperAdmin for approval.`,
       });
 
-      // Navigate to dashboard
-      navigate('/dashboard');
+      // Switch to submitted state
+      setIsSubmitted(true);
     } catch (err: any) {
       console.error('Onboarding error:', err);
-      setError(err.message || 'An error occurred setting up your workspace. Please try again.');
+      setError(err.message || 'An error occurred submitting your workspace request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -246,18 +262,79 @@ export default function CompanyOnboarding() {
       {/* 2. Onboarding Modal Container */}
       <div className="relative z-10 w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/40 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/50 p-6 sm:p-8 flex flex-col gap-6 my-8">
 
-        {/* Top Header & Stepper */}
-        <div>
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center">
-                <img
-                  src="/images/sahab-hiresortai-black.png"
-                  alt="Sahab Portal"
-                  className="h-9 w-auto object-contain block"
-                />
+        {isSubmitted ? (
+          <div className="py-6 px-2 flex flex-col items-center text-center space-y-5 animate-fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/10">
+              <Clock className="w-8 h-8 animate-pulse" />
+            </div>
+
+            <div className="space-y-2 max-w-lg">
+              <Badge variant="outline" className="px-3 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-xs font-semibold">
+                Status: Pending SuperAdmin Approval
+              </Badge>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                Workspace Request Submitted!
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Thank you, <span className="font-semibold text-foreground">{fullName}</span>! Your request to launch the <span className="font-semibold text-foreground">{companyName}</span> company workspace has been received and logged for review.
+              </p>
+            </div>
+
+            {/* Application Summary Card */}
+            <div className="w-full max-w-md bg-muted/30 border border-border/80 rounded-2xl p-4 text-left space-y-2.5 text-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                <span className="text-muted-foreground">Company Workspace</span>
+                <span className="font-bold text-foreground">{companyName}</span>
+              </div>
+              <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                <span className="text-muted-foreground">Portal URL Slug</span>
+                <span className="font-mono text-primary font-medium">/careers/{slug}</span>
+              </div>
+              <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                <span className="text-muted-foreground">Admin Contact</span>
+                <span className="font-mono text-foreground">{email}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Requested Plan</span>
+                <span className="capitalize font-semibold text-foreground">{subscriptionTier} (14-Day Free Trial)</span>
               </div>
             </div>
+
+            {/* Next Steps Box */}
+            <div className="w-full max-w-md bg-primary/5 border border-primary/20 rounded-2xl p-3.5 text-left text-xs space-y-1.5">
+              <div className="font-semibold text-primary flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4" />
+                What happens next?
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Our Platform SuperAdmin will review your organization details and provision your enterprise tenant. Once approved, your administrator access credentials and activation link will be dispatched to <strong className="text-foreground">{email}</strong>.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md">
+              <Link
+                to="/auth"
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+              >
+                Return to Sign In
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Top Header & Stepper */}
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center">
+                    <img
+                      src="/images/sahab-hiresortai-black.png"
+                      alt="Sahab Portal"
+                      className="h-9 w-auto object-contain block"
+                    />
+                  </div>
+                </div>
 
             <Link
               to="/auth"
@@ -328,6 +405,10 @@ export default function CompanyOnboarding() {
         {/* STEP 1: Admin Account */}
         {currentStep === 1 && (
           <div className="space-y-4 animate-fade-in">
+            {/* Decoy hidden fields to absorb browser credential autofill */}
+            <input type="text" name="fake_usernameremembered" className="hidden" tabIndex={-1} aria-hidden="true" autoComplete="off" />
+            <input type="password" name="fake_passwordremembered" className="hidden" tabIndex={-1} aria-hidden="true" autoComplete="new-password" />
+
             <div className="space-y-1">
               <Label htmlFor="admin-name" className="text-xs font-semibold">
                 Your Full Name *
@@ -336,11 +417,15 @@ export default function CompanyOnboarding() {
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="admin-name"
+                  name="onboarding_full_name"
                   type="text"
                   placeholder="e.g. Alex Henderson"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="pl-9 h-10 text-xs"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   required
                 />
               </div>
@@ -354,11 +439,15 @@ export default function CompanyOnboarding() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="admin-email"
+                  name="onboarding_work_email"
                   type="email"
                   placeholder="alex@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-9 h-10 text-xs"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   required
                 />
               </div>
@@ -375,11 +464,15 @@ export default function CompanyOnboarding() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="admin-password"
+                  name="onboarding_new_admin_password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-9 pr-9 h-10 text-xs font-mono"
+                  autoComplete="new-password"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   required
                 />
                 <button
@@ -663,17 +756,19 @@ export default function CompanyOnboarding() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Setting up Workspace...
+                  Submitting Request...
                 </>
               ) : (
                 <>
-                  <Rocket className="w-3.5 h-3.5" />
-                  Launch Company Workspace
+                  <Send className="w-3.5 h-3.5" />
+                  Submit
                 </>
               )}
             </Button>
           )}
         </div>
+          </>
+        )}
 
       </div>
     </div>

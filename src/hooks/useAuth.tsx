@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, getNeedsPasswordReset, enableMockMode } from '@/integrations/supabase/client';
+import { supabase, getNeedsPasswordReset, enableMockMode, isMockMode } from '@/integrations/supabase/client';
 import { getAppBaseUrl } from '@/lib/app-url';
 
 import { ClientTenant } from '@/types/hiresort';
@@ -432,14 +432,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const cleanEmail = email.toLowerCase().trim();
     const isDemoPersona = ['admin@hiremate.ai', 'admin@commit.com', 'admin@zool.in', 'recruiter@hiremate.ai'].includes(cleanEmail);
+    const allowMockFallback = isMockMode() || 
+      import.meta.env.DEV || 
+      (typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === 'true' || new URLSearchParams(window.location.search).get('show_demo') === 'true'));
 
     let authRes = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (authRes.error && isDemoPersona) {
-      console.info('Live Supabase auth rejected demo persona, falling back to local mock session:', authRes.error.message);
+    if (authRes.error && isDemoPersona && allowMockFallback) {
+      console.info('Live Supabase auth rejected demo persona, falling back to local mock session in demo/dev mode:', authRes.error.message);
       enableMockMode();
       authRes = await supabase.auth.signInWithPassword({
         email,

@@ -33,9 +33,9 @@ describe('Auth Login Screen Demo Credentials', () => {
     localStorage.clear();
   });
 
-  const renderComponent = () => {
+  const renderComponent = (initialEntry = '/auth') => {
     return render(
-      <MemoryRouter initialEntries={['/auth']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <AuthProvider>
           <Auth />
         </AuthProvider>
@@ -43,8 +43,16 @@ describe('Auth Login Screen Demo Credentials', () => {
     );
   };
 
-  it('renders Admin and Recruiter demo credential cards on login form', async () => {
-    renderComponent();
+  it('hides demo credential cards on public auth login form by default', async () => {
+    renderComponent('/auth');
+
+    expect(await screen.findByText(/Welcome back/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Demo Credentials/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1-click autofill/i)).not.toBeInTheDocument();
+  });
+
+  it('renders Admin and Recruiter demo credential cards when ?demo=true is provided', async () => {
+    renderComponent('/auth?demo=true');
 
     expect(await screen.findByText(/Demo Credentials/i)).toBeInTheDocument();
     expect(screen.getByText(/1-click autofill/i)).toBeInTheDocument();
@@ -52,8 +60,8 @@ describe('Auth Login Screen Demo Credentials', () => {
     expect(screen.getByText('recruiter@hiremate.ai')).toBeInTheDocument();
   });
 
-  it('autofills Admin credentials when Admin card is clicked', async () => {
-    renderComponent();
+  it('autofills Admin credentials when Admin card is clicked in demo mode', async () => {
+    renderComponent('/auth?demo=true');
 
     await screen.findByText(/Demo Credentials/i);
     const adminButton = screen.getByText('admin@hiremate.ai').closest('button');
@@ -67,8 +75,8 @@ describe('Auth Login Screen Demo Credentials', () => {
     expect(passwordInput.value).toBe('admin123');
   });
 
-  it('autofills Recruiter credentials when Recruiter card is clicked', async () => {
-    renderComponent();
+  it('autofills Recruiter credentials when Recruiter card is clicked in demo mode', async () => {
+    renderComponent('/auth?demo=true');
 
     await screen.findByText(/Demo Credentials/i);
     const recruiterButton = screen.getByText('recruiter@hiremate.ai').closest('button');
