@@ -167,6 +167,7 @@ export default function Candidates() {
             resumeUrl: c.resume_url || c.resumeUrl || '',
             source: c.source || (c.email.length % 3 === 0 ? 'talent-pool' : 'applied'),
             pipelineStage: c.pipeline_stage || (c.pipelineStage || 'applied'),
+            customAnswers: c.custom_answers || c.customAnswers || {},
           }));
           setCandidates(mappedCandidates);
         } else {

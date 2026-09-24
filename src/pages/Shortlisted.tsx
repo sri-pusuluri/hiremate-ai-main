@@ -169,7 +169,8 @@ export default function Shortlisted() {
             company: c.company || (c.predictive_insights as any)?.company || 'Independent',
             currentRole: c.role_title || (c.predictive_insights as any)?.currentRole || c.current_role || c.currentRole || 'Software Engineer',
             resumeText: c.resume_text || c.resumeText || '',
-            resumeUrl: c.resume_url || c.resumeUrl || ''
+            resumeUrl: c.resume_url || c.resumeUrl || '',
+            customAnswers: c.custom_answers || c.customAnswers || {}
           }));
         }
         const filteredShortlisted = mappedCandidates.filter(c => 

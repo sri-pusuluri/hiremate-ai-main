@@ -32,7 +32,8 @@ import {
   UserCheck,
   ExternalLink,
   Save,
-  Printer
+  Printer,
+  ClipboardList
 } from 'lucide-react';
 import { parseCandidateResume } from '@/lib/resume-parser';
 import { supabase } from '@/integrations/supabase/client';
@@ -702,6 +703,58 @@ export function CandidateDetail({
                     </p>
                   </div>
                 )}
+              </div>
+            );
+          })()}
+
+          {/* Candidate Screening Questionnaire Responses */}
+          {(() => {
+            const rawAnswers = candidate.customAnswers || (candidate as any).custom_answers || {};
+            // Filter out system metadata keys
+            const entries = Object.entries(rawAnswers).filter(([k, v]) => 
+              v !== undefined && v !== null && String(v).trim() !== '' &&
+              !['linkedin_url', 'linkedin_verification', 'sync_timestamp', 'token'].includes(k)
+            );
+
+            if (entries.length === 0) return null;
+
+            return (
+              <div className="bg-card border border-border rounded-xl p-3.5 mb-3.5 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-primary" />
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                      Screening Questionnaire Responses
+                    </h3>
+                  </div>
+                  <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {entries.length} {entries.length === 1 ? 'Answer' : 'Answers'} Recorded
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  {entries.map(([question, answer], idx) => {
+                    const isLong = String(answer).length > 60 || question.toLowerCase().includes('cover') || question.toLowerCase().includes('project');
+                    const cleanQuestion = question.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className="p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1"
+                      >
+                        <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] shrink-0 font-bold">
+                            {idx + 1}
+                          </span>
+                          <span>{cleanQuestion}</span>
+                        </p>
+                        <div className={cn("text-xs font-medium text-foreground pl-5.5", isLong && "whitespace-pre-line leading-relaxed")}>
+                          {String(answer)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })()}
