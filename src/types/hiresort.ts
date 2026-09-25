@@ -129,6 +129,11 @@ export interface ClientTenant {
   adminName?: string;
   stripeCustomerId?: string | null;
   createdAt?: string;
+
+  // Enterprise Guardrails
+  allowedDomains?: string[]; // Whitelisted parent domains permitted to embed career widget
+  monthlyTokenQuota?: number; // Hard quota ceiling (e.g. 500,000 tokens)
+  monthlyTokensUsed?: number; // Monthly consumption tracker
 }
 
 export interface Department {

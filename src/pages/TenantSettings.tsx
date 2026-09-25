@@ -327,6 +327,20 @@ export default function TenantSettings() {
     return localStorage.getItem(`hiresort_byok_endpoint_${client?.id}`) || 'https://api.openai.com/v1';
   });
 
+  // Enterprise Guardrails State: Domain Whitelisting & Financial Hard Token Quotas
+  const [tokenQuotaInput, setTokenQuotaInput] = useState<string>(() => {
+    return localStorage.getItem(`hiresort_token_quota_${client?.id}`) || '500000';
+  });
+  const [allowedDomainsInput, setAllowedDomainsInput] = useState<string>(() => {
+    const stored = localStorage.getItem(`hiresort_allowed_domains_${client?.id}`);
+    if (stored) {
+      try {
+        return JSON.parse(stored).join(', ');
+      } catch (e) {}
+    }
+    return 'localhost, 127.0.0.1';
+  });
+
   // Login & SSO State (Option 1 vs 2 vs 3)
   const [loginMethod, setLoginMethod] = useState<'universal' | 'subdomain' | 'sso'>(() => {
     return (localStorage.getItem(`hiresort_login_method_${client?.id}`) as any) || 'universal';
@@ -426,6 +440,21 @@ export default function TenantSettings() {
 
     const storedLogin = localStorage.getItem(`hiresort_login_method_${target.id}`) as any;
     if (storedLogin) setLoginMethod(storedLogin);
+
+    const storedQuota = localStorage.getItem(`hiresort_token_quota_${target.id}`);
+    if (storedQuota) setTokenQuotaInput(storedQuota);
+    else setTokenQuotaInput('500000');
+
+    const storedDomains = localStorage.getItem(`hiresort_allowed_domains_${target.id}`);
+    if (storedDomains) {
+      try {
+        setAllowedDomainsInput(JSON.parse(storedDomains).join(', '));
+      } catch (e) {
+        setAllowedDomainsInput('localhost, 127.0.0.1');
+      }
+    } else {
+      setAllowedDomainsInput('localhost, 127.0.0.1');
+    }
   };
 
   useEffect(() => {
@@ -646,6 +675,18 @@ export default function TenantSettings() {
         localStorage.setItem('claude_api_key', byokApiKey.trim());
       }
     }
+
+    // Persist Financial Token Quotas
+    if (tokenQuotaInput.trim()) {
+      localStorage.setItem(`hiresort_token_quota_${effectiveClientId}`, tokenQuotaInput.trim());
+    }
+
+    // Persist Allowed Domains (Domain Whitelisting for Embedded Widgets)
+    const domainArray = allowedDomainsInput
+      .split(',')
+      .map(d => d.trim().toLowerCase())
+      .filter(Boolean);
+    localStorage.setItem(`hiresort_allowed_domains_${effectiveClientId}`, JSON.stringify(domainArray));
 
     logAuditEvent({
       clientId: effectiveClientId,
@@ -1187,9 +1228,58 @@ export default function TenantSettings() {
                 </div>
               )}
 
+              {/* Financial Guardrails & Hard Token Quotas */}
+              <div className="p-4 rounded-xl border border-border bg-card/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs font-semibold text-foreground">Financial Guardrails: Monthly Token Cap & Quota</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] font-mono">Cost Protection</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Enforces a hard ceiling on cumulative LLM inference tokens per billing month. When 100% of this quota is reached, screening automatically routes to the zero-cost Deterministic ATS engine to protect your OpenAI balance.
+                </p>
+                <div className="flex items-center gap-2 max-w-sm">
+                  <Input 
+                    type="number" 
+                    value={tokenQuotaInput} 
+                    onChange={(e) => setTokenQuotaInput(e.target.value)}
+                    placeholder="500000"
+                    className="h-8 text-xs font-mono"
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">tokens / month</span>
+                </div>
+              </div>
+
+              {/* Stolen Widget Protection & Domain Whitelisting */}
+              <div className="p-4 rounded-xl border border-border bg-card/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-semibold text-foreground">Stolen Widget Protection: Authorized Parent Domains</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] font-mono">Frame-Ancestors Whitelist</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Defines whitelisted website hostnames permitted to embed your public careers widget (<code>/embed/{slug}</code>). Unauthorized third-party sites attempting to embed your portal will be blocked immediately.
+                </p>
+                <div className="space-y-1">
+                  <Input 
+                    value={allowedDomainsInput} 
+                    onChange={(e) => setAllowedDomainsInput(e.target.value)}
+                    placeholder="acme.com, careers.acme.com, localhost"
+                    className="h-8 text-xs font-mono"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Comma-separated list of permitted hostnames. Leave blank to allow embedding on all domains.
+                  </p>
+                </div>
+              </div>
+
               <Button onClick={handleSaveAIStrategy} className="gap-1.5 text-xs">
                 <Save className="w-3.5 h-3.5" />
-                Save AI Strategy
+                Save AI Strategy & Guardrails
               </Button>
             </CardContent>
           </Card>

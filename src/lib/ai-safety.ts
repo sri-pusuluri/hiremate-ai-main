@@ -7,17 +7,21 @@
 
 // Common prompt injection keywords & adversarial jailbreak patterns
 const INJECTION_PATTERNS = [
-  /ignore\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions|prompts|directions|guidelines)/i,
-  /disregard\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions|prompts|directions)/i,
-  /system\s*(?:override|prompt|directive|message|admin)/i,
-  /you\s+are\s+now\s+(?:an?|acting\s+as|in\s+mode)/i,
-  /forget\s+(?:all\s+)?(?:rules|instructions)/i,
+  /ignore\s+(?:all\s+)?(?:previous|prior|above|underlying)\s+(?:instructions|prompts|directions|guidelines|rules)/i,
+  /disregard\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions|prompts|directions|constraints)/i,
+  /system\s*(?:override|prompt|directive|message|admin|command|level)/i,
+  /you\s+are\s+now\s+(?:an?|acting\s+as|in\s+mode|unrestricted|DAN|developer)/i,
+  /forget\s+(?:all\s+)?(?:rules|instructions|constraints|prior\s+knowledge)/i,
   /new\s+instruction(?:\s*:\s*|\s+is\s+)/i,
-  /reveal\s+(?:your\s+)?(?:prompt|system\s+instructions)/i,
-  /<\|(?:im_start|im_end|endoftext)\|>/i,
-  /\[\/?INST\]/i,
-  /```(?:system|admin|root)/i,
-  /give\s+(?:this\s+candidate|me)\s+(?:a\s+)?(?:perfect|high|100%?|99%?)\s+(?:score|match|rating)/i
+  /reveal\s+(?:your\s+)?(?:prompt|system\s+instructions|system\s+prompt)/i,
+  /<\|(?:im_start|im_end|endoftext|system|user|assistant)\|>/i,
+  /\[\/?(?:INST|SYS)\]/i,
+  /```(?:system|admin|root|instruction)/i,
+  /give\s+(?:this\s+candidate|me)\s+(?:a\s+)?(?:perfect|high|100%?|99%?|A\+?)\s+(?:score|match|rating)/i,
+  /bypass\s+(?:guardrails|ats|filter|screening|evaluation)/i,
+  /jailbreak\s+(?:mode|prompt|active)/i,
+  /print\s+only\s+(?:high|100%|passed)/i,
+  /always\s+respond\s+with\s+(?:{"score":\s*"high"|high)/i
 ];
 
 export interface SanitizationResult {
@@ -201,4 +205,44 @@ export function wrapUntrustedCandidateResume(
     sanitizationDetails,
     scrubbedDetails
   };
+}
+
+/**
+ * Validates candidate evaluation outputs against ground-truth vector realities.
+ * Flags anomalous scores where prompt injection might have manipulated LLM generation.
+ */
+export function validateScreeningIntegrity(params: {
+  llmScore: 'high' | 'medium' | 'low';
+  llmSimilarity: number;
+  matchedSkillsCount: number;
+  requiredSkillsCount: number;
+  hasInjectionAttempt: boolean;
+}): {
+  isCompromised: boolean;
+  securityFlag?: string;
+  adjustedScore?: 'high' | 'medium' | 'low';
+} {
+  const { llmScore, llmSimilarity, matchedSkillsCount, requiredSkillsCount, hasInjectionAttempt } = params;
+  
+  const skillMatchRatio = requiredSkillsCount > 0 ? (matchedSkillsCount / requiredSkillsCount) : 1;
+
+  // Anomaly 1: Resume contained explicit injection attempts AND LLM awarded High or >85%
+  if (hasInjectionAttempt && (llmScore === 'high' || llmSimilarity >= 0.80) && skillMatchRatio < 0.40) {
+    return {
+      isCompromised: true,
+      securityFlag: 'Anomalous High Rating: Prompt injection attempt detected alongside low core skill coverage.',
+      adjustedScore: 'low'
+    };
+  }
+
+  // Anomaly 2: Hallucination divergence where LLM gave high fit but candidate has 0 skills
+  if (llmScore === 'high' && matchedSkillsCount === 0 && requiredSkillsCount >= 3) {
+    return {
+      isCompromised: true,
+      securityFlag: 'Evaluation Divergence: High score awarded despite zero required competencies present.',
+      adjustedScore: 'low'
+    };
+  }
+
+  return { isCompromised: false };
 }

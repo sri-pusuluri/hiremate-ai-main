@@ -1,8 +1,51 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Job, Candidate } from '@/types/hiresort';
-import { wrapUntrustedCandidateResume } from './ai-safety';
+import { wrapUntrustedCandidateResume, validateScreeningIntegrity } from './ai-safety';
 import { getSecureResumeUrl } from './resume-storage';
 import { asyncAIQueue } from './async-ai-queue';
+
+/**
+ * Checks whether a tenant has exceeded their monthly token quota.
+ * Default hard limit: 500,000 tokens / month if not explicitly configured.
+ */
+export function checkTenantTokenQuota(clientId?: string): {
+  isExceeded: boolean;
+  quota: number;
+  usedTokens: number;
+  percentUsed: number;
+} {
+  const DEFAULT_QUOTA = 500_000;
+  if (!clientId || typeof window === 'undefined') {
+    return { isExceeded: false, quota: DEFAULT_QUOTA, usedTokens: 0, percentUsed: 0 };
+  }
+
+  const storedQuotaStr = localStorage.getItem(`hiresort_token_quota_${clientId}`);
+  const quota = storedQuotaStr ? parseInt(storedQuotaStr, 10) : DEFAULT_QUOTA;
+
+  const logsStr = localStorage.getItem('hiremate_ai_analysis_logs') || '[]';
+  let usedTokens = 0;
+  try {
+    const logs = JSON.parse(logsStr);
+    const now = new Date();
+    const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
+    for (const log of logs) {
+      if ((log.created_at || '').startsWith(currentMonthPrefix)) {
+        usedTokens += (log.input_tokens || 0) + (log.output_tokens || 0);
+      }
+    }
+  } catch (e) {
+    console.debug('Failed to calculate used tokens:', e);
+  }
+
+  const percentUsed = Math.min(100, Math.round((usedTokens / quota) * 100));
+  return {
+    isExceeded: usedTokens >= quota,
+    quota,
+    usedTokens,
+    percentUsed
+  };
+}
 
 export interface AIAnalysisResult {
   currentRole: string;
@@ -787,8 +830,23 @@ Output ONLY valid JSON without markdown wrapping.`;
     }
   }
 
+  // Financial Guardrail: Hard Token Quota Check
+  const effectiveClientId = (candidate as any).clientId || (candidate as any).client_id;
+  const quotaCheck = checkTenantTokenQuota(effectiveClientId);
+  if (quotaCheck.isExceeded && selectedProvider !== 'deterministic-ats') {
+    console.warn(`[Financial Guardrail] Monthly token quota exceeded (${quotaCheck.usedTokens}/${quotaCheck.quota}) for tenant ${effectiveClientId}. Automatically routing to Zero-Cost Deterministic ATS.`);
+    result = evaluateResumeDeterministically({
+      candidateName: name,
+      resumeText,
+      currentRole: candidate.currentRole || candidate.role_title,
+      company: candidate.company,
+      job
+    });
+    result.assessment = `[Quota Guardrail Notice: Monthly token allowance reached (${quotaCheck.percentUsed}%)]. Evaluated via Zero-Cost Deterministic ATS. ${result.assessment}`;
+  }
+
   // Option A: If explicitly requested deterministic ATS, run directly
-  if (selectedProvider === 'deterministic-ats') {
+  if (!result && selectedProvider === 'deterministic-ats') {
     result = evaluateResumeDeterministically({
       candidateName: name,
       resumeText,
@@ -1057,6 +1115,21 @@ Output ONLY valid JSON without markdown wrapping.`;
     });
   }
 
+  // 4. AI Guardrail: Screening Integrity & Anti-Jailbreak Verification
+  const integrityCheck = validateScreeningIntegrity({
+    llmScore: result.score as any,
+    llmSimilarity: result.similarity || 0,
+    matchedSkillsCount: (result.matchedSkills || []).length,
+    requiredSkillsCount: (job.requirements || []).length,
+    hasInjectionAttempt: Boolean(hasInjectionAttempt)
+  });
+
+  if (integrityCheck.isCompromised) {
+    console.warn(`[AI Guardrails] Prompt injection or evaluation divergence neutralized for candidate ${name}:`, integrityCheck.securityFlag);
+    result.score = integrityCheck.adjustedScore || 'low';
+    result.assessment = `[Security Guardrail Alert: ${integrityCheck.securityFlag}] ${result.assessment}`;
+  }
+
   // 5. Update Supabase with honest, dynamic evaluation results and provider telemetry
   try {
     await supabase
@@ -1083,6 +1156,7 @@ Output ONLY valid JSON without markdown wrapping.`;
           model: result.model || 'Deterministic ATS Engine (Rule-based NLP & Heuristics)',
           executionMode: result.executionMode || 'deterministic_ats',
           isUnprocessed: false,
+          securityFlag: integrityCheck.securityFlag || null,
           error: null,
           evaluatedAt: new Date().toISOString()
         }

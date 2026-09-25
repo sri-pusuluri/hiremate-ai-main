@@ -84,7 +84,18 @@ export default function PublicCareers() {
           .ilike('slug', normalizedSlug)
           .maybeSingle();
 
+        let allowedDomainsList: string[] = [];
+        if (typeof window !== 'undefined') {
+          const storedDomains = localStorage.getItem(`hiresort_allowed_domains_${(clientData as any)?.id || normalizedSlug}`);
+          if (storedDomains) {
+            try {
+              allowedDomainsList = JSON.parse(storedDomains);
+            } catch (e) {}
+          }
+        }
+
         if (clientData) {
+          const tenantAllowed = (clientData as any).allowed_domains || allowedDomainsList;
           setClient({
             id: (clientData as any).id,
             name: (clientData as any).name,
@@ -93,6 +104,7 @@ export default function PublicCareers() {
             themeColor: (clientData as any).theme_color || '#2563eb',
             subscriptionTier: (clientData as any).subscription_tier || 'pro',
             status: (clientData as any).status || 'active',
+            allowedDomains: Array.isArray(tenantAllowed) ? tenantAllowed : [],
           });
         } else {
           const isPlatformSlug = normalizedSlug === 'platform' || normalizedSlug === 'sahab';
@@ -101,6 +113,7 @@ export default function PublicCareers() {
             name: isPlatformSlug ? 'Sahab Portal' : normalizedSlug.charAt(0).toUpperCase() + normalizedSlug.slice(1),
             slug: normalizedSlug,
             status: 'active',
+            allowedDomains: allowedDomainsList,
           });
         }
 
@@ -332,6 +345,40 @@ export default function PublicCareers() {
       window.removeEventListener('resize', notifyParentHeight);
     };
   }, [isEmbedMode, jobs, filteredJobs, loading, slug]);
+
+  // Security Guardrail: Stolen Widget (Domain Whitelisting) Verification
+  const isParentDomainAllowed = () => {
+    if (!isEmbedMode) return true;
+    if (!client.allowedDomains || client.allowedDomains.length === 0) return true; // Permissive default if tenant hasn't restricted
+    
+    try {
+      const referrer = document.referrer;
+      if (!referrer) return true; // Direct test navigation or non-standard client
+      const parentHost = new URL(referrer).hostname.toLowerCase();
+      return client.allowedDomains.some(d => {
+        const clean = d.trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
+        return parentHost === clean || parentHost.endsWith(`.${clean}`);
+      });
+    } catch (e) {
+      return true;
+    }
+  };
+
+  const domainAuthorized = isParentDomainAllowed();
+
+  if (!loading && isEmbedMode && !domainAuthorized) {
+    return (
+      <div className="p-8 text-center bg-rose-50/50 dark:bg-rose-950/20 border border-rose-500/30 rounded-xl my-4">
+        <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-3">
+          <Building2 className="w-6 h-6" />
+        </div>
+        <h2 className="text-base font-bold text-foreground">Embedded Widget Unauthorized</h2>
+        <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+          Security policy violation: This career portal widget cannot be embedded on the requesting origin domain. Contact the administrator of <strong>{client.name}</strong> to add your domain to the authorized whitelist.
+        </p>
+      </div>
+    );
+  }
 
   if (!loading && client.status === 'archived') {
     return (
