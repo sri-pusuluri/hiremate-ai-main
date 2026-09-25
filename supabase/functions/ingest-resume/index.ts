@@ -3,8 +3,37 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-turnstile-token",
 };
+
+/**
+ * Verifies a Cloudflare Turnstile token server-side.
+ * Returns true if verification passes or if no secret is configured (internal/dev calls).
+ */
+async function verifyTurnstileToken(token: string | undefined, secret: string | undefined): Promise<{ success: boolean; errorCodes?: string[] }> {
+  if (!secret) {
+    // No secret configured — skip verification (internal calls from Settings, JobDashboard, etc.)
+    return { success: true };
+  }
+  if (!token) {
+    return { success: false, errorCodes: ['missing-input-response'] };
+  }
+  try {
+    const formData = new FormData();
+    formData.append('secret', secret);
+    formData.append('response', token);
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v1/siteverify', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    return { success: !!data.success, errorCodes: data['error-codes'] };
+  } catch (err) {
+    console.error('[Turnstile] Verification fetch failed:', err);
+    // Fail open on network errors to avoid blocking legitimate users
+    return { success: true };
+  }
+}
 
 serve(async (req) => {
   // Handle CORS
@@ -19,7 +48,22 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const { candidateId, resumeText, jobId, jobTitle, jobRequirements } = body;
+    const { candidateId, resumeText, jobId, jobTitle, jobRequirements, turnstileToken } = body;
+
+    // ── Cloudflare Turnstile Bot Protection ──────────────────────────────────
+    // TURNSTILE_SECRET_KEY must be set in Supabase Dashboard → Settings → Secrets
+    // for public-facing submissions. Internal calls (Settings re-analysis, etc.)
+    // do not send a token and are allowed through when no secret is configured.
+    const turnstileSecret = Deno.env.get("TURNSTILE_SECRET_KEY");
+    const turnstileVerification = await verifyTurnstileToken(turnstileToken, turnstileSecret);
+    if (!turnstileVerification.success) {
+      console.warn('[Turnstile] Verification failed. Error codes:', turnstileVerification.errorCodes);
+      return new Response(
+        JSON.stringify({ error: 'Bot verification failed. Please complete the security check and try again.', errorCodes: turnstileVerification.errorCodes }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     if (!candidateId || !resumeText || !jobId) {
       throw new Error("Missing candidateId, resumeText or jobId");

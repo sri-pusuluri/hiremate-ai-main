@@ -404,9 +404,35 @@ export default function PublicJobApplication() {
       return;
     }
 
+    // ── Server-side Turnstile verification ───────────────────────────────────
+    // Call the verify-turnstile edge function which performs the real
+    // Cloudflare siteverify check. This is what registers as a verified call
+    // in the Cloudflare Turnstile dashboard.
+    if (turnstileSiteKey && turnstileToken) {
+      try {
+        const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-turnstile', {
+          body: { token: turnstileToken },
+        });
+        if (verifyError || !verifyData?.success) {
+          toast({
+            title: 'Security Check Failed',
+            description: verifyData?.error || 'Bot verification failed. Please refresh and try again.',
+            variant: 'destructive',
+          });
+          setTurnstileToken(null);
+          return;
+        }
+      } catch (verifyErr) {
+        console.warn('[Turnstile] Verification call failed:', verifyErr);
+        // Fail open on unexpected network errors so genuine users aren't blocked
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     setSubmitting(true);
     try {
       const generatedId = 'APP-' + Math.floor(100000 + Math.random() * 900000);
+
 
       // 1. Upload Resume file if provided
       // 1. Upload Resume file if provided & extract text if readable
