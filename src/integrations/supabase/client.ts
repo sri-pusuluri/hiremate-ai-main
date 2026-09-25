@@ -905,8 +905,9 @@ class MockQueryBuilder {
         let clients = getMockClients();
         if (this.filters.length > 0) {
           clients = clients.filter(c => {
-            // Protect base Zool workspace
-            if (c.id === '00000000-0000-0000-0000-000000000001') return true;
+            // Protect base system workspaces (Zool & Commit)
+            if (c.id === '00000000-0000-0000-0000-000000000001' || c.slug === 'zool') return true;
+            if (c.id === '00000000-0000-0000-0000-000000000005' || c.slug === 'commit') return true;
             let matches = true;
             for (const filter of this.filters) {
               if (!filter(c)) matches = false;

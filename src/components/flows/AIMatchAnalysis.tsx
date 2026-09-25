@@ -56,7 +56,7 @@ interface AIMatchAnalysisProps {
   candidate: Candidate;
   job?: Job;
   compact?: boolean;
-  onReanalyze?: (customProvider?: string) => Promise<void> | void;
+  onReanalyze?: (customProvider?: string, customModel?: string) => Promise<void> | void;
   isReanalyzing?: boolean;
 }
 
@@ -73,13 +73,39 @@ export function AIMatchAnalysis({
   const [showProviderCoverageDetails, setShowProviderCoverageDetails] = useState(false);
   const isUnranked = candidate.cosineSimilarity === null || candidate.cosineSimilarity === undefined;
 
-  // Active AI Provider information:
+  // Active AI Provider & Model information:
   // 1. If candidate has an evaluation record with a tagged provider, that is the ground truth
   // 2. Otherwise use the user's selected engine or default to deterministic ATS
   const recordedProvider = (candidate.predictiveInsights as any)?.provider;
-  const [selectedEngine, setSelectedEngine] = useState<string>(
-    recordedProvider || (typeof window !== 'undefined' ? (localStorage.getItem('ai_provider') || 'deterministic-ats') : 'deterministic-ats')
-  );
+  const recordedModel = (candidate.predictiveInsights as any)?.model;
+  
+  const [selectedOpenAIModel, setSelectedOpenAIModel] = useState<string>(() => {
+    if (recordedProvider === 'openai' && recordedModel) return recordedModel;
+    return typeof window !== 'undefined' ? (localStorage.getItem('openai_model') || 'gpt-4o') : 'gpt-4o';
+  });
+
+  const [selectedEngine, setSelectedEngine] = useState<string>(() => {
+    if (recordedProvider === 'openai') {
+      return `openai:${recordedModel || (typeof window !== 'undefined' ? (localStorage.getItem('openai_model') || 'gpt-4o') : 'gpt-4o')}`;
+    }
+    if (recordedProvider === 'claude') {
+      return `claude:${recordedModel || 'claude-3-5-sonnet-latest'}`;
+    }
+    if (recordedProvider === 'gemini') {
+      return `gemini:${recordedModel || 'gemini-1.5-flash'}`;
+    }
+    if (recordedProvider) return recordedProvider;
+
+    if (typeof window !== 'undefined') {
+      const storedProvider = localStorage.getItem('ai_provider');
+      if (storedProvider === 'openai') {
+        const storedModel = localStorage.getItem('openai_model') || 'gpt-4o';
+        return `openai:${storedModel}`;
+      }
+      if (storedProvider) return storedProvider;
+    }
+    return 'openai:gpt-4o';
+  });
   
   const effectiveProvider = recordedProvider || (isUnranked ? selectedEngine : 'deterministic-ats');
   const providerDisplay = effectiveProvider === 'openai' 
@@ -92,7 +118,7 @@ export function AIMatchAnalysis({
     ? 'Supabase Vector Engine'
     : 'Deterministic ATS Engine';
 
-  const modelDisplay = (candidate.predictiveInsights as any)?.model || (
+  const modelDisplay = recordedModel || (
     effectiveProvider === 'gemini' 
       ? (typeof window !== 'undefined' ? localStorage.getItem('gemini_model') || 'gemini-1.5-flash' : 'gemini-1.5-flash')
       : effectiveProvider === 'claude' 
@@ -101,7 +127,7 @@ export function AIMatchAnalysis({
       ? 'Deterministic ATS Engine (Rule-based NLP & Heuristics)'
       : effectiveProvider === 'supabase-edge'
       ? 'pgvector 1536-dim Embedding'
-      : (typeof window !== 'undefined' ? localStorage.getItem('openai_model') || 'gpt-4o-mini' : 'gpt-4o-mini')
+      : selectedOpenAIModel
   );
 
   // Multi-Tiered Skills Classification
@@ -156,6 +182,22 @@ export function AIMatchAnalysis({
   
   // Overall score - use cosineSimilarity for consistency with the list view
   const overallScore = isUnranked ? null : Math.round(candidate.cosineSimilarity * 100);
+
+  // Granular LLM Cognitive Match Percentage derived from scanned candidate data
+  const llmCognitiveScore = useMemo(() => {
+    if (isUnranked) return null;
+    const insights = (candidate.predictiveInsights as any) || {};
+    // Priority 1: Direct model guessed similarity if provided
+    if (typeof insights.llmGuessedSimilarity === 'number' && insights.llmGuessedSimilarity > 0) {
+      return Math.round(insights.llmGuessedSimilarity > 1 ? insights.llmGuessedSimilarity : insights.llmGuessedSimilarity * 100);
+    }
+    // Priority 2: Blended formula based on scanned data: verified skills match (50%) + interview pass probability (30%) + experience match (20%)
+    const skillPart = skillMatchPercentage !== null ? skillMatchPercentage : (candidate.aiScore === 'high' ? 85 : candidate.aiScore === 'medium' ? 65 : 35);
+    const passPart = typeof insights.interviewPassProb === 'number' ? insights.interviewPassProb : (candidate.aiScore === 'high' ? 88 : candidate.aiScore === 'medium' ? 70 : 40);
+    const expPart = expMatchPercentage;
+    const weighted = Math.round((skillPart * 0.50) + (passPart * 0.30) + (expPart * 0.20));
+    return Math.min(99, Math.max(12, weighted));
+  }, [isUnranked, candidate.predictiveInsights, skillMatchPercentage, candidate.aiScore, expMatchPercentage]);
 
   // Comparison Engine Logic (Difference between Vector Math and LLM Cognitive)
   const isScoreConsensus = overallScore !== null && (
@@ -243,19 +285,27 @@ export function AIMatchAnalysis({
           <div className="bg-card border border-border rounded-lg p-2 flex flex-col justify-center items-center">
             <div className="flex items-center gap-1 justify-center mb-1">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                LLM Fit Score
+                LLM Cognitive Score
               </span>
               <ScoreInfoButton
-                title="LLM Fit Score"
-                description="A qualitative rating (high, medium, low) generated by the LLM reasoning engine based on contextual assessment of skills, architectural depth, and career trajectory."
+                title="LLM Cognitive Score"
+                description="Quantitative alignment percentage computed from evaluated skills coverage, career trajectory depth, and pass probability."
               />
             </div>
-            <span className={cn(
-              "text-2xl font-bold capitalize",
-              candidate.aiScore === 'high' ? "text-success" : candidate.aiScore === 'medium' ? "text-warning" : "text-muted-foreground"
-            )}>
-              {isUnranked ? '--' : candidate.aiScore}
-            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className={cn(
+                "text-2xl font-bold",
+                llmCognitiveScore !== null && llmCognitiveScore >= 75 ? "text-success" : llmCognitiveScore !== null && llmCognitiveScore >= 55 ? "text-warning" : "text-muted-foreground"
+              )}>
+                {llmCognitiveScore !== null ? `${llmCognitiveScore}%` : '--%'}
+              </span>
+              <span className={cn(
+                "text-xs font-semibold capitalize px-1.5 py-0.5 rounded border text-[10px]",
+                candidate.aiScore === 'high' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : candidate.aiScore === 'medium' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : "bg-slate-500/10 text-muted-foreground border-slate-500/20"
+              )}>
+                {isUnranked ? 'Pending' : `${candidate.aiScore} Fit`}
+              </span>
+            </div>
             <span className="text-[10px] text-muted-foreground mt-1">AI Reasoning Assessment</span>
           </div>
         </div>
@@ -299,7 +349,7 @@ export function AIMatchAnalysis({
             <div className="flex items-center gap-1.5 truncate">
               <span className="truncate">2. LLM Recruiter</span>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-200/70 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 group-data-[state=active]:bg-purple-600 group-data-[state=active]:text-white group-data-[state=active]:border-purple-600 uppercase font-bold transition-all shadow-2xs hidden md:inline">
-                {isUnranked ? 'Pending' : candidate.aiScore}
+                {isUnranked ? 'Pending' : (llmCognitiveScore !== null ? `${llmCognitiveScore}% ${candidate.aiScore}` : candidate.aiScore)}
               </span>
             </div>
             <span className="absolute -bottom-1 left-4 right-4 h-0.5 rounded-full bg-purple-600 dark:bg-purple-400 hidden group-data-[state=active]:block shadow-sm" />
@@ -705,18 +755,18 @@ export function AIMatchAnalysis({
           </div>
 
           {/* Dynamic Engine Selector & Live Re-screen Trigger */}
-          <div className="p-3.5 rounded-xl bg-card border border-border/80 shadow-2xs space-y-2.5">
+          <div className="p-3 rounded-xl bg-card border border-border/80 shadow-2xs space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Cpu className="w-4 h-4 text-primary shrink-0" />
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Cpu className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="text-xs font-semibold text-foreground truncate">Active Screening Engine</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-primary/10 text-primary border border-primary/20 font-medium shrink-0">
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-primary/10 text-primary border border-primary/20 font-medium shrink-0 leading-none">
                 Dynamic
               </span>
             </div>
 
-            <p className="text-[11px] text-muted-foreground leading-snug">
+            <p className="text-[10px] text-muted-foreground leading-snug">
               Select engine to re-screen candidate and update provider telemetry
             </p>
 
@@ -728,25 +778,63 @@ export function AIMatchAnalysis({
                     const newEngine = e.target.value;
                     setSelectedEngine(newEngine);
                     if (typeof window !== 'undefined') {
-                      localStorage.setItem('ai_provider', newEngine);
+                      if (newEngine.startsWith('openai:')) {
+                        const model = newEngine.replace('openai:', '');
+                        localStorage.setItem('ai_provider', 'openai');
+                        localStorage.setItem('openai_model', model);
+                        setSelectedOpenAIModel(model);
+                      } else {
+                        localStorage.setItem('ai_provider', newEngine);
+                      }
                     }
                   }}
-                  className="w-full text-xs bg-background border border-border rounded-md px-2.5 py-1.5 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary truncate cursor-pointer shadow-2xs"
+                  className="w-full text-xs bg-background border border-border rounded-lg pl-2.5 pr-7 h-8 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary truncate cursor-pointer shadow-2xs appearance-none"
                 >
-                  <option value="deterministic-ats">Deterministic ATS (Rule-based NLP)</option>
-                  <option value="openai">OpenAI (gpt-4o-mini)</option>
-                  <option value="gemini">Google Gemini (gemini-1.5-flash)</option>
-                  <option value="claude">Anthropic Claude (claude-3-5-sonnet)</option>
-                  <option value="supabase-edge">Supabase Vector (pgvector)</option>
+                  <optgroup label="Rule-based & Embeddings">
+                    <option value="deterministic-ats">Deterministic ATS (Rule-based NLP & Heuristics)</option>
+                    <option value="supabase-edge">Supabase Vector (pgvector 1536-dim)</option>
+                  </optgroup>
+
+                  <optgroup label="OpenAI GPT Models">
+                    <option value="openai:gpt-4o">OpenAI (gpt-4o - Multimodal Flagship)</option>
+                    <option value="openai:gpt-4o-mini">OpenAI (gpt-4o-mini - Fast & Cost-efficient)</option>
+                    <option value="openai:o3-mini">OpenAI (o3-mini - Fast STEM & Deep Reasoning)</option>
+                    <option value="openai:o1">OpenAI (o1 - Autonomous STEM & Code Reasoner)</option>
+                    <option value="openai:gpt-4-turbo">OpenAI (gpt-4-turbo - High Context 128k)</option>
+                    <option value="openai:gpt-5.6-sol">OpenAI (gpt-5.6-sol - Next-Gen Sol Flagship)</option>
+                    <option value="openai:gpt-5.6-terra">OpenAI (gpt-5.6-terra - Next-Gen Terra Balanced)</option>
+                    <option value="openai:gpt-5.6-luna">OpenAI (gpt-5.6-luna - Next-Gen Luna Efficient)</option>
+                  </optgroup>
+
+                  <optgroup label="Anthropic Claude">
+                    <option value="claude:claude-3-5-sonnet-latest">Anthropic (claude-3-5-sonnet - High IQ Analysis)</option>
+                    <option value="claude:claude-3-5-haiku-latest">Anthropic (claude-3-5-haiku - Rapid Screening)</option>
+                    <option value="claude:claude-3-opus-latest">Anthropic (claude-3-opus - Deep Comprehensive)</option>
+                  </optgroup>
+
+                  <optgroup label="Google Gemini">
+                    <option value="gemini:gemini-1.5-pro">Google (gemini-1.5-pro - 2M Long Context)</option>
+                    <option value="gemini:gemini-1.5-flash">Google (gemini-1.5-flash - Ultra Fast)</option>
+                  </optgroup>
                 </select>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
 
               {onReanalyze && (
                 <button
                   type="button"
                   disabled={isReanalyzing}
-                  onClick={() => onReanalyze(selectedEngine)}
-                  className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer shadow-2xs whitespace-nowrap"
+                  onClick={() => {
+                    let provider = selectedEngine;
+                    let model: string | undefined = undefined;
+                    if (selectedEngine.includes(':')) {
+                      const [p, m] = selectedEngine.split(':');
+                      provider = p;
+                      model = m;
+                    }
+                    onReanalyze(provider, model);
+                  }}
+                  className="px-3 h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer shadow-2xs whitespace-nowrap"
                 >
                   <RefreshCw className={cn("w-3.5 h-3.5", isReanalyzing && "animate-spin")} />
                   <span>{isReanalyzing ? "Evaluating..." : "Re-screen"}</span>
@@ -1071,16 +1159,16 @@ export function AIMatchAnalysis({
         {/* TAB 3: Comparison (Difference between Vector Math and LLM Recruiter) */}
         <TabsContent value="comparison-diff" forceMount className="space-y-4 mt-0 focus-visible:outline-none data-[state=inactive]:hidden">
           {/* Subheader banner with Consensus Ratio */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/10 via-primary/5 to-purple-500/10 border border-border gap-3 text-xs shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                <GitCompare className="w-4 h-4" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-primary/5 to-purple-500/10 border border-border gap-2 text-xs shadow-2xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                <GitCompare className="w-3.5 h-3.5" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-foreground text-sm">Dual-Engine Comparative Diff</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-foreground text-xs">Dual-Engine Comparative Diff</span>
                   <span className={cn(
-                    "text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border",
+                    "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full border leading-none",
                     consensusPercentage >= 75 
                       ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                       : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
@@ -1088,21 +1176,21 @@ export function AIMatchAnalysis({
                     {consensusPercentage}% Consensus
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Side-by-side audit: Green highlights indicate consensus; red highlights flag divergences requiring recruiter review.
+                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                  Side-by-side audit of geometric vector match vs contextual reasoning.
                 </p>
               </div>
             </div>
 
-            {/* Quick legend */}
-            <div className="flex items-center gap-3 text-[11px] font-medium shrink-0 self-end sm:self-center">
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                Green = Agreement
+            {/* Quick legend aligned cleanly */}
+            <div className="flex items-center gap-2.5 text-[10px] font-medium shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-border/40">
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Agreement
               </span>
-              <span className="flex items-center gap-1 text-rose-500">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                Red = Discrepancy
+              <span className="inline-flex items-center gap-1 text-rose-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                Discrepancy
               </span>
             </div>
           </div>
@@ -1112,14 +1200,14 @@ export function AIMatchAnalysis({
 
             {/* Dimension 1: Overall Scoring & Fit Verdict */}
             <div className={cn(
-              "rounded-xl border p-4 transition-all shadow-2xs space-y-3",
+              "rounded-xl border p-3 transition-all shadow-2xs space-y-2.5",
               isScoreConsensus 
                 ? "bg-card border-emerald-500/30 dark:border-emerald-500/20" 
                 : "bg-card border-rose-500/30 dark:border-rose-500/20"
             )}>
-              <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+              <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                     1. Score & Fit Verdict
                   </span>
                   <ScoreInfoButton 
@@ -1128,7 +1216,7 @@ export function AIMatchAnalysis({
                   />
                 </div>
                 <span className={cn(
-                  "text-[10px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1",
+                  "text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 leading-none",
                   isScoreConsensus 
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
                     : "bg-rose-500/10 text-rose-500 border-rose-500/25"
@@ -1148,9 +1236,9 @@ export function AIMatchAnalysis({
               </div>
 
               {/* Left vs Right Panels */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
                 {/* Left Panel: Semantic Math */}
-                <div className="p-3 rounded-lg bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40 space-y-1">
+                <div className="p-2.5 rounded-lg bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1">
                       <Binary className="w-3 h-3" />
@@ -1160,23 +1248,23 @@ export function AIMatchAnalysis({
                       {overallScore !== null ? `${overallScore}%` : '--'}
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-snug">
+                  <p className="text-[10px] text-muted-foreground leading-snug">
                     Strict geometric distance in 1536-dimensional space based purely on literal resume vector overlap.
                   </p>
                 </div>
 
                 {/* Right Panel: LLM Recruiter */}
-                <div className="p-3 rounded-lg bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/40 space-y-1">
+                <div className="p-2.5 rounded-lg bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/40 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1">
                       <Brain className="w-3 h-3" />
                       Right: LLM Recruiter (Cognitive)
                     </span>
-                    <span className="text-xs font-bold capitalize text-foreground">
-                      {isUnranked ? 'Pending' : `${candidate.aiScore} Fit`}
+                    <span className="text-xs font-mono font-bold capitalize text-foreground">
+                      {isUnranked ? 'Pending' : (llmCognitiveScore !== null ? `${llmCognitiveScore}% (${candidate.aiScore} Fit)` : `${candidate.aiScore} Fit`)}
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-snug">
+                  <p className="text-[10px] text-muted-foreground leading-snug">
                     Contextual reasoning assessing project complexity, problem-solving scope, and overall profile depth.
                   </p>
                 </div>
@@ -1184,15 +1272,15 @@ export function AIMatchAnalysis({
 
               {/* Diff Resolution Note */}
               <div className={cn(
-                "p-2.5 rounded-lg text-xs flex items-center gap-2 font-medium",
+                "p-2 rounded-lg text-[11px] flex items-center gap-2 font-medium leading-snug",
                 isScoreConsensus
                   ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
                   : "bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20"
               )}>
                 {isScoreConsensus ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
                 )}
                 <span>
                   {isScoreConsensus 

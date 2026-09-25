@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { supabase, isMockMode, saveMockClients, getMockClients } from '@/integrations/supabase/client';
 import { useAuth, DEFAULT_ZOOL_CLIENT, DEFAULT_COMMIT_CLIENT } from '@/hooks/useAuth';
 import { getAppBaseUrl } from '@/lib/app-url';
 import { Department, Position, QuestionBankItem, ClientTenant, Candidate } from '@/types/hiresort';
@@ -44,7 +44,9 @@ import {
   AlertTriangle,
   Zap,
   Globe,
-  Scale
+  Scale,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 import {
   Select,
@@ -108,6 +110,7 @@ const DEFAULT_QUESTIONS: Array<{ text: string; type: 'text' | 'choice' | 'boolea
 ];
 
 export default function TenantSettings() {
+  const navigate = useNavigate();
   const { client, setClient, clientId, user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -126,6 +129,13 @@ export default function TenantSettings() {
 
   const effectiveClientId = (client && client.id !== 'hiresort-platform-hq') ? client.id : selectedTenantId;
 
+  // Danger Zone / Delete & Archive State
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
@@ -139,6 +149,136 @@ export default function TenantSettings() {
       next.set('tab', newTab);
       return next;
     }, { replace: true });
+  };
+
+  const isProtectedTenant = () => {
+    const s = (slug || client?.slug || '').toLowerCase();
+    const id = effectiveClientId;
+    return s === 'zool' || s === 'commit' || id === DEFAULT_ZOOL_CLIENT.id || id === DEFAULT_COMMIT_CLIENT.id;
+  };
+
+  const currentTenantObj = availableTenants.find(t => t.id === effectiveClientId) || client;
+  const isCurrentTenantArchived = currentTenantObj?.status === 'archived';
+
+  // Soft Delete (Archive / Restore) Handler
+  const handleToggleArchiveTenant = async () => {
+    if (isProtectedTenant()) {
+      toast({
+        title: 'Protected Workspace',
+        description: 'System default workspaces cannot be archived.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsArchiving(true);
+      const nextStatus = isCurrentTenantArchived ? 'active' : 'archived';
+
+      if (!isMockMode()) {
+        await supabase
+          .from('clients')
+          .update({ status: nextStatus } as any)
+          .eq('id', effectiveClientId);
+      }
+
+      const updated = availableTenants.map(t => t.id === effectiveClientId ? { ...t, status: nextStatus as any } : t);
+      setAvailableTenants(updated);
+      saveMockClients(updated);
+
+      if (client?.id === effectiveClientId) {
+        setClient({ ...client, status: nextStatus as any });
+      }
+
+      await logAuditEvent({
+        clientId: effectiveClientId,
+        clientName: name,
+        userId: user?.id,
+        userEmail: user?.email || 'admin@hiresort.ai',
+        userRole: 'client_admin',
+        action: nextStatus === 'archived' ? 'ARCHIVE_TENANT' : 'RESTORE_TENANT',
+        resourceType: 'tenant',
+        resourceId: slug,
+        details: { status: nextStatus }
+      });
+
+      toast({
+        title: nextStatus === 'archived' ? 'Workspace Archived' : 'Workspace Restored',
+        description: nextStatus === 'archived'
+          ? `${name} has been archived and its public careers page is now offline.`
+          : `${name} is now active and its careers page is live.`,
+      });
+
+      setIsArchiveModalOpen(false);
+    } catch (e: any) {
+      toast({
+        title: 'Action Failed',
+        description: e.message || 'Could not update archive status.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  // Hard Delete Handler
+  const handleHardDeleteTenant = async () => {
+    if (isProtectedTenant()) {
+      toast({
+        title: 'Protected Workspace',
+        description: 'Root system tenants (Zool and Commit) cannot be deleted.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+
+      if (!isMockMode()) {
+        try {
+          await supabase.from('candidates').delete().eq('client_id', effectiveClientId);
+          await supabase.from('jobs').delete().eq('client_id', effectiveClientId);
+          await supabase.from('departments').delete().eq('client_id', effectiveClientId);
+          await supabase.from('positions').delete().eq('client_id', effectiveClientId);
+          await supabase.from('question_bank').delete().eq('client_id', effectiveClientId);
+          await supabase.from('clients').delete().eq('id', effectiveClientId);
+        } catch (dbErr) {
+          console.warn('Supabase cascade delete notice:', dbErr);
+        }
+      }
+
+      // Update mock clients & pending store
+      const updated = availableTenants.filter(t => t.id !== effectiveClientId && t.slug !== slug);
+      setAvailableTenants(updated);
+      saveMockClients(updated);
+
+      try {
+        const pendingKey = 'hiresort_pending_workspaces';
+        const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+        const updatedPending = pending.filter((p: any) => p.id !== effectiveClientId && p.slug !== slug);
+        localStorage.setItem(pendingKey, JSON.stringify(updatedPending));
+      } catch (e) {}
+
+      // Fallback switch to default Zool client
+      setClient(DEFAULT_ZOOL_CLIENT);
+
+      toast({
+        title: 'Tenant Deleted Permanently',
+        description: `Workspace ${name} was permanently removed. Switched to ${DEFAULT_ZOOL_CLIENT.name}.`,
+      });
+
+      setIsDeleteModalOpen(false);
+      navigate('/clients');
+    } catch (e: any) {
+      toast({
+        title: 'Delete Failed',
+        description: e.message || 'Could not delete workspace.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Branding Settings State
@@ -240,7 +380,7 @@ export default function TenantSettings() {
   useEffect(() => {
     async function loadTenants() {
       try {
-        const { data } = await supabase.from('clients').select('id, name, slug, logo_url, theme_color, subscription_tier');
+        const { data } = await supabase.from('clients').select('id, name, slug, logo_url, theme_color, subscription_tier, status');
         if (data && data.length > 0) {
           const mapped: ClientTenant[] = data.map((c: any) => ({
             id: c.id,
@@ -249,6 +389,7 @@ export default function TenantSettings() {
             logoUrl: c.logo_url,
             themeColor: c.theme_color || (c.slug === 'commit' ? '#f97316' : '#2563eb'),
             subscriptionTier: c.subscription_tier || 'pro',
+            status: c.status || 'active',
           }));
           if (!mapped.some(c => c.slug === 'zool')) mapped.unshift(DEFAULT_ZOOL_CLIENT);
           if (!mapped.some(c => c.slug === 'commit')) mapped.splice(1, 0, DEFAULT_COMMIT_CLIENT);
@@ -764,6 +905,10 @@ export default function TenantSettings() {
           <TabsTrigger value="positions" onClick={() => handleTabChange('positions')} className="gap-1.5 text-xs">
             <Briefcase className="w-3.5 h-3.5" />
             Positions ({positions.length})
+          </TabsTrigger>
+          <TabsTrigger value="danger" onClick={() => handleTabChange('danger')} className="gap-1.5 text-xs text-rose-500 hover:text-rose-600 data-[state=active]:text-rose-600">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Danger Zone
           </TabsTrigger>
         </TabsList>
 
@@ -1579,6 +1724,94 @@ export default function TenantSettings() {
             }}
           />
         </TabsContent>
+
+        {/* 11. DANGER ZONE TAB */}
+        <TabsContent value="danger" className="space-y-4">
+          <Card className="border-rose-200 dark:border-rose-900/60 bg-card">
+            <CardHeader className="border-b border-rose-100 dark:border-rose-950 pb-4">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="w-5 h-5" />
+                <CardTitle className="text-base">Workspace Danger Zone</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Manage workspace lifecycle for <strong>{name}</strong> (/careers/{slug}). Actions here can disable careers portals or permanently wipe data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="divide-y divide-border/60 p-0">
+              {/* Soft Delete / Archival Row */}
+              <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-semibold text-foreground">
+                      {isCurrentTenantArchived ? 'Reactivate / Restore Workspace' : 'Archive Workspace (Soft Delete)'}
+                    </h4>
+                    {isCurrentTenantArchived && (
+                      <Badge variant="secondary" className="text-[10px] text-slate-500 bg-slate-100 dark:bg-slate-900">
+                        Currently Archived
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-xl">
+                    {isCurrentTenantArchived
+                      ? 'Reactivate this client workspace so team members can switch into it and the public careers portal resumes accepting applications.'
+                      : 'Taking this workspace offline hides it from team members and makes the public careers portal unavailable, while keeping all candidate and job data safely preserved.'}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isProtectedTenant() || isArchiving}
+                  onClick={() => setIsArchiveModalOpen(true)}
+                  className={`shrink-0 text-xs h-8 gap-1.5 ${isCurrentTenantArchived ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'}`}
+                >
+                  {isCurrentTenantArchived ? (
+                    <>
+                      <ArchiveRestore className="w-3.5 h-3.5" />
+                      Restore Workspace
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="w-3.5 h-3.5" />
+                      Archive Workspace
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Hard Delete Row */}
+              <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h4 className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                    Permanently Delete Workspace (Hard Delete)
+                  </h4>
+                  <p className="text-xs text-muted-foreground max-w-xl">
+                    Permanently remove this client tenant, its careers portal, candidate resumes, AI evaluations, and job requisitions. This action cannot be undone.
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={isProtectedTenant() || isDeleting}
+                  onClick={() => {
+                    setDeleteConfirmText('');
+                    setIsDeleteModalOpen(true);
+                  }}
+                  className="shrink-0 text-xs h-8 gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Workspace
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {isProtectedTenant() && (
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 px-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              This is a primary system workspace partition and cannot be deleted or archived.
+            </p>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* New Question Dialog */}
@@ -1628,6 +1861,88 @@ export default function TenantSettings() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsQuestionModalOpen(false)}>Cancel</Button>
             <Button onClick={handleAddQuestion}>Add to Library</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive / Restore Confirmation Dialog in Tenant Settings */}
+      <Dialog open={isArchiveModalOpen} onOpenChange={setIsArchiveModalOpen}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1">
+              {isCurrentTenantArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
+            </div>
+            <DialogTitle>
+              {isCurrentTenantArchived ? `Restore Workspace "${name}"?` : `Archive Workspace "${name}"?`}
+            </DialogTitle>
+            <DialogDescription>
+              {isCurrentTenantArchived
+                ? `Re-enabling this workspace will make /careers/${slug} available to job seekers again.`
+                : `Archiving this workspace will hide it and show an offline notice on /careers/${slug}. All underlying candidate records, jobs, and settings will remain preserved.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" disabled={isArchiving} onClick={() => setIsArchiveModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className={isCurrentTenantArchived ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white"}
+              disabled={isArchiving}
+              onClick={handleToggleArchiveTenant}
+            >
+              {isArchiving ? 'Processing...' : isCurrentTenantArchived ? 'Confirm Restore' : 'Confirm Archive'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hard Delete Confirmation Dialog in Tenant Settings */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mb-1">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <DialogTitle className="text-rose-600 dark:text-rose-400">
+              Permanently Delete Tenant Workspace?
+            </DialogTitle>
+            <DialogDescription className="space-y-2">
+              <p>
+                This action is <span className="font-semibold text-rose-600">irreversible</span>. Deleting <strong>{name}</strong> will permanently wipe:
+              </p>
+              <ul className="list-disc pl-5 text-xs space-y-1 text-muted-foreground">
+                <li>All jobs and candidate pipelines in this workspace</li>
+                <li>All applicant resumes and AI screening scores</li>
+                <li>Careers portal at <code className="bg-muted px-1 py-0.5 rounded text-[11px]">/careers/{slug}</code></li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            <Label htmlFor="tenant-settings-delete-input" className="text-xs">
+              To confirm, type <strong className="font-mono text-foreground">{name}</strong> below:
+            </Label>
+            <Input
+              id="tenant-settings-delete-input"
+              placeholder={name}
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="text-xs"
+              autoFocus
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" disabled={isDeleting} onClick={() => setIsDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isDeleting || deleteConfirmText.trim().toLowerCase() !== name.trim().toLowerCase()}
+              onClick={handleHardDeleteTenant}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

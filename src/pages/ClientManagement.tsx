@@ -21,7 +21,11 @@ import {
   Users, 
   Briefcase,
   Search,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  Archive,
+  ArchiveRestore,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Dialog,
@@ -78,6 +82,13 @@ export default function ClientManagement() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
 
+  // Delete & Archive Dialog State
+  const [clientToAction, setClientToAction] = useState<ClientTenant | null>(null);
+  const [actionType, setActionType] = useState<'archive' | 'restore' | 'delete' | null>(null);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'pending'>('all');
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -90,6 +101,152 @@ export default function ClientManagement() {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  const isProtectedClient = (client: ClientTenant | null) => {
+    if (!client) return false;
+    const s = (client.slug || '').toLowerCase();
+    const id = client.id;
+    return s === 'zool' || s === 'commit' || id === DEFAULT_ZOOL_CLIENT.id || id === DEFAULT_COMMIT_CLIENT.id;
+  };
+
+  const handleArchiveClient = async (targetClient: ClientTenant) => {
+    if (isProtectedClient(targetClient)) {
+      toast({
+        title: 'Protected Workspace',
+        description: 'Default platform client cannot be archived.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsProcessingAction(true);
+      if (!isMockMode()) {
+        await supabase
+          .from('clients')
+          .update({ status: 'archived' } as any)
+          .eq('id', targetClient.id);
+      }
+
+      const updated = clients.map(c => c.id === targetClient.id ? { ...c, status: 'archived' as const } : c);
+      setClients(updated);
+      saveMockClients(updated);
+
+      toast({
+        title: 'Workspace Archived',
+        description: `${targetClient.name} is now archived and hidden from public portal.`,
+      });
+      setActionType(null);
+      setClientToAction(null);
+    } catch (e: any) {
+      toast({
+        title: 'Error Archiving',
+        description: e.message || 'Could not archive client',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleRestoreClient = async (targetClient: ClientTenant) => {
+    try {
+      setIsProcessingAction(true);
+      if (!isMockMode()) {
+        await supabase
+          .from('clients')
+          .update({ status: 'active' } as any)
+          .eq('id', targetClient.id);
+      }
+
+      const updated = clients.map(c => c.id === targetClient.id ? { ...c, status: 'active' as const } : c);
+      setClients(updated);
+      saveMockClients(updated);
+
+      toast({
+        title: 'Workspace Restored',
+        description: `${targetClient.name} is now active and accessible.`,
+      });
+      setActionType(null);
+      setClientToAction(null);
+    } catch (e: any) {
+      toast({
+        title: 'Error Restoring',
+        description: e.message || 'Could not restore client',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleDeleteClient = async (targetClient: ClientTenant) => {
+    if (isProtectedClient(targetClient)) {
+      toast({
+        title: 'Protected Workspace',
+        description: 'System root tenants (Zool and Commit) cannot be deleted.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (activeClient?.id === targetClient.id) {
+      toast({
+        title: 'Active Workspace In Use',
+        description: 'Please switch to another workspace (e.g. Zool) before deleting this workspace.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsProcessingAction(true);
+
+      // 1. Delete associated jobs and candidates for this client in Supabase
+      if (!isMockMode()) {
+        try {
+          await supabase.from('candidates').delete().eq('client_id', targetClient.id);
+          await supabase.from('jobs').delete().eq('client_id', targetClient.id);
+          await supabase.from('departments').delete().eq('client_id', targetClient.id);
+          await supabase.from('positions').delete().eq('client_id', targetClient.id);
+          await supabase.from('question_bank').delete().eq('client_id', targetClient.id);
+          await supabase.from('clients').delete().eq('id', targetClient.id);
+        } catch (dbErr) {
+          console.warn('Supabase cascade delete notice:', dbErr);
+        }
+      }
+
+      // 2. Remove from local state & mock storage
+      const updated = clients.filter(c => c.id !== targetClient.id && c.slug !== targetClient.slug);
+      setClients(updated);
+      saveMockClients(updated);
+
+      // 3. Remove from pending workspaces if present
+      try {
+        const pendingKey = 'hiresort_pending_workspaces';
+        const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+        const updatedPending = pending.filter((p: any) => p.id !== targetClient.id && p.slug !== targetClient.slug);
+        localStorage.setItem(pendingKey, JSON.stringify(updatedPending));
+      } catch (e) {}
+
+      toast({
+        title: 'Workspace Deleted Permanently',
+        description: `Client ${targetClient.name} and associated workspace partition have been deleted.`,
+      });
+
+      setActionType(null);
+      setClientToAction(null);
+      setDeleteConfirmationInput('');
+    } catch (e: any) {
+      toast({
+        title: 'Error Deleting Client',
+        description: e.message || 'Could not delete client.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -337,10 +494,16 @@ export default function ClientManagement() {
     setIsCreateOpen(true);
   };
 
-  const filteredClients = clients.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.slug.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredClients = clients.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.slug.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'archived') return c.status === 'archived';
+    if (statusFilter === 'pending') return c.status === 'pending';
+    if (statusFilter === 'active') return c.status === 'active' || !c.status;
+    return true;
+  });
 
   const getTierBadge = (tier?: string) => {
     switch (tier) {
@@ -400,7 +563,7 @@ export default function ClientManagement() {
           </CardHeader>
           <CardContent className="p-3.5 pt-0">
             <div className="text-xl font-bold">
-              {clients.filter(c => c.subscriptionTier === 'pro' || c.subscriptionTier === 'enterprise').length}
+              {clients.filter(c => c.status !== 'archived' && (c.subscriptionTier === 'pro' || c.subscriptionTier === 'enterprise')).length}
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">Pro & Enterprise plans</p>
           </CardContent>
@@ -412,8 +575,8 @@ export default function ClientManagement() {
             <ExternalLink className="w-4 h-4 text-blue-500" />
           </CardHeader>
           <CardContent className="p-3.5 pt-0">
-            <div className="text-xl font-bold">{clients.length}</div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Public branded landing pages</p>
+            <div className="text-xl font-bold">{clients.filter(c => c.status !== 'archived').length}</div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Live public career portals</p>
           </CardContent>
         </Card>
 
@@ -440,9 +603,9 @@ export default function ClientManagement() {
         </Card>
       </div>
 
-      {/* Filter / Search Bar */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-sm">
+      {/* Filter / Search Bar with Status Tabs */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input 
             placeholder="Search clients by name or slug..."
@@ -450,6 +613,33 @@ export default function ClientManagement() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-8 text-xs"
           />
+        </div>
+
+        <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border text-xs">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-2.5 py-1 rounded-md transition-colors font-medium ${statusFilter === 'all' ? 'bg-background text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            All ({clients.length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('active')}
+            className={`px-2.5 py-1 rounded-md transition-colors font-medium ${statusFilter === 'active' ? 'bg-background text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Active ({clients.filter(c => c.status === 'active' || !c.status).length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('pending')}
+            className={`px-2.5 py-1 rounded-md transition-colors font-medium ${statusFilter === 'pending' ? 'bg-background text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Pending ({clients.filter(c => c.status === 'pending').length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('archived')}
+            className={`px-2.5 py-1 rounded-md transition-colors font-medium ${statusFilter === 'archived' ? 'bg-background text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Archived ({clients.filter(c => c.status === 'archived').length})
+          </button>
         </div>
       </div>
 
@@ -469,10 +659,10 @@ export default function ClientManagement() {
             <tbody className="divide-y divide-border">
               {filteredClients.map((client) => {
                 const isCurrent = activeClient?.id === client.id;
-                const portalUrl = `${getAppBaseUrl()}/careers/${client.slug}`;
+                const isProtected = isProtectedClient(client);
 
                 return (
-                  <tr key={client.id} className="hover:bg-muted/30 transition-colors">
+                  <tr key={client.id} className={`hover:bg-muted/30 transition-colors ${client.status === 'archived' ? 'opacity-70 bg-muted/15' : ''}`}>
                     <td className="px-3.5 py-2.5">
                       <div className="flex items-center gap-2.5">
                         <TenantBrandLogo client={client} size="sm" />
@@ -482,6 +672,11 @@ export default function ClientManagement() {
                             {isCurrent && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary text-primary">
                                 Active Workspace
+                              </Badge>
+                            )}
+                            {isProtected && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                Protected
                               </Badge>
                             )}
                           </div>
@@ -507,7 +702,12 @@ export default function ClientManagement() {
                     </td>
 
                     <td className="px-3.5 py-2.5">
-                      {client.status === 'pending' ? (
+                      {client.status === 'archived' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-900/60 dark:text-slate-400 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800">
+                          <Archive className="w-3 h-3" />
+                          Archived
+                        </span>
+                      ) : client.status === 'pending' ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                           Pending Review
@@ -521,7 +721,7 @@ export default function ClientManagement() {
                     </td>
 
                     <td className="px-3.5 py-2.5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
                         {/* Approve Pending Workspace (SuperAdmin only) */}
                         {client.status === 'pending' && isSuperAdmin && (
                           <Button 
@@ -558,7 +758,7 @@ export default function ClientManagement() {
                         </Button>
 
                         {/* Switch Workspace */}
-                        {!isCurrent ? (
+                        {!isCurrent && client.status !== 'archived' && (
                           <Button 
                             variant="default" 
                             size="sm"
@@ -574,9 +774,55 @@ export default function ClientManagement() {
                             Switch To
                             <ArrowRight className="w-3.5 h-3.5 ml-1" />
                           </Button>
-                        ) : (
-                          <Button variant="secondary" size="sm" disabled>
-                            Current
+                        )}
+
+                        {/* Soft Delete (Archive / Restore) */}
+                        {!isProtected && (
+                          client.status === 'archived' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="Restore archived client"
+                              className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800"
+                              onClick={() => {
+                                setClientToAction(client);
+                                setActionType('restore');
+                              }}
+                            >
+                              <ArchiveRestore className="w-3.5 h-3.5 mr-1" />
+                              Restore
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="Archive client (soft-delete)"
+                              className="h-7 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                              onClick={() => {
+                                setClientToAction(client);
+                                setActionType('archive');
+                              }}
+                            >
+                              <Archive className="w-3.5 h-3.5 mr-1" />
+                              Archive
+                            </Button>
+                          )
+                        )}
+
+                        {/* Hard Delete */}
+                        {!isProtected && !isCurrent && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Permanently delete client workspace"
+                            className="h-7 px-2 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                            onClick={() => {
+                              setClientToAction(client);
+                              setActionType('delete');
+                              setDeleteConfirmationInput('');
+                            }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
@@ -772,6 +1018,139 @@ export default function ClientManagement() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Archive / Restore Confirmation Dialog */}
+      <Dialog 
+        open={actionType === 'archive' || actionType === 'restore'} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionType(null);
+            setClientToAction(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1">
+              {actionType === 'archive' ? <Archive className="w-5 h-5" /> : <ArchiveRestore className="w-5 h-5" />}
+            </div>
+            <DialogTitle>
+              {actionType === 'archive' ? `Archive "${clientToAction?.name}"?` : `Restore "${clientToAction?.name}"?`}
+            </DialogTitle>
+            <DialogDescription>
+              {actionType === 'archive' ? (
+                <>
+                  Archiving this workspace will hide it from the active workspace switcher and take its public careers portal offline (<strong>/careers/{clientToAction?.slug}</strong>). All underlying job records, candidates, and AI screenings will remain preserved.
+                </>
+              ) : (
+                <>
+                  Restoring this workspace will reactivate its portal and allow team members to access and switch to it normally.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              disabled={isProcessingAction}
+              onClick={() => {
+                setActionType(null);
+                setClientToAction(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className={actionType === 'archive' ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+              disabled={isProcessingAction}
+              onClick={() => {
+                if (!clientToAction) return;
+                if (actionType === 'archive') {
+                  handleArchiveClient(clientToAction);
+                } else {
+                  handleRestoreClient(clientToAction);
+                }
+              }}
+            >
+              {isProcessingAction ? 'Processing...' : actionType === 'archive' ? 'Confirm Archive' : 'Confirm Restore'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permanent Delete Confirmation Dialog */}
+      <Dialog 
+        open={actionType === 'delete'} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionType(null);
+            setClientToAction(null);
+            setDeleteConfirmationInput('');
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mb-1">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <DialogTitle className="text-rose-600 dark:text-rose-400">
+              Permanently Delete Tenant Workspace?
+            </DialogTitle>
+            <DialogDescription className="space-y-2">
+              <p>
+                This action is <span className="font-semibold text-rose-600">irreversible</span>. Deleting <strong>{clientToAction?.name}</strong> will permanently wipe:
+              </p>
+              <ul className="list-disc pl-5 text-xs space-y-1 text-muted-foreground">
+                <li>Tenant configuration and branding</li>
+                <li>All active and archived jobs posted under this tenant</li>
+                <li>All candidates and AI screening scores in this workspace partition</li>
+                <li>Public careers page at <code className="bg-muted px-1 py-0.5 rounded text-[11px]">/careers/{clientToAction?.slug}</code></li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            <Label htmlFor="delete-confirm-input" className="text-xs">
+              To confirm, type <strong className="font-mono text-foreground">{clientToAction?.name}</strong> below:
+            </Label>
+            <Input
+              id="delete-confirm-input"
+              placeholder={clientToAction?.name}
+              value={deleteConfirmationInput}
+              onChange={(e) => setDeleteConfirmationInput(e.target.value)}
+              className="text-xs"
+              autoFocus
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              disabled={isProcessingAction}
+              onClick={() => {
+                setActionType(null);
+                setClientToAction(null);
+                setDeleteConfirmationInput('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isProcessingAction || deleteConfirmationInput.trim().toLowerCase() !== (clientToAction?.name || '').trim().toLowerCase()}
+              onClick={() => {
+                if (clientToAction) {
+                  handleDeleteClient(clientToAction);
+                }
+              }}
+            >
+              {isProcessingAction ? 'Deleting...' : 'Delete Permanently'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

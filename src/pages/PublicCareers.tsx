@@ -92,6 +92,7 @@ export default function PublicCareers() {
             logoUrl: (clientData as any).logo_url,
             themeColor: (clientData as any).theme_color || '#2563eb',
             subscriptionTier: (clientData as any).subscription_tier || 'pro',
+            status: (clientData as any).status || 'active',
           });
         } else {
           const isPlatformSlug = normalizedSlug === 'platform' || normalizedSlug === 'sahab';
@@ -99,6 +100,7 @@ export default function PublicCareers() {
             ...DEFAULT_ZOOL_CLIENT,
             name: isPlatformSlug ? 'Sahab Portal' : normalizedSlug.charAt(0).toUpperCase() + normalizedSlug.slice(1),
             slug: normalizedSlug,
+            status: 'active',
           });
         }
 
@@ -330,6 +332,25 @@ export default function PublicCareers() {
       window.removeEventListener('resize', notifyParentHeight);
     };
   }, [isEmbedMode, jobs, filteredJobs, loading, slug]);
+
+  if (!loading && client.status === 'archived') {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4 text-muted-foreground">
+          <Building2 className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">Portal Unavailable</h1>
+        <p className="text-sm text-muted-foreground max-w-md mb-6">
+          The careers portal for <strong>{client.name}</strong> is currently archived or inactive. Open applications are not being accepted at this time.
+        </p>
+        <Link to="/">
+          <Button variant="outline" size="sm">
+            Return to Homepage
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className={isEmbedMode ? "bg-background text-foreground flex flex-col p-4 font-sans" : "min-h-screen bg-background text-foreground flex flex-col"}>

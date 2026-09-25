@@ -124,7 +124,7 @@ export interface ClientTenant {
   logoUrl?: string | null;
   themeColor?: string;
   subscriptionTier?: 'free' | 'pro' | 'enterprise';
-  status?: 'active' | 'pending' | 'suspended';
+  status?: 'active' | 'pending' | 'suspended' | 'archived';
   adminEmail?: string;
   adminName?: string;
   stripeCustomerId?: string | null;

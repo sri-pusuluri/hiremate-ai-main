@@ -1,5 +1,6 @@
 import { Candidate, Job } from '@/types/hiresort';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AIBadge, RankBadge, RelevanceLabel, OverrideIndicator } from '@/components/ui/ai-badges';
 import { ResumeViewerModal } from './ResumeViewerModal';
 import { AIMatchAnalysis } from './AIMatchAnalysis';
@@ -414,7 +415,7 @@ export function CandidateDetail({
     }
   };
 
-  const handleReanalyze = async (customProviderOrEvent?: any) => {
+  const handleReanalyze = async (customProviderOrEvent?: any, customModel?: string) => {
     setIsReanalyzing(true);
     try {
       const customProvider = typeof customProviderOrEvent === 'string' && customProviderOrEvent.length > 0 
@@ -502,7 +503,10 @@ export function CandidateDetail({
       const result = await analyzeCandidateWithAI(
         candidatePayload, 
         effectiveJob || { id: targetJobId || '', title: 'Software Engineer', description: 'Technical software engineering position' },
-        { preferredProvider: customProvider }
+        { 
+          preferredProvider: customProvider,
+          preferredModel: customModel
+        }
       );
 
       if (result) {
@@ -1048,84 +1052,124 @@ export function CandidateDetail({
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-border p-3 sm:p-4 bg-card shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            <Button 
-              variant={isShortlisted ? "secondary" : "ghost"} 
-              size="sm"
-              onClick={handleToggleShortlist}
-              className={cn("h-8 px-2 sm:px-2.5 text-xs cursor-pointer transition-colors", isShortlisted ? "text-amber-500 font-medium" : "")}
-              title={isShortlisted ? "Unpin candidate" : "Pin candidate"}
-            >
-              <Pin className={cn("w-3.5 h-3.5 mr-1", isShortlisted && "fill-amber-500 text-amber-500")} />
-              {isShortlisted ? "Pinned" : "Pin"}
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onBoost?.(candidate.id)}
-              className="h-8 px-2 sm:px-2.5 text-xs cursor-pointer"
-              title="Boost candidate ranking"
-            >
-              <ArrowUp className="w-3.5 h-3.5 mr-1" />
-              Boost
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onDemote?.(candidate.id)}
-              className="h-8 px-2 sm:px-2.5 text-xs cursor-pointer"
-              title="Demote candidate ranking"
-            >
-              <ArrowDown className="w-3.5 h-3.5 mr-1" />
-              Demote
-            </Button>
-          </div>
+        <div className="border-t border-border p-3 sm:p-4 bg-card shrink-0 flex items-center justify-between gap-2.5">
+          <TooltipProvider delayDuration={150}>
+            {/* Left Action Group (Pin, Boost, Demote) */}
+            <div className="flex items-center gap-1 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={isShortlisted ? "secondary" : "ghost"} 
+                    size="icon"
+                    onClick={handleToggleShortlist}
+                    className={cn("h-8 w-8 cursor-pointer transition-colors", isShortlisted ? "text-amber-500 font-medium" : "text-muted-foreground hover:text-foreground")}
+                    aria-label={isShortlisted ? "Unpin candidate" : "Pin candidate"}
+                  >
+                    <Pin className={cn("w-4 h-4", isShortlisted && "fill-amber-500 text-amber-500")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {isShortlisted ? "Unpin candidate" : "Pin candidate to top"}
+                </TooltipContent>
+              </Tooltip>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowReportModal(true)} 
-              className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer border-primary/30 text-primary hover:bg-primary/5 gap-1.5 font-semibold"
-              title="Export Candidate Dossier & PDF Report"
-            >
-              <Printer className="w-3.5 h-3.5 text-primary" />
-              Report Dossier
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowResumeModal(true)} 
-              className="h-8 px-2.5 sm:px-3 text-xs cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5 mr-1.5" />
-              View Resume
-            </Button>
-            {isShortlisted ? (
-              <Button 
-                variant="outline" 
-                size="sm"
-                disabled={updatingShortlist}
-                onClick={handleToggleShortlist}
-                className="h-8 px-2.5 sm:px-3 text-xs border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40 cursor-pointer transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5 text-rose-500" />
-                Remove from Shortlist
-              </Button>
-            ) : (
-              <Button 
-                variant="default" 
-                size="sm"
-                disabled={updatingShortlist}
-                onClick={handleToggleShortlist}
-                className="h-8 px-2.5 sm:px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs transition-all"
-              >
-                <Star className="w-3.5 h-3.5 mr-1.5 fill-white text-white" />
-                Add to Shortlist
-              </Button>
-            )}
-          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onBoost?.(candidate.id)}
+                    className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-foreground"
+                    aria-label="Boost candidate ranking"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  Boost candidate ranking (+10%)
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onDemote?.(candidate.id)}
+                    className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-foreground"
+                    aria-label="Demote candidate ranking"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  Demote candidate ranking (-10%)
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            {/* Right Action Group (Report Dossier, View Resume, Add to Shortlist) */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setShowReportModal(true)} 
+                    className="h-8 w-8 cursor-pointer border-primary/30 text-primary hover:bg-primary/5 shadow-2xs"
+                    aria-label="Export Candidate Report Dossier"
+                  >
+                    <Printer className="w-4 h-4 text-primary" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  Candidate Report Dossier (Executive PDF)
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setShowResumeModal(true)} 
+                    className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-foreground shadow-2xs"
+                    aria-label="View Resume"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  View Candidate Resume
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Primary Action Button (Retains prominent label and styling) */}
+              {isShortlisted ? (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={updatingShortlist}
+                  onClick={handleToggleShortlist}
+                  className="h-8 px-3 text-xs border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40 cursor-pointer transition-all ml-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5 text-rose-500" />
+                  Remove from Shortlist
+                </Button>
+              ) : (
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  disabled={updatingShortlist}
+                  onClick={handleToggleShortlist}
+                  className="h-8 px-3.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium cursor-pointer shadow-xs transition-all ml-1 gap-1.5"
+                >
+                  <Star className="w-3.5 h-3.5 fill-primary-foreground text-primary-foreground" />
+                  Add to Shortlist
+                </Button>
+              )}
+            </div>
+          </TooltipProvider>
         </div>
       </div>
 

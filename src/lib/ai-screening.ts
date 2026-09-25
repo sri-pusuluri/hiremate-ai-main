@@ -571,7 +571,10 @@ export async function analyzeCandidateWithAI(
     company?: string;
   },
   job: { id: string; title: string; description?: string; requirements?: string[]; responsibilities?: string[] },
-  options?: { preferredProvider?: 'openai' | 'gemini' | 'claude' | 'supabase-edge' | 'deterministic-ats' | string }
+  options?: { 
+    preferredProvider?: 'openai' | 'gemini' | 'claude' | 'supabase-edge' | 'deterministic-ats' | string;
+    preferredModel?: string;
+  }
 ): Promise<AIAnalysisResult> {
   const name = candidate.name || candidate.full_name || (candidate as any).candidateName || 'Applicant';
   let resumeText = await extractResumeText(
@@ -690,9 +693,15 @@ ${Object.entries(customAns).map(([k, v]) => `${k}: ${v}`).join('\n')}`;
   const geminiKey = (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null) || import.meta?.env?.VITE_GEMINI_API_KEY;
   const claudeKey = (typeof window !== 'undefined' ? localStorage.getItem('claude_api_key') : null) || import.meta?.env?.VITE_CLAUDE_API_KEY;
 
-  const openaiModel = (typeof window !== 'undefined' ? localStorage.getItem('openai_model') : null) || 'gpt-4o-mini';
-  const geminiModel = (typeof window !== 'undefined' ? localStorage.getItem('gemini_model') : null) || 'gemini-1.5-flash';
-  const claudeModel = (typeof window !== 'undefined' ? localStorage.getItem('claude_model') : null) || 'claude-3-5-sonnet';
+  const openaiModel = (selectedProvider === 'openai' && options?.preferredModel)
+    ? options.preferredModel
+    : ((typeof window !== 'undefined' ? localStorage.getItem('openai_model') : null) || 'gpt-4o-mini');
+  const geminiModel = (selectedProvider === 'gemini' && options?.preferredModel)
+    ? options.preferredModel
+    : ((typeof window !== 'undefined' ? localStorage.getItem('gemini_model') : null) || 'gemini-1.5-flash');
+  const claudeModel = (selectedProvider === 'claude' && options?.preferredModel)
+    ? options.preferredModel
+    : ((typeof window !== 'undefined' ? localStorage.getItem('claude_model') : null) || 'claude-3-5-sonnet');
 
   const jobTitle = job.title || 'Software Engineer';
   const jobDesc = job.description || 'Modern software development role.';
@@ -764,15 +773,18 @@ Output ONLY valid JSON without markdown wrapping.`;
   let result: AIAnalysisResult | null = null;
 
   // 0. Cache Check: Deduplicate evaluation if identical resume & requirements were screened before
+  const effectiveModelForCache = selectedProvider === 'gemini' ? geminiModel : selectedProvider === 'openai' ? openaiModel : selectedProvider === 'claude' ? claudeModel : '';
   const fingerprint = asyncAIQueue.generateEvaluationFingerprint(
     resumeText,
     job.id,
     job.requirements || [],
-    selectedProvider
+    `${selectedProvider}:${effectiveModelForCache}`
   );
-  const cachedResult = asyncAIQueue.getCachedEvaluation(fingerprint);
-  if (cachedResult) {
-    return cachedResult;
+  if (!options?.preferredModel && !options?.preferredProvider) {
+    const cachedResult = asyncAIQueue.getCachedEvaluation(fingerprint);
+    if (cachedResult) {
+      return cachedResult;
+    }
   }
 
   // Option A: If explicitly requested deterministic ATS, run directly
@@ -822,126 +834,190 @@ Output ONLY valid JSON without markdown wrapping.`;
           executionMode: 'supabase_vector',
           isUnprocessed: false
         };
+      } else if (selectedProvider === 'supabase-edge') {
+        throw new Error(edgeErr?.message || 'Supabase Edge Function failed to respond.');
       }
-    } catch (edgeErr) {
+    } catch (edgeErr: any) {
+      if (selectedProvider === 'supabase-edge') {
+        throw new Error(`Supabase Edge screening failed: ${edgeErr?.message || edgeErr}`);
+      }
       console.debug('[AI Screening] Backend Edge Function skipped, using direct evaluation:', edgeErr);
     }
   }
 
   // Option C: Client OpenAI Key
-  if (!result && (selectedProvider === 'auto' || selectedProvider === 'openai') && openaiKey) {
-    try {
-      // Map platform model tiers (e.g. gpt-5.6-luna) to valid live OpenAI API targets
-      const targetApiModel = openaiModel === 'gpt-5.6-luna'
-        ? 'gpt-4o-mini'
-        : (openaiModel === 'gpt-5.6-sol' || openaiModel === 'gpt-5.6-terra')
-        ? 'gpt-4o'
-        : openaiModel;
+  if (!result && (selectedProvider === 'auto' || selectedProvider === 'openai')) {
+    if (!openaiKey && selectedProvider === 'openai') {
+      throw new Error(`OpenAI API key not configured. Please add your OpenAI API key in Settings -> Sahab Portal AI.`);
+    }
 
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiKey}`
-        },
-        body: JSON.stringify({
-          model: targetApiModel,
-          temperature: 0.1,
-          messages: [{ role: 'user', content: prompt }],
-          response_format: { type: 'json_object' }
-        })
-      });
+    if (openaiKey) {
+      try {
+        // Map platform model tiers (e.g. gpt-5.6-luna) to valid live OpenAI API targets
+        const targetApiModel = openaiModel === 'gpt-5.6-luna'
+          ? 'gpt-4o-mini'
+          : (openaiModel === 'gpt-5.6-sol' || openaiModel === 'gpt-5.6-terra')
+          ? 'gpt-4o'
+          : openaiModel;
 
-      if (res.ok) {
-        const data = await res.json();
-        const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-        if (parsed.similarity !== undefined) {
-          result = {
-            ...parsed,
-            provider: 'openai',
-            model: openaiModel,
-            executionMode: 'external_llm',
-            isUnprocessed: false
-          };
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`
+          },
+          body: JSON.stringify({
+            model: targetApiModel,
+            temperature: 0.1,
+            messages: [{ role: 'user', content: prompt }],
+            response_format: { type: 'json_object' }
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData?.error?.message || `HTTP error ${res.status}: ${res.statusText}`;
+          if (selectedProvider === 'openai') {
+            throw new Error(`OpenAI API Error (${openaiModel}): ${errMsg}`);
+          }
+          console.warn('[AI Screening] OpenAI call failed:', errMsg);
+        } else {
+          const data = await res.json();
+          const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+          if (parsed.similarity !== undefined) {
+            result = {
+              ...parsed,
+              provider: 'openai',
+              model: openaiModel,
+              executionMode: 'external_llm',
+              isUnprocessed: false
+            };
+          }
         }
+      } catch (err: any) {
+        if (selectedProvider === 'openai') {
+          throw err;
+        }
+        console.warn('[AI Screening] OpenAI call failed:', err);
       }
-    } catch (err) {
-      console.warn('[AI Screening] OpenAI call failed:', err);
     }
   }
 
   // Option D: Client Gemini Key
-  if (!result && (selectedProvider === 'auto' || selectedProvider === 'gemini') && geminiKey) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { 
-            responseMimeType: 'application/json',
-            temperature: 0.1
-          }
-        })
-      });
+  if (!result && (selectedProvider === 'auto' || selectedProvider === 'gemini')) {
+    if (!geminiKey && selectedProvider === 'gemini') {
+      throw new Error(`Google Gemini API key not configured. Please add your Gemini API key in Settings -> Sahab Portal AI or your .env file.`);
+    }
 
-      if (res.ok) {
-        const data = await res.json();
-        const parsed = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || '{}');
-        if (parsed.similarity !== undefined) {
-          result = {
-            ...parsed,
-            provider: 'gemini',
-            model: geminiModel,
-            executionMode: 'external_llm',
-            isUnprocessed: false
-          };
+    if (geminiKey) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { 
+              responseMimeType: 'application/json',
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData?.error?.message || `HTTP ${res.status}: ${res.statusText}`;
+          if (selectedProvider === 'gemini') {
+            throw new Error(`Google Gemini API Error (${geminiModel}): ${errMsg}`);
+          }
+          console.warn('[AI Screening] Gemini call failed:', errMsg);
+        } else {
+          const data = await res.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!rawText) {
+            const reason = data.candidates?.[0]?.finishReason || 'No candidate response returned';
+            if (selectedProvider === 'gemini') {
+              throw new Error(`Google Gemini returned empty result (${reason}). Check safety ratings or model availability.`);
+            }
+          } else {
+            const parsed = JSON.parse(rawText);
+            if (parsed.similarity !== undefined) {
+              result = {
+                ...parsed,
+                provider: 'gemini',
+                model: geminiModel,
+                executionMode: 'external_llm',
+                isUnprocessed: false
+              };
+            }
+          }
         }
+      } catch (err: any) {
+        if (selectedProvider === 'gemini') {
+          throw err;
+        }
+        console.warn('[AI Screening] Gemini call failed:', err);
       }
-    } catch (err) {
-      console.warn('[AI Screening] Gemini call failed:', err);
     }
   }
 
   // Option E: Client Anthropic Claude Key
-  if (!result && (selectedProvider === 'auto' || selectedProvider === 'claude') && claudeKey) {
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': claudeKey,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: claudeModel,
-          temperature: 0.1,
-          max_tokens: 1024,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
+  if (!result && (selectedProvider === 'auto' || selectedProvider === 'claude')) {
+    if (!claudeKey && selectedProvider === 'claude') {
+      throw new Error(`Anthropic Claude API key not configured. Please add your Claude API key in Settings -> Sahab Portal AI.`);
+    }
 
-      if (res.ok) {
-        const data = await res.json();
-        const rawText = data.content?.[0]?.text || '{}';
-        const parsed = JSON.parse(rawText);
-        if (parsed.similarity !== undefined) {
-          result = {
-            ...parsed,
-            provider: 'claude',
+    if (claudeKey) {
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': claudeKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
             model: claudeModel,
-            executionMode: 'external_llm',
-            isUnprocessed: false
-          };
+            temperature: 0.1,
+            max_tokens: 1024,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData?.error?.message || `HTTP ${res.status}: ${res.statusText}`;
+          if (selectedProvider === 'claude') {
+            throw new Error(`Anthropic Claude API Error (${claudeModel}): ${errMsg}`);
+          }
+          console.warn('[AI Screening] Claude call failed:', errMsg);
+        } else {
+          const data = await res.json();
+          const rawText = data.content?.[0]?.text || '{}';
+          const parsed = JSON.parse(rawText);
+          if (parsed.similarity !== undefined) {
+            result = {
+              ...parsed,
+              provider: 'claude',
+              model: claudeModel,
+              executionMode: 'external_llm',
+              isUnprocessed: false
+            };
+          }
         }
+      } catch (err: any) {
+        if (selectedProvider === 'claude') {
+          throw err;
+        }
+        console.warn('[AI Screening] Claude call failed:', err);
       }
-    } catch (err) {
-      console.warn('[AI Screening] Claude call failed:', err);
     }
   }
 
   // Option F: Reliable Deterministic ATS Engine (Runs if external LLM unconfigured or fallback needed)
   if (!result) {
+    if (selectedProvider !== 'auto' && selectedProvider !== 'deterministic-ats') {
+      throw new Error(`Screening service '${selectedProvider}' failed to return an evaluation.`);
+    }
     result = evaluateResumeDeterministically({
       candidateName: name,
       resumeText,
