@@ -264,6 +264,64 @@ export default function Settings() {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
 
+  // Compute live active AI engine status
+  const getActiveAIStatus = () => {
+    const hasOpenAI = Boolean(openaiKey.trim());
+    const hasGemini = Boolean(geminiKey.trim());
+    const hasClaude = Boolean(claudeKey.trim());
+
+    if (aiProvider === 'openai' && hasOpenAI) {
+      return {
+        id: 'openai',
+        name: 'OpenAI (ChatGPT)',
+        model: selectedOpenAIModel,
+        tier: 'Live External LLM',
+        isLive: true,
+        badgeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+        dotColor: 'bg-emerald-500',
+        description: `Active via OpenAI API (${selectedOpenAIModel}) with real-time token costing.`
+      };
+    }
+    if (aiProvider === 'gemini' && hasGemini) {
+      return {
+        id: 'gemini',
+        name: 'Google Gemini',
+        model: selectedGeminiModel,
+        tier: 'Live External LLM',
+        isLive: true,
+        badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30',
+        dotColor: 'bg-blue-500',
+        description: `Active via Google Gemini API (${selectedGeminiModel}) with real-time token costing.`
+      };
+    }
+    if (aiProvider === 'claude' && hasClaude) {
+      return {
+        id: 'claude',
+        name: 'Anthropic Claude',
+        model: selectedClaudeModel,
+        tier: 'Live External LLM',
+        isLive: true,
+        badgeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30',
+        dotColor: 'bg-amber-500',
+        description: `Active via Anthropic API (${selectedClaudeModel}) with real-time token costing.`
+      };
+    }
+
+    // Default Fallback
+    return {
+      id: 'deterministic',
+      name: 'Deterministic ATS Engine',
+      model: 'Rule-based NLP & Heuristics',
+      tier: 'Local Free Engine',
+      isLive: false,
+      badgeColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30',
+      dotColor: 'bg-amber-500',
+      description: 'Active on built-in Deterministic ATS Engine (No external API key saved — zero token cost).'
+    };
+  };
+
+  const activeAI = getActiveAIStatus();
+
   const fetchAiLogs = async () => {
     setLoadingLogs(true);
     const useMock = localStorage.getItem('use_mock_supabase') === 'true';
@@ -902,15 +960,56 @@ export default function Settings() {
         <TabsContent value="ai">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-ai-accent" />
-                Sahab Portal AI Settings
-              </CardTitle>
-              <CardDescription>
-                Customize how AI assists your hiring process
-              </CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-ai-accent" />
+                    Sahab Portal AI Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Customize how AI assists your hiring process
+                  </CardDescription>
+                </div>
+                {/* Live Active Engine Badge */}
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold shadow-sm ${activeAI.badgeColor}`}>
+                  <span className="relative flex h-2 w-2">
+                    {activeAI.isLive && (
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeAI.dotColor}`}></span>
+                    )}
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${activeAI.dotColor}`}></span>
+                  </span>
+                  <span>Active AI: <strong>{activeAI.name}</strong> ({activeAI.model})</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Active AI Status Alert Banner */}
+              <div className="p-4 rounded-xl border bg-card/60 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${activeAI.isLive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-foreground">Current Live AI Engine:</span>
+                      <Badge variant="outline" className={`font-mono text-xs ${activeAI.badgeColor}`}>
+                        {activeAI.name}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[11px] font-mono">
+                        {activeAI.model}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {activeAI.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold ${activeAI.isLive ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-muted text-muted-foreground'}`}>
+                    {activeAI.isLive ? '● ONLINE' : '○ STANDBY'}
+                  </span>
+                </div>
+              </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1586,7 +1685,17 @@ export default function Settings() {
                   Audit token usage, costs, input prompts, and outputs for each candidate ranking.
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Active AI Status Pill */}
+                <div className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${activeAI.badgeColor}`}>
+                  <span className="relative flex h-2 w-2">
+                    {activeAI.isLive && (
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeAI.dotColor}`}></span>
+                    )}
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${activeAI.dotColor}`}></span>
+                  </span>
+                  <span>Active Engine: <strong>{activeAI.name}</strong></span>
+                </div>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -1637,8 +1746,15 @@ export default function Settings() {
                             <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">
                               {log.input_tokens.toLocaleString()} / {log.output_tokens.toLocaleString()}
                             </td>
-                            <td className="px-4 py-3.5 font-semibold text-emerald-500 tabular-nums">
-                              ${totalCost.toFixed(6)}
+                            <td className="px-4 py-3.5 font-semibold tabular-nums">
+                              {totalCost > 0 ? (
+                                <span className="text-emerald-500">${totalCost.toFixed(6)}</span>
+                              ) : (
+                                <span className="text-muted-foreground font-normal inline-flex items-center gap-1.5">
+                                  <span>$0.000000</span>
+                                  <Badge variant="secondary" className="text-[10px] py-0 px-1 font-mono uppercase bg-muted/80">Free / Local</Badge>
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-3.5 text-xs text-muted-foreground">
                               {new Date(log.created_at).toLocaleString()}
