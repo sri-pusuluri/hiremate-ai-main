@@ -418,9 +418,16 @@ export function CandidateDetail({
   const handleReanalyze = async (customProviderOrEvent?: any, customModel?: string) => {
     setIsReanalyzing(true);
     try {
-      const customProvider = typeof customProviderOrEvent === 'string' && customProviderOrEvent.length > 0 
+      let customProvider = typeof customProviderOrEvent === 'string' && customProviderOrEvent.length > 0 
         ? customProviderOrEvent 
-        : undefined;
+        : (typeof window !== 'undefined' ? localStorage.getItem('ai_provider') || 'auto' : 'auto');
+
+      let resolvedModel = customModel;
+      if (customProvider && customProvider.includes(':')) {
+        const [p, m] = customProvider.split(':');
+        customProvider = p;
+        resolvedModel = resolvedModel || m;
+      }
 
       // 1. Fetch fresh resume text and metadata from DB if missing in memory
       let resumeText = candidate.resumeText || (candidate as any).resume_text;
@@ -505,7 +512,7 @@ export function CandidateDetail({
         effectiveJob || { id: targetJobId || '', title: 'Software Engineer', description: 'Technical software engineering position' },
         { 
           preferredProvider: customProvider,
-          preferredModel: customModel
+          preferredModel: resolvedModel
         }
       );
 

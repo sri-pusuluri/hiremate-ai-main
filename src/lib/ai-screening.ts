@@ -849,7 +849,7 @@ Output ONLY valid JSON without markdown wrapping.`;
   // Option C: Client OpenAI Key
   if (!result && (selectedProvider === 'auto' || selectedProvider === 'openai')) {
     if (!openaiKey && selectedProvider === 'openai') {
-      throw new Error(`OpenAI API key not configured. Please add your OpenAI API key in Settings -> Sahab Portal AI.`);
+      throw new Error(`OpenAI API key not configured. Please add your OpenAI API key in Settings -> Sahab Portal AI or select Deterministic ATS.`);
     }
 
     if (openaiKey) {

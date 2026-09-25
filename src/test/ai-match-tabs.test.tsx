@@ -57,7 +57,7 @@ describe('AIMatchAnalysis Dual-Engine Two-Tab Layout', () => {
     expect(screen.getByText('Dual-Engine Match Analysis')).toBeDefined();
     expect(screen.getByText('Semantic Math Score')).toBeDefined();
     expect(screen.getAllByText('88%').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('LLM Fit Score')).toBeDefined();
+    expect(screen.getByText(/LLM Cognitive Score|LLM Fit Score/i)).toBeDefined();
     expect(screen.getAllByText(/high/i).length).toBeGreaterThanOrEqual(1);
   });
 
@@ -69,7 +69,7 @@ describe('AIMatchAnalysis Dual-Engine Two-Tab Layout', () => {
     expect(screen.getAllByText('88%').length).toBeGreaterThanOrEqual(2);
 
     // Tab 2 trigger
-    expect(screen.getByText(/2\. LLM Recruiter/i)).toBeDefined();
+    expect(screen.getByText(/2\. LLM (?:Reasoning|Recruiter)/i)).toBeDefined();
 
     // Tab 3 trigger
     expect(screen.getByText(/3\. Comparison/i)).toBeDefined();

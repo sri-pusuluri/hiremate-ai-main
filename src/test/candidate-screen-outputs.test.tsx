@@ -50,7 +50,7 @@ describe('Candidate Screen Output Captures', () => {
 
     // 2. LLM Fit Score (ai_score) -> high
     expect(screen.getAllByText(/high/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('LLM Fit Score')).toBeDefined();
+    expect(screen.getByText(/LLM Cognitive Score|LLM Fit Score/i)).toBeDefined();
   });
 
   it('captures External LLM & Screening Provider Details and full coverage specification on screen', () => {

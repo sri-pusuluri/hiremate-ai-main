@@ -1186,11 +1186,11 @@ export function AIMatchAnalysis({
             <div className="flex items-center gap-2.5 text-[10px] font-medium shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-border/40">
               <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Agreement
+                Green = Agreement
               </span>
               <span className="inline-flex items-center gap-1 text-rose-500">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                Discrepancy
+                Red = Discrepancy
               </span>
             </div>
           </div>
