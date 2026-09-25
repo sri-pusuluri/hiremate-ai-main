@@ -1752,7 +1752,7 @@ export default function Settings() {
                               ) : (
                                 <span className="text-muted-foreground font-normal inline-flex items-center gap-1.5">
                                   <span>$0.000000</span>
-                                  <Badge variant="secondary" className="text-[10px] py-0 px-1 font-mono uppercase bg-muted/80">Free / Local</Badge>
+                                  <Badge variant="secondary" className="text-[10px] py-0 px-1 font-mono uppercase bg-muted/80">Rule-based / Free</Badge>
                                 </span>
                               )}
                             </td>
