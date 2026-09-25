@@ -861,19 +861,45 @@ Output ONLY valid JSON without markdown wrapping.`;
           ? 'gpt-4o'
           : openaiModel;
 
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiKey}`
-          },
-          body: JSON.stringify({
-            model: targetApiModel,
-            temperature: 0.1,
-            messages: [{ role: 'user', content: prompt }],
-            response_format: { type: 'json_object' }
-          })
-        });
+        // Attempt via dev proxy first to bypass browser CORS; fall back to direct endpoint
+        const isLocalDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const primaryUrl = isLocalDev ? '/api/openai/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+
+        let res: Response;
+        try {
+          res = await fetch(primaryUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openaiKey}`
+            },
+            body: JSON.stringify({
+              model: targetApiModel,
+              temperature: 0.1,
+              messages: [{ role: 'user', content: prompt }],
+              response_format: { type: 'json_object' }
+            })
+          });
+        } catch (fetchErr) {
+          // If proxy failed, attempt direct fetch
+          if (isLocalDev) {
+            res = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${openaiKey}`
+              },
+              body: JSON.stringify({
+                model: targetApiModel,
+                temperature: 0.1,
+                messages: [{ role: 'user', content: prompt }],
+                response_format: { type: 'json_object' }
+              })
+            });
+          } else {
+            throw fetchErr;
+          }
+        }
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));

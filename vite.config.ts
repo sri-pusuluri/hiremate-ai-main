@@ -12,6 +12,18 @@ export default defineConfig(({ mode }) => ({
       "Access-Control-Allow-Origin": "*",
       "Content-Security-Policy": "frame-ancestors *",
     },
+    proxy: {
+      "/api/openai": {
+        target: "https://api.openai.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/openai/, "")
+      },
+      "/api/gemini": {
+        target: "https://generativelanguage.googleapis.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/gemini/, "")
+      }
+    },
     hmr: {
       overlay: false,
     },
