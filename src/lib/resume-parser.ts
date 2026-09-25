@@ -54,9 +54,47 @@ export async function extractTextFromPdf(bytes: Uint8Array): Promise<string> {
     for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
       const page = await pdfDoc.getPage(pageNum);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => ('str' in item ? item.str : ''))
-        .join(' ');
+      
+      let pageText = '';
+      let lastItem: any = null;
+      for (const rawItem of textContent.items) {
+        if (!rawItem || typeof rawItem !== 'object' || !('str' in rawItem)) continue;
+        const item = rawItem as any;
+        const str = item.str;
+        if (!str) continue;
+
+        if (!lastItem) {
+          pageText += str;
+        } else {
+          // If transform exists, check if on a new line or horizontally adjacent
+          const isNewLine = lastItem.transform && item.transform && Math.abs(lastItem.transform[5] - item.transform[5]) > 4;
+          if (isNewLine) {
+            pageText += '\n' + str;
+          } else {
+            // If the last item ends with space or current item starts with space, don't add another
+            const hasSpace = /\s$/.test(pageText) || /^\s/.test(str);
+            // If characters are broken up (single glyph or very close without space), check distance
+            const xGap = (lastItem.transform && item.transform) 
+              ? (item.transform[4] - (lastItem.transform[4] + (lastItem.width || 0)))
+              : 0;
+
+            if (hasSpace) {
+              pageText += str;
+            } else if (xGap > 1.5) {
+              pageText += ' ' + str;
+            } else if (xGap < -0.5) {
+              // Kerning or overlapping glyph
+              pageText += str;
+            } else {
+              // Very close adjacent letters (typical PDF kerning/sub-string chunk)
+              // Only insert space if it naturally separates words
+              pageText += str;
+            }
+          }
+        }
+        lastItem = item;
+      }
+
       if (pageText.trim()) {
         fullText += pageText + '\n\n';
       }
@@ -468,17 +506,31 @@ export function parseContactInfoFromText(text: string, fileName?: string): Parse
   }
 
   // 3. LinkedIn Profile
-  const linkedinMatch = extractedText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_-]+)/i);
+  // First, heal fractured linkedin URLs (e.g. "linkedin . com / in / tejas-ns-942599200" or "linkedin.com/ in/ tejas-ns-942599200")
   let linkedIn = '';
+  const healedLinkedInText = extractedText
+    .replace(/linkedin\s*\.\s*com\s*\/\s*in\s*\/\s*([a-zA-Z0-9_\-\.\%]+)/gi, 'https://linkedin.com/in/$1')
+    .replace(/linkedin\s*:\s*(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_\-\.\%]+)/gi, 'https://linkedin.com/in/$1');
+
+  const linkedinMatch = healedLinkedInText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_\-\.\%]+)/i);
   if (linkedinMatch) {
-    linkedIn = linkedinMatch[0].startsWith('http') ? linkedinMatch[0] : `https://${linkedinMatch[0]}`;
+    let cleanHandle = linkedinMatch[1].replace(/[.,;:/?#].*$/, '').replace(/\/+$/, '');
+    if (cleanHandle) {
+      linkedIn = `https://linkedin.com/in/${cleanHandle}`;
+    }
   }
 
   // 4. Portfolio / GitHub / Behance Link
-  const portfolioMatch = extractedText.match(/(?:https?:\/\/)?(?:www\.)?(?:github\.com\/[a-zA-Z0-9_-]+|gitlab\.com\/[a-zA-Z0-9_-]+|behance\.net\/[a-zA-Z0-9_-]+|dribbble\.com\/[a-zA-Z0-9_-]+|portfolio\.[a-zA-Z0-9_.-]+)|https?:\/\/[a-zA-Z0-9_.-]+\.(?:dev|design|io|me|com)\/?[a-zA-Z0-9_\-/]*/i);
+  // Heal fractured github/portfolio links
   let portfolio = '';
+  const healedPortfolioText = extractedText
+    .replace(/github\s*\.\s*com\s*\/\s*([a-zA-Z0-9_\-]+)/gi, 'https://github.com/$1')
+    .replace(/gitlab\s*\.\s*com\s*\/\s*([a-zA-Z0-9_\-]+)/gi, 'https://gitlab.com/$1');
+
+  const portfolioMatch = healedPortfolioText.match(/(?:https?:\/\/)?(?:www\.)?(?:github\.com\/[a-zA-Z0-9_-]+|gitlab\.com\/[a-zA-Z0-9_-]+|behance\.net\/[a-zA-Z0-9_-]+|dribbble\.com\/[a-zA-Z0-9_-]+|portfolio\.[a-zA-Z0-9_.-]+)|https?:\/\/[a-zA-Z0-9_.-]+\.(?:dev|design|io|me|com)\/?[a-zA-Z0-9_\-/]*/i);
   if (portfolioMatch) {
-    portfolio = portfolioMatch[0].startsWith('http') ? portfolioMatch[0] : `https://${portfolioMatch[0]}`;
+    let cleanUrl = portfolioMatch[0].trim().replace(/[.,;:]$/, '');
+    portfolio = cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
   }
 
   // 5. Candidate Full Name
@@ -492,21 +544,36 @@ export function parseContactInfoFromText(text: string, fileName?: string): Parse
 
   // Case B: Markdown header: # Resume: Alex Mercer or # Tariq Al-Mansoor
   if (!fullName) {
-    const mdHeaderMatch = text.match(/^#+[ \t]*(?:resume[ \t]*[:-]?[ \t]*)?([A-Za-z][a-zA-Z'–-]+(?:[ \t]+[A-Za-z][a-zA-Z'–-]+){1,3})/im);
+    const mdHeaderMatch = text.match(/^#+[ \t]*(?:resume[ \t]*[:-]?[ \t]*)?([A-Za-z][a-zA-Z'–-]*(?:[ \t]+[A-Za-z][a-zA-Z'–-]*){1,4})/im);
     if (mdHeaderMatch && mdHeaderMatch[1].trim()) {
-      fullName = mdHeaderMatch[1].trim();
+      const candidateHeader = mdHeaderMatch[1].trim();
+      if (!/experience|education|skills|summary|profile|project|contact/i.test(candidateHeader)) {
+        fullName = candidateHeader;
+      }
     }
   }
 
   // Case C: Top lines of resume before contact info
   if (!fullName) {
     const lines = extractedText.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
-    for (const line of lines.slice(0, 5)) {
-      // Check if line looks like a person's name (2 to 4 capitalized words)
-      const candidateLine = line.replace(/^(?:resume|cv)\s*[:-]?\s*/i, '').trim();
-      if (/^[A-Za-z][a-zA-Z'–-]+(?:[ \t]+[A-Za-z][a-zA-Z'–-]+){1,3}$/.test(candidateLine) && 
-          !candidateLine.includes('@') && 
-          !/experience|education|skills|summary|profile|project/i.test(candidateLine)) {
+    for (const line of lines.slice(0, 7)) {
+      // Strip common prefixes like "Resume -", "Name:", "CV:"
+      const candidateLine = line
+        .replace(/^(?:resume|cv|curriculum\s+vitae|name)\s*[:-]?\s*/i, '')
+        .trim();
+
+      // Skip lines that have contact tokens or section headers
+      if (candidateLine.includes('@') || 
+          candidateLine.includes('http') || 
+          candidateLine.includes('www.') ||
+          candidateLine.includes('.com') ||
+          /^(?:work\s+experience|professional\s+experience|experience|education|skills|summary|profile|projects?|contact|about\s+me|objective)\b/i.test(candidateLine)) {
+        continue;
+      }
+
+      // Match names with 2-4 parts, allowing initials (e.g. "Tejas N S", "John D. Doe", "Kunal Shah")
+      if (/^[A-Za-z][a-zA-Z'–-]*(?:\.?\s+[A-Za-z][a-zA-Z'–-]*\.?){1,4}$/.test(candidateLine) && 
+          candidateLine.length >= 3 && candidateLine.length <= 40) {
         fullName = candidateLine;
         break;
       }
@@ -530,17 +597,27 @@ export function parseContactInfoFromText(text: string, fileName?: string): Parse
     }
   }
 
-function formatProperName(name: string): string {
-  return name
-    .split(/\s+/)
-    .map(w => {
-      if (w.includes('-')) {
-        return w.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join('-');
-      }
-      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-    })
-    .join(' ');
-}
+  function formatProperName(name: string): string {
+    return name
+      .split(/\s+/)
+      .map(w => {
+        if (w.includes('-')) {
+          return w.split('-').map(part => {
+            if (part.toLowerCase() === 'al' || part.toLowerCase() === 'el') {
+              return 'Al';
+            }
+            if (part.length === 1 && /^[A-Za-z]$/.test(part)) return part.toUpperCase();
+            return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+          }).join('-');
+        }
+        // Preserve standalone initials like "N", "S", "D" (single character or single character with dot)
+        if (/^[A-Za-z]\.?$/.test(w)) {
+          return w.toUpperCase();
+        }
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      })
+      .join(' ');
+  }
 
   // Clean job role titles from candidate full name if accidentally included (e.g. "Adlin Yona Ui Ux Designer" -> "Adlin Yona")
   if (fullName) {

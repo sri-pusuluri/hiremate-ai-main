@@ -312,8 +312,43 @@ export default function PublicJobApplication() {
 
       if (contact.email) setEmail(contact.email);
       if (contact.phone) setPhone(contact.phone);
-      if (contact.linkedIn) setLinkedIn(contact.linkedIn);
-      if (contact.portfolio) setPortfolio(contact.portfolio);
+      if (contact.linkedIn) {
+        setLinkedIn(contact.linkedIn);
+        // Also update any screening questions asking for LinkedIn URL
+        setScreeningAnswers(prev => {
+          const next = { ...prev };
+          for (const key of Object.keys(next)) {
+            if (/linkedin/i.test(key) && !next[key]) {
+              next[key] = contact.linkedIn;
+            }
+          }
+          // Also pre-fill standard question names if configured on job
+          jobQuestions.forEach(q => {
+            if (/linkedin/i.test(q.text) && !next[q.text]) {
+              next[q.text] = contact.linkedIn;
+            }
+          });
+          return next;
+        });
+      }
+      if (contact.portfolio) {
+        setPortfolio(contact.portfolio);
+        // Also update any screening questions asking for Portfolio / GitHub URL
+        setScreeningAnswers(prev => {
+          const next = { ...prev };
+          for (const key of Object.keys(next)) {
+            if (/github|portfolio|website/i.test(key) && !next[key]) {
+              next[key] = contact.portfolio;
+            }
+          }
+          jobQuestions.forEach(q => {
+            if (/github|portfolio|website/i.test(q.text) && !next[q.text]) {
+              next[q.text] = contact.portfolio;
+            }
+          });
+          return next;
+        });
+      }
 
       setExtractedResumeContent(text);
       setDetectedSkills(contact.detectedSkills);
@@ -511,9 +546,11 @@ export default function PublicJobApplication() {
         resume_text: combinedResumeText,
         custom_answers: {
           ...screeningAnswers,
-          linkedin: linkedIn,
-          portfolio: portfolio,
-          cover_note: coverNote,
+          linkedin: linkedIn.trim(),
+          linkedin_url: linkedIn.trim(),
+          portfolio: portfolio.trim(),
+          portfolio_url: portfolio.trim(),
+          cover_note: coverNote.trim(),
         },
         ai_score: evalResult.isUnprocessed ? null : evalResult.score,
         cosine_similarity: evalResult.isUnprocessed ? null : evalResult.similarity,

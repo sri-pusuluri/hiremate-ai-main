@@ -81,9 +81,31 @@ export function CandidateDetail({
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const { toast } = useToast();
-  const savedLinkedIn = (initialCandidate as any)?.custom_answers?.linkedin_url || 
-    (initialCandidate.predictiveInsights as any)?.linkedinUrl || 
-    (initialCandidate as any)?.linkedin_url ||
+  const resolveCandidateLinkedIn = (cand: any): string | null => {
+    if (!cand) return null;
+    const answers = cand.custom_answers || cand.customAnswers || {};
+    // Check direct keys
+    if (answers.linkedin_url && typeof answers.linkedin_url === 'string' && answers.linkedin_url.trim()) {
+      return answers.linkedin_url.trim();
+    }
+    if (answers.linkedin && typeof answers.linkedin === 'string' && answers.linkedin.trim()) {
+      return answers.linkedin.trim();
+    }
+    // Check question responses
+    for (const [key, val] of Object.entries(answers)) {
+      if (/linkedin/i.test(key) && typeof val === 'string' && val.trim().startsWith('http')) {
+        return val.trim();
+      }
+    }
+    if (cand.predictiveInsights?.linkedinUrl) return cand.predictiveInsights.linkedinUrl;
+    if (cand.predictive_insights?.linkedinUrl) return cand.predictive_insights.linkedinUrl;
+    if (cand.linkedin_url) return cand.linkedin_url;
+    if (cand.linkedin) return cand.linkedin;
+    return null;
+  };
+
+  const initialLinkedInResolved = resolveCandidateLinkedIn(initialCandidate);
+  const savedLinkedIn = initialLinkedInResolved || 
     `https://www.linkedin.com/in/${initialCandidate.name.toLowerCase().replace(/\s+/g, '-')}/`;
 
   const [linkedinUrl, setLinkedinUrl] = useState(savedLinkedIn);
@@ -92,16 +114,13 @@ export function CandidateDetail({
   const [syncLogs, setSyncLogs] = useState<string[]>([]);
   const [isSynced, setIsSynced] = useState(Boolean(
     (initialCandidate.predictiveInsights as any)?.linkedinVerification ||
-    (initialCandidate as any)?.custom_answers?.linkedin_url ||
-    (initialCandidate as any)?.custom_answers?.linkedin_verification
+    initialLinkedInResolved
   ));
   const [localAIEnabled, setLocalAIEnabled] = useState(false);
 
   useEffect(() => {
     setCandidate(initialCandidate);
-    const existingUrl = (initialCandidate as any)?.custom_answers?.linkedin_url || 
-      (initialCandidate.predictiveInsights as any)?.linkedinUrl || 
-      (initialCandidate as any)?.linkedin_url;
+    const existingUrl = resolveCandidateLinkedIn(initialCandidate);
     if (existingUrl) {
       setLinkedinUrl(existingUrl);
       setIsSynced(true);
@@ -125,7 +144,7 @@ export function CandidateDetail({
       .then(({ data, error }) => {
         if (!isMounted || error || !data) return;
 
-        const dbLinkedIn = (data.custom_answers as any)?.linkedin_url || (data.predictive_insights as any)?.linkedinUrl;
+        const dbLinkedIn = resolveCandidateLinkedIn(data);
         if (dbLinkedIn) {
           setLinkedinUrl(dbLinkedIn);
         }
@@ -173,10 +192,16 @@ export function CandidateDetail({
   useEffect(() => {
     setFeedback(candidate.recruiterFeedback || null);
     setShowResumeModal(false);
-    setLinkedinUrl(`https://linkedin.com/in/${candidate.name.toLowerCase().replace(/\s+/g, '-')}`);
+    const existingUrl = resolveCandidateLinkedIn(candidate);
+    if (existingUrl) {
+      setLinkedinUrl(existingUrl);
+      setIsSynced(true);
+    } else {
+      setLinkedinUrl(`https://linkedin.com/in/${candidate.name.toLowerCase().replace(/\s+/g, '-')}`);
+      setIsSynced(false);
+    }
     setSyncing(false);
     setSyncLogs([]);
-    setIsSynced(false);
     setLocalAIEnabled(false);
     setIsReanalyzing(false);
     setIsShortlisted(Boolean(

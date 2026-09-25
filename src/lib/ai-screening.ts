@@ -437,6 +437,16 @@ export function evaluateResumeDeterministically(input: {
     }
   }
 
+  // Clean any resume section headers that leaked into currentRole (e.g. "WORK EXPERIENCE Software Engineer" -> "Software Engineer")
+  const cleanSectionPrefix = (role: string) => {
+    return role
+      .replace(/^(?:work\s+experience|professional\s+experience|career\s+history|experience|summary|profile|employment\s+history|role|title)\s*[:-]?\s*/i, '')
+      .trim();
+  };
+
+  currentRole = cleanSectionPrefix(currentRole);
+  if (!currentRole) currentRole = 'Software Engineer';
+
   // 9. Derive Predictive Metrics Proportional to Match Quality
   const interviewPassProb = Math.round(25 + similarity * 68);
   const offerAcceptanceProb = Math.round(55 + similarity * 35);

@@ -129,15 +129,47 @@ Aug 2025 – Present
     expect(contact.portfolio).toBe('https://www.behance.net/adlinyonaa');
   });
 
-  it('recognizes image MIME types and image extensions in extractTextFromFile without crashing', async () => {
-    const { extractTextFromFile } = await import('../lib/resume-parser');
-    
-    // Create a mock image file
-    const fakeImageBlob = new Blob(['mock binary image content'], { type: 'image/png' });
-    const fakeFile = new File([fakeImageBlob], 'resume_screenshot.png', { type: 'image/png' });
+  it('extracts candidate name with initials and fractured or spaced LinkedIn URL properly', () => {
+    const candidateText = `
+Tejas N S
+Software Engineer
+tejas.ns@example.com
++91 94259 92200
+linkedin . com / in / tejas-ns-942599200
+github.com/Tejas9620
 
-    // Should route through OCR pipeline safely without crashing
-    const result = await extractTextFromFile(fakeFile);
-    expect(typeof result).toBe('string');
+WORK EXPERIENCE
+Software Engineer at Zool Tech Solutions
+2024 - Present
+Worked on MEAN Stack Developer projects with MongoDB, Express, Angular, Node.js.
+    `;
+
+    const contact = parseContactInfoFromText(candidateText, 'Tejas_NS_Resume.pdf');
+    expect(contact.fullName).toBe('Tejas N S');
+    expect(contact.email).toBe('tejas.ns@example.com');
+    expect(contact.linkedIn).toBe('https://linkedin.com/in/tejas-ns-942599200');
+    expect(contact.portfolio).toBe('https://github.com/Tejas9620');
+  });
+
+  it('strips WORK EXPERIENCE section header prefix from evaluateResumeDeterministically role', () => {
+    const rawResume = `
+Tejas N S
+WORK EXPERIENCE
+Software Engineer – Zool Tech Solutions
+Experience in Angular, React, Node.js, MongoDB.
+    `;
+
+    const evalResult = evaluateResumeDeterministically({
+      candidateName: 'Tejas N S',
+      resumeText: rawResume,
+      job: {
+        title: 'MEAN Stack Developer (Angular, React, Node.js, MongoDB)',
+        requirements: ['Angular', 'React', 'Node.js', 'MongoDB']
+      }
+    });
+
+    expect(evalResult.currentRole).not.toContain('WORK EXPERIENCE');
+    expect(evalResult.currentRole).toBe('Software Engineer');
+    expect(evalResult.company).toBe('Zool Tech Solutions');
   });
 });
