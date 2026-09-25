@@ -980,13 +980,12 @@ Output ONLY valid JSON without markdown wrapping.`;
           }
         }
       } catch (err: any) {
+        console.warn('[AI Screening] OpenAI API call blocked or failed:', err);
+        // If OpenAI was blocked by CORS or network, don't crash candidate evaluation;
+        // allow fallback to the high-accuracy Deterministic ATS engine.
         if (selectedProvider === 'openai') {
-          if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-            throw new Error(`OpenAI request blocked or unreachable (Failed to fetch). This usually occurs due to browser CORS/network blocking direct browser-to-OpenAI calls, or an invalid API key. Please check your internet connection or proxy settings.`);
-          }
-          throw err;
+          console.info('[AI Screening] Falling back to Deterministic ATS engine due to network/CORS block.');
         }
-        console.warn('[AI Screening] OpenAI call failed:', err);
       }
     }
   }
@@ -1103,9 +1102,6 @@ Output ONLY valid JSON without markdown wrapping.`;
 
   // Option F: Reliable Deterministic ATS Engine (Runs if external LLM unconfigured or fallback needed)
   if (!result) {
-    if (selectedProvider !== 'auto' && selectedProvider !== 'deterministic-ats') {
-      throw new Error(`Screening service '${selectedProvider}' failed to return an evaluation.`);
-    }
     result = evaluateResumeDeterministically({
       candidateName: name,
       resumeText,
@@ -1113,6 +1109,9 @@ Output ONLY valid JSON without markdown wrapping.`;
       company: candidate.company,
       job
     });
+    if (selectedProvider !== 'auto' && selectedProvider !== 'deterministic-ats') {
+      result.assessment = `[Provider Notice: '${selectedProvider}' was unreachable from browser. Evaluated via Deterministic ATS Engine]. ${result.assessment}`;
+    }
   }
 
   // 4. AI Guardrail: Screening Integrity & Anti-Jailbreak Verification
