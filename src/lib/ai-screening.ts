@@ -835,11 +835,12 @@ Output ONLY valid JSON without markdown wrapping.`;
           isUnprocessed: false
         };
       } else if (selectedProvider === 'supabase-edge') {
-        throw new Error(edgeErr?.message || 'Supabase Edge Function failed to respond.');
+        const errorMsg = edgeErr?.message || 'Supabase Edge Function returned a non-2xx status code';
+        throw new Error(`${errorMsg}. Please ensure GEMINI_API_KEY or OPENAI_API_KEY is configured in your Supabase Dashboard Edge Secrets, or select "Deterministic ATS" for zero-configuration screening.`);
       }
     } catch (edgeErr: any) {
       if (selectedProvider === 'supabase-edge') {
-        throw new Error(`Supabase Edge screening failed: ${edgeErr?.message || edgeErr}`);
+        throw new Error(edgeErr?.message || `Supabase Edge screening failed: ${edgeErr}`);
       }
       console.debug('[AI Screening] Backend Edge Function skipped, using direct evaluation:', edgeErr);
     }
@@ -896,6 +897,9 @@ Output ONLY valid JSON without markdown wrapping.`;
         }
       } catch (err: any) {
         if (selectedProvider === 'openai') {
+          if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+            throw new Error(`OpenAI request blocked or unreachable (Failed to fetch). This usually occurs due to browser CORS/network blocking direct browser-to-OpenAI calls, or an invalid API key. Please check your internet connection or proxy settings.`);
+          }
           throw err;
         }
         console.warn('[AI Screening] OpenAI call failed:', err);

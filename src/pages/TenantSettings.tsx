@@ -638,6 +638,13 @@ export default function TenantSettings() {
     if (aiStrategy === 'byok') {
       localStorage.setItem(`hiresort_byok_key_${effectiveClientId}`, byokApiKey);
       localStorage.setItem(`hiresort_byok_endpoint_${effectiveClientId}`, byokEndpoint);
+      if (byokProvider === 'openai' && byokApiKey.trim()) {
+        localStorage.setItem('openai_api_key', byokApiKey.trim());
+      } else if (byokProvider === 'gemini' && byokApiKey.trim()) {
+        localStorage.setItem('gemini_api_key', byokApiKey.trim());
+      } else if (byokProvider === 'claude' && byokApiKey.trim()) {
+        localStorage.setItem('claude_api_key', byokApiKey.trim());
+      }
     }
 
     logAuditEvent({

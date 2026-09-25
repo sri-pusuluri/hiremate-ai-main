@@ -347,9 +347,9 @@ export function AIMatchAnalysis({
           >
             <Brain className="w-3.5 h-3.5 text-slate-400 group-data-[state=active]:text-purple-600 dark:group-data-[state=active]:text-purple-400 transition-colors shrink-0" />
             <div className="flex items-center gap-1.5 truncate">
-              <span className="truncate">2. LLM Recruiter</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-200/70 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 group-data-[state=active]:bg-purple-600 group-data-[state=active]:text-white group-data-[state=active]:border-purple-600 uppercase font-bold transition-all shadow-2xs hidden md:inline">
-                {isUnranked ? 'Pending' : (llmCognitiveScore !== null ? `${llmCognitiveScore}% ${candidate.aiScore}` : candidate.aiScore)}
+              <span className="truncate">2. LLM Reasoning</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-200/70 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 group-data-[state=active]:bg-purple-600 group-data-[state=active]:text-white group-data-[state=active]:border-purple-600 uppercase font-bold transition-all shadow-2xs hidden lg:inline">
+                {isUnranked ? 'Pending' : (llmCognitiveScore !== null ? `${llmCognitiveScore}%` : candidate.aiScore)}
               </span>
             </div>
             <span className="absolute -bottom-1 left-4 right-4 h-0.5 rounded-full bg-purple-600 dark:bg-purple-400 hidden group-data-[state=active]:block shadow-sm" />
