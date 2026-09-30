@@ -105,8 +105,8 @@ export function CandidateDetail({
   };
 
   const initialLinkedInResolved = resolveCandidateLinkedIn(initialCandidate);
-  const savedLinkedIn = initialLinkedInResolved || 
-    `https://www.linkedin.com/in/${initialCandidate.name.toLowerCase().replace(/\s+/g, '-')}/`;
+  // Only use the resolved URL if actually found — never guess from name
+  const savedLinkedIn = initialLinkedInResolved || '';
 
   const [linkedinUrl, setLinkedinUrl] = useState(savedLinkedIn);
   const [syncing, setSyncing] = useState(false);
