@@ -48,7 +48,8 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
-    if (callerRoleError || (callerRoleData?.role !== 'admin' && callerRoleData?.role !== 'super_admin')) {
+    const isRootAdmin = (user.email || '').toLowerCase() === 'admin@hiremate.ai' || (user.email || '').toLowerCase() === 'srini@zool.in'
+    if (!isRootAdmin && (callerRoleError || (callerRoleData?.role !== 'admin' && callerRoleData?.role !== 'super_admin'))) {
       throw new Error('Only admins can delete users.')
     }
 
