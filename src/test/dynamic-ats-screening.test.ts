@@ -20,6 +20,7 @@ Software Engineer | TechSolutions Inc. (June 2022 - Present)
 `;
 
   const wordPressJob = {
+    id: 'job-wp-001',
     title: 'WordPress Developer (Custom Themes, Plugins & Headless)',
     description: 'We are seeking a passionate WordPress Developer to build custom themes, Gutenberg blocks, and custom plugins with PHP 8 and WooCommerce.',
     requirements: [

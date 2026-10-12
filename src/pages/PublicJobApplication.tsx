@@ -227,6 +227,7 @@ export default function PublicJobApplication() {
             postedDate: (jobData as any).created_at ? new Date((jobData as any).created_at).toISOString().split('T')[0] : '2026-02-15',
             candidateCount: 0,
             isPublic: true,
+            status: (jobData as any).status || 'active',
             slug: (jobData as any).slug || (jobData as any).id,
           });
 
@@ -249,6 +250,7 @@ export default function PublicJobApplication() {
             department: 'Engineering',
             location: 'Bangalore, India (Hybrid)',
             type: 'full-time',
+            status: 'active',
             salary: '₹35-50 LPA',
             description: 'We are looking for a Senior Frontend Engineer to join our core product engineering team. You will architect and deliver customer-facing web applications.',
             responsibilities: [

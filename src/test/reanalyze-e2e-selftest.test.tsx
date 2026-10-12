@@ -163,6 +163,7 @@ describe('Self-Test: Complete Re-Analyze Functionality & Persistence Verificatio
 
   it('TEST 1: Direct analyzeCandidateWithAI call succeeds on candidate with null resume_text without throwing error', async () => {
     const candidateData = {
+      id: 'cand-selftest-1',
       candidateName: 'Adlin Yona Ui Ux',
       experience: 5,
       skills: ['Figma', 'UI/UX'],

@@ -1364,7 +1364,7 @@ export const supabase = new Proxy(realSupabase, {
         if (useMock) {
           return mockSupabase.from(table);
         }
-        return wrapQueryBuilder(realSupabase.from(table), table);
+        return wrapQueryBuilder((realSupabase as any).from(table), table);
       };
     }
     

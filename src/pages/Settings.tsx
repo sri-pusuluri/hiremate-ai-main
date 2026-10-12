@@ -644,7 +644,7 @@ export default function Settings() {
             description: job.description,
             requirements: job.requirements || [],
             responsibilities: job.responsibilities || [],
-            nice_to_have: job.niceToHave || [],
+            nice_to_have: (job as any).niceToHave || (job as any).nice_to_have || [],
             hire_sort_enabled: true,
             ai_processing_status: 'complete',
             last_ranked_at: new Date().toISOString()

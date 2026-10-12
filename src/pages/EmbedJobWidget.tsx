@@ -70,6 +70,7 @@ export default function EmbedJobWidget() {
               description: (data as any).description,
               postedDate: '2026-02-01',
               candidateCount: 0,
+              status: (data as any).status || 'active',
             });
 
             // Fetch Client branding if available
@@ -117,6 +118,7 @@ export default function EmbedJobWidget() {
           description: 'Join our product team to build high-scale web platforms.',
           postedDate: '2026-02-01',
           candidateCount: 0,
+          status: 'active',
         });
       } finally {
         setLoading(false);

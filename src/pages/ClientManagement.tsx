@@ -530,6 +530,7 @@ export default function ClientManagement() {
             setFormData({
               name: '',
               slug: '',
+              logoUrl: '',
               themeColor: '#2563eb',
               subscriptionTier: 'pro',
             });

@@ -66,6 +66,6 @@ export interface Interview {
   notes?: string;
   scorecard?: InterviewScorecard;
   createdBy?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

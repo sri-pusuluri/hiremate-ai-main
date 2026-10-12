@@ -2,21 +2,22 @@ export interface Candidate {
   id: string;
   name: string;
   email: string;
-  currentRole: string;
-  company: string;
-  experience: number;
-  location: string;
-  appliedDate: string;
+  currentRole?: string;
+  company?: string;
+  experience?: number;
+  location?: string;
+  appliedDate?: string;
   jobId?: string; // Reference to the job they applied for
   resumeUrl?: string;
   resumeText?: string;
   lastUpdated?: string; // For talent pool freshness filtering
   source?: 'applied' | 'talent-pool'; // Whether candidate applied or from talent pool
   avatarUrl?: string;
+  skills?: string[];
 
   // AI ranking data
   aiRank?: number;
-  aiScore?: 'high' | 'medium' | 'low';
+  aiScore?: 'high' | 'medium' | 'low' | 'pending';
   cosineSimilarity?: number; // Cosine similarity between JD and resume embeddings (0-1)
   matchedSkills?: string[];
   missingSkills?: string[];
@@ -26,7 +27,7 @@ export interface Candidate {
   missingSecondarySkills?: string[];
   experienceAlignment?: string;
   aiExplanation?: string;
-  evaluationStatus?: 'completed' | 'pending' | 'failed';
+  evaluationStatus?: 'completed' | 'pending' | 'failed' | 'evaluated' | string;
   evaluationError?: string;
 
   // Recruiter overrides
@@ -43,14 +44,15 @@ export interface Candidate {
   // Predictive AI Layer
   predictiveInsights?: {
     llmGuessedSimilarity?: number;
-    interviewPassProb: number; // 0-100
-    offerAcceptanceProb: number; // 0-100
-    onboardingSuccessProb: number; // 0-100
-    retentionRisk: 'low' | 'medium' | 'high';
+    interviewPassProb?: number; // 0-100
+    offerAcceptanceProb?: number; // 0-100
+    onboardingSuccessProb?: number; // 0-100
+    retentionRisk?: 'low' | 'medium' | 'high' | string;
     retentionRiskFactor?: string;
     timeToJoinEstimate?: string;
     assessment?: string; // Detailed predictive assessment
     resumeFormat?: 'AI Generated' | 'Human Written' | 'Mixed';
+    [key: string]: any;
   };
   // ATS Fields
   clientId?: string;
@@ -60,6 +62,14 @@ export interface Candidate {
   linkedInUrl?: string;
   portfolioUrl?: string;
   customAnswers?: Record<string, any>;
+  
+  // Database / Postgres column aliases
+  full_name?: string;
+  applied_for?: string;
+  match_score?: number;
+  role_title?: string;
+  currentCompany?: string;
+  created_at?: string;
 }
 
 export interface Job {
@@ -67,12 +77,17 @@ export interface Job {
   title: string;
   department: string;
   location: string;
-  type: 'full-time' | 'part-time' | 'contract';
-  postedDate: string;
+  type: 'full-time' | 'part-time' | 'contract' | 'Full-time' | 'Part-time' | 'Contract' | string;
+  postedDate?: string;
+  createdAt?: string;
   screeningEndDate?: string;
   expiresAt?: string;
-  status: 'active' | 'paused' | 'closed' | 'inactive';
-  candidateCount: number;
+  status?: 'active' | 'paused' | 'closed' | 'inactive' | 'published' | 'draft' | string;
+  candidateCount?: number;
+  candidatesCount?: number;
+  applicantsCount?: number;
+  shortlistedCount?: number;
+  experienceRequired?: string;
 
   // Job Description
   description?: string;

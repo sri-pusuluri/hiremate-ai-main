@@ -622,6 +622,8 @@ export async function analyzeCandidateWithAI(
     currentRole?: string;
     role_title?: string;
     company?: string;
+    email?: string;
+    candidateEmail?: string;
   },
   job: { id: string; title: string; description?: string; requirements?: string[]; responsibilities?: string[] },
   options?: { 

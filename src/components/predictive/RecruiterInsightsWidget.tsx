@@ -4,9 +4,10 @@ import { Users, TrendingUp } from 'lucide-react';
 
 interface RecruiterInsightsWidgetProps {
   names?: string[];
+  candidates?: any[];
 }
 
-export function RecruiterInsightsWidget({ names }: RecruiterInsightsWidgetProps) {
+export function RecruiterInsightsWidget({ names, candidates }: RecruiterInsightsWidgetProps) {
     const displayNames = names && names.length >= 3 ? names : ['Sarah Chen', 'Mike Johnson', 'Priya Sharma'];
     const teamPerformance = [
         { name: displayNames[0], conversion: 78, trend: '+5%' },

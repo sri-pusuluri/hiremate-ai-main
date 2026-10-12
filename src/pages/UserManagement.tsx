@@ -75,7 +75,7 @@ interface UserWithRole {
 }
 
 export default function UserManagement() {
-  const { isAdmin, isSuperAdmin, isClientAdmin, user, client: activeClient, role } = useAuth();
+  const { isAdmin, isSuperAdmin, isClientAdmin, user, client: activeClient, role, profile } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [clients, setClients] = useState<ClientTenant[]>([]);
@@ -391,7 +391,7 @@ export default function UserManagement() {
           clientId: targetClientId,
           clientName: clientName,
           projectName: clientName,
-          inviterName: profile?.name || user?.email || 'HireSort Admin'
+          inviterName: profile?.full_name || (profile as any)?.name || user?.user_metadata?.full_name || user?.email || 'HireSort Admin'
         }
       });
 
@@ -498,7 +498,7 @@ export default function UserManagement() {
           clientId: userClientId,
           clientName,
           projectName: clientName,
-          inviterName: profile?.name || user?.email || 'HireSort Admin'
+          inviterName: profile?.full_name || (profile as any)?.name || user?.user_metadata?.full_name || user?.email || 'HireSort Admin'
         }
       });
       

@@ -51,7 +51,7 @@ interface AvailableCandidate {
   email?: string;
   jobId: string;
   currentRole?: string;
-  experience?: string;
+  experience?: string | number;
   matchScore?: number;
 }
 
@@ -203,7 +203,7 @@ export function ScheduleInterviewModal({
               jobId: c.jobId,
               currentRole: c.currentRole,
               experience: c.experience,
-              matchScore: c.aiScore?.overall
+              matchScore: (c as any).overallScore || (c as any).match_score || (c.aiScore === 'high' ? 90 : c.aiScore === 'medium' ? 75 : 60)
             }));
           }
           setAvailableCandidates(candList);

@@ -173,7 +173,7 @@ const getPredictiveInsights = (aiScore: 'high' | 'medium' | 'low') => {
       retentionRiskFactor: 'Strong cultural fit & career progression alignment.',
       timeToJoinEstimate: '2-3 weeks',
       assessment: "**Strong Contender**: This candidate shows exceptional alignment with the core requirements, particularly in technical skills and industry experience.\n\n**Key Factors**:\n• **High Skills Match**: The 90%+ match in React and TypeScript significantly boosts interview pass probability.\n• **Stable Career History**: A consistent track record suggests high retention potential.\n• **Cultural Alignment**: Previous experience in similar high-paced environments indicates a smooth onboarding process.",
-      resumeFormat: Math.random() > 0.5 ? 'AI Generated' : 'Human Written' as const,
+      resumeFormat: (Math.random() > 0.5 ? 'AI Generated' : 'Human Written') as 'AI Generated' | 'Human Written',
     };
   } else if (aiScore === 'medium') {
     return {
@@ -184,7 +184,7 @@ const getPredictiveInsights = (aiScore: 'high' | 'medium' | 'low') => {
       retentionRiskFactor: 'Salary expectations slightly above band.',
       timeToJoinEstimate: '1 month',
       assessment: "**Moderate Potential**: The candidate meets the baseline requirements but may need support in specific areas.\n\n**Key Factors**:\n• **Skill Gaps**: Missing experience in some nice-to-have areas lowers the immediate interview pass probability.\n• **Salary Expectations**: Slightly above standard bands, which may impact offer acceptance.\n• **Growth Potential**: Strong foundational skills suggest good long-term potential despite initial ramp-up needs.",
-      resumeFormat: Math.random() > 0.5 ? 'AI Generated' : 'Human Written' as const,
+      resumeFormat: (Math.random() > 0.5 ? 'AI Generated' : 'Human Written') as 'AI Generated' | 'Human Written',
     };
   } else {
     return {
@@ -195,7 +195,7 @@ const getPredictiveInsights = (aiScore: 'high' | 'medium' | 'low') => {
       retentionRiskFactor: 'High turnover history in previous roles.',
       timeToJoinEstimate: 'Unknown',
       assessment: "**Challenging Fit**: Significant misalignment with the role's core requirements.\n\n**Key Factors**:\n• **Experience Mismatch**: Lack of required senior-level experience is the primary driver for low interview probability.\n• **Retention Concerns**: Frequent job changes in the past 2 years flag a high retention risk.\n• **Skill Variance**: Core technical stack does not fully align with our current infrastructure.",
-      resumeFormat: Math.random() > 0.5 ? 'AI Generated' : 'Human Written' as const,
+      resumeFormat: (Math.random() > 0.5 ? 'AI Generated' : 'Human Written') as 'AI Generated' | 'Human Written',
     };
   }
 };

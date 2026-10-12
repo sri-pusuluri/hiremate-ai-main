@@ -514,7 +514,9 @@ export function CandidateDetail({
               hireSortEnabled: dbJob.hire_sort_enabled,
               aiProcessingStatus: dbJob.ai_processing_status,
               lastRankedAt: dbJob.last_ranked_at,
-              candidateCount: dbJob.candidate_count || 0
+              candidateCount: dbJob.candidate_count || 0,
+              postedDate: dbJob.created_at || new Date().toISOString(),
+              status: dbJob.status || 'active'
             };
             setJob(effectiveJob);
           }

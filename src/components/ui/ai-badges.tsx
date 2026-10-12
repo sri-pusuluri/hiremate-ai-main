@@ -3,39 +3,44 @@ import { cn } from '@/lib/utils';
 
 interface AIBadgeProps {
   size?: 'sm' | 'md';
+  score?: 'high' | 'medium' | 'low' | string;
   className?: string;
 }
 
-export function AIBadge({ size = 'md', className }: AIBadgeProps) {
+export function AIBadge({ size = 'md', score, className }: AIBadgeProps) {
+  const scoreBadgeText = score === 'high' ? 'High Match' : score === 'medium' ? 'Medium Match' : score === 'low' ? 'Low Match' : 'AI';
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full font-medium",
         "bg-ai-surface border border-ai-border text-ai-accent",
+        score === 'high' && "text-emerald-500 border-emerald-500/20 bg-emerald-500/10",
+        score === 'medium' && "text-amber-500 border-amber-500/20 bg-amber-500/10",
+        score === 'low' && "text-rose-500 border-rose-500/20 bg-rose-500/10",
         size === 'sm' ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs",
         className
       )}
     >
       <Sparkles className={cn(size === 'sm' ? "w-3 h-3" : "w-3.5 h-3.5")} />
-      AI
+      {scoreBadgeText}
     </span>
   );
 }
 
 interface RankBadgeProps {
   rank: number;
-  score: 'high' | 'medium' | 'low';
+  score?: 'high' | 'medium' | 'low' | 'pending' | string;
   className?: string;
 }
 
-export function RankBadge({ rank, score, className }: RankBadgeProps) {
+export function RankBadge({ rank, score = 'medium', className }: RankBadgeProps) {
   return (
     <div
       className={cn(
         "flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold",
         score === 'high' && "bg-success-muted text-success border border-success/20",
         score === 'medium' && "bg-warning-muted text-warning border border-warning/20",
-        score === 'low' && "bg-muted text-muted-foreground border border-border",
+        (score === 'low' || score === 'pending') && "bg-muted text-muted-foreground border border-border",
         className
       )}
     >
