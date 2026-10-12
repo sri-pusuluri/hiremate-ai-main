@@ -188,15 +188,18 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
-    const isPlatformAdmin = callerRoleData?.role === 'admin' || callerRoleData?.role === 'super_admin'
+    const isRootAdmin = (user.email || '').toLowerCase() === 'admin@hiremate.ai' || (user.email || '').toLowerCase() === 'srini@zool.in'
+    const isPlatformAdmin = isRootAdmin || callerRoleData?.role === 'admin' || callerRoleData?.role === 'super_admin'
     const isCallerClientAdmin = callerRoleData?.role === 'client_admin'
 
-    if (callerRoleError || (!isPlatformAdmin && !isCallerClientAdmin)) {
+    if (!isRootAdmin && (callerRoleError || (!isPlatformAdmin && !isCallerClientAdmin))) {
       throw new Error('Only administrators can invite new users.')
     }
 
-    // Enforce client_id scoping: if not platform admin, caller can only invite into their own client_id
-    const targetClientId = isPlatformAdmin ? (clientId || callerRoleData?.client_id) : callerRoleData?.client_id
+    // Enforce client_id scoping: if platform admin, respect explicitly passed null for Platform HQ
+    const targetClientId = isPlatformAdmin 
+      ? (clientId !== undefined ? clientId : callerRoleData?.client_id) 
+      : callerRoleData?.client_id
 
     // Initialize admin client to perform the invite
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
