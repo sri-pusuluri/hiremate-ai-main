@@ -32,7 +32,8 @@ import {
   User,
   UserCheck,
   MapPin,
-  DollarSign
+  DollarSign,
+  Activity
 } from 'lucide-react';
 import {
   Select,
@@ -159,6 +160,7 @@ export function CreateJobModal({
   };
 
   const [activePeriod, setActivePeriod] = useState<'15' | '30' | '60' | '90' | 'custom' | 'unlimited'>('30');
+  const [jobStatus, setJobStatus] = useState<'active' | 'inactive'>('active');
   const [customExpiryDate, setCustomExpiryDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
@@ -264,11 +266,21 @@ export function CreateJobModal({
         isPublic: jobToEdit.isPublic ?? true,
       });
 
+      const isExpired = jobToEdit.expiresAt ? new Date(jobToEdit.expiresAt) < new Date() : false;
       if (jobToEdit.expiresAt) {
         setActivePeriod('custom');
         setCustomExpiryDate(new Date(jobToEdit.expiresAt).toISOString().split('T')[0]);
       } else {
         setActivePeriod('unlimited');
+      }
+
+      // If job has a future expiry date (e.g. extended to 2027) or was active, default to active
+      if (jobToEdit.expiresAt && !isExpired) {
+        setJobStatus('active');
+      } else if (jobToEdit.status === 'inactive' || jobToEdit.status === 'closed' || isExpired) {
+        setJobStatus('inactive');
+      } else {
+        setJobStatus('active');
       }
 
       // Map existing custom questions
@@ -310,6 +322,7 @@ export function CreateJobModal({
         isPublic: true,
       });
       setActivePeriod('30');
+      setJobStatus('active');
       // Default initial screening questions from library
       setSelectedQuestions([
         SYSTEM_QUESTION_LIBRARY[0], // Notice period (Choice)
@@ -375,6 +388,7 @@ export function CreateJobModal({
           requirements: resolvedRequirements,
           nice_to_have: resolvedNiceToHave,
           is_public: formData.isPublic,
+          status: jobStatus,
           expires_at: expiresAt,
           custom_questions: formattedQuestions,
           created_by: selectedCreatorId || jobToEdit.createdBy || user?.id || null,
@@ -405,6 +419,7 @@ export function CreateJobModal({
           requirements: (data as any).requirements || resolvedRequirements,
           niceToHave: (data as any).nice_to_have || resolvedNiceToHave,
           isPublic: (data as any).is_public,
+          status: (data as any).status || jobStatus,
           expiresAt: (data as any).expires_at || undefined,
           customQuestions: formattedQuestions as any,
           createdBy: updatedCreatorId,
@@ -462,7 +477,7 @@ export function CreateJobModal({
           created_by: selectedCreatorId || user?.id || null,
           hire_sort_enabled: true,
           ai_processing_status: 'idle',
-          status: 'active',
+          status: jobStatus || 'active',
           expires_at: expiresAt,
           custom_questions: formattedQuestions,
           responsibilities: parsed.responsibilities.length > 0 ? parsed.responsibilities : [
@@ -936,7 +951,38 @@ export function CreateJobModal({
             </div>
 
             {/* Row 4: Unified Compact Settings Panel (Auto-Expiry + Owner + Public Toggle) */}
-            <div className="p-2.5 rounded-lg border border-border bg-muted/30 grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-center">
+            {/* Row 4: Status, Auto-Expiry & Visibility Controls */}
+            <div className="p-2.5 rounded-lg border border-border bg-muted/30 grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-center">
+              {/* Job Status */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Activity className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <Label className="text-[11px] font-semibold">Job Status</Label>
+                </div>
+                <Select 
+                  value={jobStatus} 
+                  onValueChange={(val: 'active' | 'inactive') => setJobStatus(val)}
+                >
+                  <SelectTrigger className="w-full h-8 text-xs bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active" className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Active (Accepting)
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="inactive" className="text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                        Inactive (Paused)
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Auto-Expiry */}
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -945,7 +991,11 @@ export function CreateJobModal({
                 </div>
                 <Select 
                   value={activePeriod} 
-                  onValueChange={(val: any) => setActivePeriod(val)}
+                  onValueChange={(val: any) => {
+                    setActivePeriod(val);
+                    // Extending active period reactivates an inactive/expired role
+                    setJobStatus('active');
+                  }}
                 >
                   <SelectTrigger className="w-full h-8 text-xs bg-background">
                     <SelectValue />
@@ -1013,15 +1063,26 @@ export function CreateJobModal({
 
               {/* Custom Date sub-row if custom expiry selected */}
               {activePeriod === 'custom' && (
-                <div className="sm:col-span-3 flex items-center gap-2 pt-1 border-t border-border/50">
+                <div className="sm:col-span-4 flex items-center gap-2 pt-1 border-t border-border/50">
                   <Label className="text-xs text-muted-foreground shrink-0">Auto-Inactive Date:</Label>
                   <Input
                     type="date"
                     min={new Date().toISOString().split('T')[0]}
                     value={customExpiryDate}
-                    onChange={(e) => setCustomExpiryDate(e.target.value)}
+                    onChange={(e) => {
+                      setCustomExpiryDate(e.target.value);
+                      if (e.target.value && new Date(e.target.value) > new Date()) {
+                        setJobStatus('active');
+                      }
+                    }}
                     className="h-7 text-xs bg-background max-w-[200px]"
                   />
+                  {jobStatus === 'active' && (
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Role is active until this date
+                    </span>
+                  )}
                 </div>
               )}
             </div>

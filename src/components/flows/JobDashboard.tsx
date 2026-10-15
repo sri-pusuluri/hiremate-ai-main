@@ -36,7 +36,8 @@ import {
   ExternalLink,
   User,
   UserCheck,
-  GraduationCap
+  GraduationCap,
+  Check
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -358,14 +359,48 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
       }));
 
       toast({
-        title: nextStatus === 'active' ? '🟢 Job Posting Activated' : '🔴 Job Marked Inactive',
+        title: nextStatus === 'active' 
+          ? (isExpired ? '🟢 Job Posting Reactivated (+30 Days)' : '🟢 Job Posting Activated') 
+          : '🔴 Job Marked Inactive',
         description: nextStatus === 'active'
-          ? `"${job.title}" is now active and published for applications.`
+          ? (isExpired 
+              ? `"${job.title}" has been reactivated and expiry extended to ${new Date(nextExpiresAt!).toLocaleDateString()}.`
+              : `"${job.title}" is now active and published for applications.`)
           : `"${job.title}" is now inactive. Candidate applications are closed.`,
       });
     } catch (err: any) {
       toast({
         title: 'Status Update Failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleActivateAllUnexpired = async () => {
+    const unexpiredInactive = jobs.filter(j => 
+      (j.status === 'inactive' || j.status === 'closed') && 
+      !(j.expiresAt && new Date(j.expiresAt) < new Date())
+    );
+    if (unexpiredInactive.length === 0) return;
+
+    try {
+      const ids = unexpiredInactive.map(j => j.id);
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: 'active' })
+        .in('id', ids);
+
+      if (error) throw error;
+
+      setJobs(prev => prev.map(j => ids.includes(j.id) ? { ...j, status: 'active' } : j));
+      toast({
+        title: '🟢 Postings Activated',
+        description: `Successfully activated ${unexpiredInactive.length} job ${unexpiredInactive.length === 1 ? 'posting' : 'postings'}.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Activation Failed',
         description: err.message,
         variant: 'destructive',
       });
@@ -703,6 +738,26 @@ export function JobDashboard({ onSelectJob, onEnableHireSort }: JobDashboardProp
         </div>
       </div>
 
+      {/* Notice Banner: Inactive postings that have future expiry dates (e.g., extended to 2027) */}
+      {statusFilter !== 'active' && jobs.some(j => (j.status === 'inactive' || j.status === 'closed') && !(j.expiresAt && new Date(j.expiresAt) < new Date())) && (
+        <div className="mb-3.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2.5 text-emerald-900 dark:text-emerald-200">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>
+              <strong>Extended expiry date detected:</strong> You have postings with future expiry dates (e.g. 2027) currently marked inactive. Click to activate and publish them.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleActivateAllUnexpired}
+            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 font-medium px-3 shadow-xs cursor-pointer gap-1.5"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>Activate All Extended Postings</span>
+          </Button>
+        </div>
+      )}
+
       {/* Jobs Grid / Empty State */}
       {jobs.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-lg border border-dashed border-border p-8">
@@ -933,15 +988,15 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
                 onToggleStatus();
               }}
               className={cn(
-                "px-2.5 py-0.5 text-xs font-medium rounded-full border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs",
+                "px-2.5 py-0.5 text-xs font-medium rounded-full border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs group/status",
                 isActive 
                   ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 hover:border-rose-300 hover:bg-rose-50/60" 
-                  : "bg-muted text-muted-foreground border-border hover:border-emerald-300 hover:bg-emerald-50/60 hover:text-emerald-700"
+                  : "bg-muted text-muted-foreground border-border hover:border-emerald-400 hover:bg-emerald-50/70 hover:text-emerald-700 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300"
               )}
-              title={isActive ? "Job is Active. Click to set Inactive." : "Job is Inactive. Click to reactivate."}
+              title={isActive ? "Job is Active. Click to set Inactive." : (isExpired ? "Job is Expired. Click to extend by 30 days and activate." : "Job is Inactive. Click to make Active.")}
             >
-              <span className={cn("w-2 h-2 rounded-full", isActive ? "bg-emerald-500 animate-pulse-soft" : "bg-muted-foreground/50")} />
-              <span>{isActive ? "Active" : isExpired ? "Expired" : "Inactive"}</span>
+              <span className={cn("w-2 h-2 rounded-full", isActive ? "bg-emerald-500 animate-pulse-soft" : isExpired ? "bg-rose-500" : "bg-muted-foreground/50")} />
+              <span>{isActive ? "Active" : isExpired ? "Expired • Click to Extend" : "Inactive • Click to Activate"}</span>
             </button>
 
             {job.hireSortEnabled && <AIBadge size="sm" />}
@@ -1079,6 +1134,21 @@ function JobCard({ job, onSelect, onEnableHireSort, onViewJD, onEmbed, onDelete,
 
         {/* Right: Secondary Actions */}
         <div className="flex items-center gap-1">
+          {!isActive && (
+            <Button 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus();
+              }}
+              className="h-6 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1 px-2.5 font-medium shadow-2xs cursor-pointer mr-0.5"
+              title={isExpired ? "Extend expiry by 30 days and reactivate role" : "Activate role and allow candidate applications"}
+            >
+              <Check className="w-3 h-3" />
+              <span>{isExpired ? "Extend & Reactivate" : "Make Active"}</span>
+            </Button>
+          )}
+
           <Button 
             variant="ghost" 
             size="sm"
